@@ -1,0 +1,1 @@
+﻿// src/types/complaint.ts
