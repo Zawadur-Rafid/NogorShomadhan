@@ -73,6 +73,8 @@ NogorShomadhan/
 │   │   ├── animated-icon.web.tsx
 │   │   ├── app-tabs.tsx
 │   │   ├── app-tabs.web.tsx
+│   │   ├── back-button.tsx             # Global back navigation component
+│   │   ├── logo.tsx                    # Reusable app logo with optional text
 │   │   ├── external-link.tsx
 │   │   ├── hint-row.tsx
 │   │   ├── themed-text.tsx

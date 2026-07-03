@@ -18,6 +18,8 @@ Read the exact versioned docs at https://docs.expo.dev/versions/v57.0.0/ before 
 ## Completed Work
 - Scaffolded complete folder and file structure for the Expo Router app based on `PROJECT_STRUCTURE.md`.
 - Created route group placeholders, components, hooks, services, types, and constants files.
+- Refined Public Pages: Implemented the Onboarding (Home) screen and Sign-In screen with animated role toggles, custom back navigation, and reusable Logo component.
+- Updated root `_layout.tsx` to use a Stack navigator instead of global tabs, allowing full-screen public pages.
 
 ## Pending Work / Next Steps
 - Implement Authentication module (UI & API services).
