@@ -230,13 +230,13 @@ const styles = StyleSheet.create({
   stepTextContainer: {
     flex: 1,
   },
-  stepTitle: {
-    fontFamily: 'Inter',
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#191c1e',
-    marginBottom: 4,
-  },
+    stepTitle: {
+        fontFamily: 'Inter',
+        fontSize: 20,
+        fontWeight: '700',
+        color: '#191c1e',
+        marginBottom: 4,
+    },
   stepDesc: {
     fontFamily: 'Inter',
     fontSize: 14,
@@ -272,12 +272,12 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 4,
   },
-  primaryButtonText: {
-    fontFamily: 'Inter',
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#ffffff',
-  },
+    primaryButtonText: {
+        fontFamily: 'Inter',
+        fontSize: 20,
+        fontWeight: '700',
+        color: '#ffffff',
+    },
   secondaryButton: {
     width: '100%',
     height: 56,
@@ -288,12 +288,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  secondaryButtonText: {
-    fontFamily: 'Inter',
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#00475e',
-  },
+    secondaryButtonText: {
+        fontFamily: 'Inter',
+        fontSize: 20,
+        fontWeight: '700',
+        color: '#00475e',
+    },
   footerLinks: {
     flexDirection: 'row',
     justifyContent: 'center',

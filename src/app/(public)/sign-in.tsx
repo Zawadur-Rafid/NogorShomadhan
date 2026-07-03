@@ -44,7 +44,7 @@ const typography = {
   labelMd: {
     fontFamily: 'Inter',
     fontSize: 12,
-    fontWeight: '600' as const,
+    fontWeight: '700' as const,
   },
   buttonText: {
     fontFamily: 'Inter',
@@ -320,7 +320,7 @@ const styles = StyleSheet.create({
   registerText: {
     ...typography.bodyLg,
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '700',
     color: colors.primary,
   },
 });

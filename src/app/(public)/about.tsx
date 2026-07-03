@@ -1,498 +1,772 @@
-﻿import { MaterialIcons } from "@expo/vector-icons";
-import { Link } from "expo-router";
-import {
-  Image,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { MaterialIcons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
+import { useEffect, useRef, useState } from 'react';
+import { Animated, Dimensions, FlatList, Image, PanResponder, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import BackButton from '@/components/back-button';
+
+const { width } = Dimensions.get("window");
+const SLIDER_WIDTH = width;
 
 const colors = {
-  background: "#f8f9fc",
-  surface: "#ffffff",
-  panel: "#d8e0ea",
-  primary: "#00475e",
-  primaryContainer: "#355c8a",
-  onPrimary: "#ffffff",
-  onSurface: "#191c1e",
-  onSurfaceVariant: "#40484d",
-  outlineVariant: "#c0c8cd",
+    primary: '#00475e',
+    primaryContainer: '#1a5f7a',
+    secondary: '#904d00',
+    secondaryContainer: '#ffa454',
+    surface: '#ffffff',
+    surfaceContainerLow: '#f2f4f6',
+    surfaceContainer: '#eceef0',
+    background: '#f8f9fc',
+    onSurface: '#191c1e',
+    onSurfaceVariant: '#40484d',
+    outline: '#70787d',
+    outlineVariant: '#c0c8cd',
 };
 
-const commitments = [
-  {
-    id: "01",
-    title: "Reliable",
-    body: "Ensuring complaints are handled properly",
-  },
-  {
-    id: "02",
-    title: "Secure",
-    body: "Protecting user data and system integrity",
-  },
-  {
-    id: "03",
-    title: "Accessible",
-    body: "Easy to use for people of all backgrounds",
-  },
-  {
-    id: "04",
-    title: "Impactful",
-    body: "Making real improvements in everyday urban life",
-  },
-];
-
-const reasons = [
-  "Ensuring accountability through visible tracking",
-  "Encouraging active citizen participation",
-  "Improving efficiency in public service delivery",
-  "Supporting data-driven urban planning",
+const CAROUSEL_IMAGES = [
+    require("../../../assets/images/about1.png"),
+    require("../../../assets/images/about2.png"),
+    require("../../../assets/images/about4.jpg"),
+    require("../../../assets/images/about5.jpg"),
 ];
 
 export default function AboutScreen() {
-  return (
-    <SafeAreaView style={styles.safeArea}>
-      <ScrollView
-        contentContainerStyle={styles.content}
-        showsVerticalScrollIndicator={false}
-      >
-        <View style={styles.topNav}>
-          <Text style={styles.brand}>Nogor Shomadhan</Text>
-          <View style={styles.navLinks}>
-            <Link href="/" asChild>
-              <TouchableOpacity>
-                <Text style={styles.navLink}>Home</Text>
-              </TouchableOpacity>
-            </Link>
-            <Link href="/(public)/about" asChild>
-              <TouchableOpacity style={styles.navActivePill}>
-                <Text style={styles.navActiveText}>About</Text>
-              </TouchableOpacity>
-            </Link>
-            <Link href="/(public)/impact" asChild>
-              <TouchableOpacity>
-                <Text style={styles.navLink}>Impact</Text>
-              </TouchableOpacity>
-            </Link>
-          </View>
-          <View style={styles.authActions}>
-            <Link href="/(public)/sign-in" asChild>
-              <TouchableOpacity style={styles.loginBtn}>
-                <Text style={styles.loginText}>Login</Text>
-              </TouchableOpacity>
-            </Link>
-            <Link href="/(public)/register" asChild>
-              <TouchableOpacity style={styles.registerBtn}>
-                <Text style={styles.registerText}>Register</Text>
-              </TouchableOpacity>
-            </Link>
-          </View>
-        </View>
+    const router = useRouter();
+    const flatListRef = useRef<FlatList>(null);
+    const [currentIndex, setCurrentIndex] = useState(0);
 
-        <View style={styles.heroGrid}>
-          <View style={styles.leftColumn}>
-            <View style={styles.headingPill}>
-              <Text style={styles.heading}>About Nogor Shomadhan</Text>
+    const panY = useRef(new Animated.Value(0)).current;
+    const panYOffset = useRef(0);
+
+    const panResponder = useRef(
+        PanResponder.create({
+            onStartShouldSetPanResponder: () => true,
+            onPanResponderGrant: () => {
+                panY.setOffset(panYOffset.current);
+                panY.setValue(0);
+            },
+            onPanResponderMove: (_, gestureState) => {
+                let newY = gestureState.dy;
+                if (panYOffset.current + newY < 0) {
+                    newY = -panYOffset.current;
+                }
+                panY.setValue(newY);
+            },
+            onPanResponderRelease: (_, gestureState) => {
+                panY.flattenOffset();
+                let targetValue = 0;
+                if (gestureState.dy > 50 || gestureState.vy > 0.5) {
+                    targetValue = 180; // Keep dragger visible and higher
+                } else if (gestureState.dy < -50 || gestureState.vy < -0.5) {
+                    targetValue = 0; // Show fully
+                } else {
+                    targetValue = panYOffset.current > 90 ? 180 : 0;
+                }
+
+                panYOffset.current = targetValue;
+
+                Animated.spring(panY, {
+                    toValue: targetValue,
+                    useNativeDriver: true,
+                    bounciness: 4,
+                }).start();
+            }
+        })
+    ).current;
+
+    useEffect(() => {
+        const timer = setInterval(() => {
+            const nextIndex = (currentIndex + 1) % CAROUSEL_IMAGES.length;
+            flatListRef.current?.scrollToIndex({ index: nextIndex, animated: true });
+            setCurrentIndex(nextIndex);
+        }, 3000);
+        return () => clearInterval(timer);
+    }, [currentIndex]);
+
+    return (
+        <SafeAreaView style={styles.safeArea}>
+            {/* Header */}
+            <View style={styles.header}>
+                <View style={styles.headerLeft}>
+                    <BackButton />
+                    <Image
+                        source={require("../../../assets/images/main_logo.png")}
+                        style={styles.logoImage}
+                    />
+                    <Text style={styles.headerTitle}>About Nogor Shomadhan</Text>
+                </View>
             </View>
-            <Text style={styles.leadText}>
-              To empower citizens by giving them a voice while enabling
-              authorities to respond more effectively through structured data
-              and prioritization.
-            </Text>
 
-            <Text style={styles.sectionTitle}>Who are we?</Text>
-            <View style={styles.identityCard}>
-              <Text style={styles.identityText}>
-                Nogor Shomadhan is a smart civic complaint management platform
-                developed to bridge the gap between citizens and local
-                authorities. We are a technology-driven initiative focused on
-                improving urban living by enabling efficient reporting,
-                tracking, and resolution of civic issues.
-              </Text>
-            </View>
-          </View>
+            <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
 
-          <View style={styles.rightColumn}>
-            <Image
-              source={require("../../../assets/images/about1.png")}
-              style={styles.heroImage}
-            />
-            <Image
-              source={require("../../../assets/images/about2.png")}
-              style={styles.heroImage}
-            />
-          </View>
-        </View>
+                {/* Hero Section */}
+                <View style={styles.heroContainer}>
+                    <FlatList
+                        ref={flatListRef}
+                        data={CAROUSEL_IMAGES}
+                        keyExtractor={(_, index) => index.toString()}
+                        horizontal
+                        pagingEnabled
+                        showsHorizontalScrollIndicator={false}
+                        renderItem={({ item }) => (
+                            <Image source={item} style={styles.heroImage} />
+                        )}
+                    />
+                    <View style={styles.heroOverlay}>
+                        <Text style={styles.heroTitle}>Building Better Communities Together</Text>
+                        <Text style={styles.heroDesc}>
+                            Empowering citizens and city management through transparent, tech-driven collaboration to build a better, safer, and more efficient city for everyone.
+                        </Text>
+                    </View>
+                </View>
 
-        <View style={styles.missionSection}>
-          <Text style={styles.missionTitle}>Our Mission</Text>
-          <View style={styles.missionCard}>
-            <Text style={styles.missionText}>
-              We envision a future where urban governance is data-driven,
-              responsive, and inclusive, allowing cities to evolve into smarter
-              and more sustainable environments. Nogor Shomadhan strives to
-              become a key tool in building trust between citizens and
-              authorities.
-            </Text>
-          </View>
-        </View>
+                {/* What We Do */}
+                <View style={styles.section}>
+                    <Text style={styles.sectionTitle}>What We Do</Text>
 
-        <Text style={styles.sectionTitleLarge}>Who is this for?</Text>
-        <View style={styles.audienceRow}>
-          <View style={styles.audienceChip}>
-            <MaterialIcons name="apartment" size={20} color="#efe8c7" />
-            <Text style={styles.audienceText}>Citizens</Text>
-          </View>
-          <View style={styles.audienceChipPrimary}>
-            <MaterialIcons name="account-balance" size={20} color="#efe8c7" />
-            <Text style={styles.audienceText}>Administrators</Text>
-          </View>
-          <View style={styles.audienceChip}>
-            <MaterialIcons name="verified-user" size={20} color="#efe8c7" />
-            <Text style={styles.audienceText}>Local Authorities</Text>
-          </View>
-        </View>
+                    <View style={styles.gridContainer}>
+                        <View style={styles.gridCard}>
+                            <MaterialIcons name="trip-origin" size={32} color={colors.primary} />
+                            <Text style={styles.gridCardText}>Potholes</Text>
+                        </View>
+                        <View style={styles.gridCard}>
+                            <MaterialIcons name="build" size={32} color={colors.primary} />
+                            <Text style={styles.gridCardText}>Road Damage</Text>
+                        </View>
+                        <View style={styles.gridCard}>
+                            <MaterialIcons name="lightbulb-outline" size={32} color={colors.primary} />
+                            <Text style={styles.gridCardText}>Streetlights</Text>
+                        </View>
+                        <View style={styles.gridCard}>
+                            <MaterialIcons name="delete-outline" size={32} color={colors.primary} />
+                            <Text style={styles.gridCardText}>Waste Mgmt</Text>
+                        </View>
+                    </View>
 
-        <Text style={styles.commitmentTitle}>Our Commitment</Text>
-        <View style={styles.commitmentWrap}>
-          {commitments.map((item) => (
-            <View key={item.id} style={styles.commitmentCard}>
-              <View style={styles.commitmentBadge}>
-                <Text style={styles.commitmentBadgeText}>{item.id}</Text>
-              </View>
-              <Text style={styles.commitmentHead}>{item.title}</Text>
-              <Text style={styles.commitmentBody}>{item.body}</Text>
-            </View>
-          ))}
-        </View>
+                    <View style={styles.infoAlert}>
+                        <MaterialIcons name="info-outline" size={24} color={colors.secondary} />
+                        <Text style={styles.infoAlertText}>
+                            All reports are reviewed by the authorities to take further actions which can be traced by the residents
+                        </Text>
+                    </View>
+                </View>
 
-        <View style={styles.impactRow}>
-          <Image
-            source={require("../../../assets/images/about3.png")}
-            style={styles.impactImage}
-          />
+                {/* How It Works */}
+                <View style={styles.section}>
+                    <Text style={[styles.sectionTitle, { textAlign: 'center' }]}>How It Works</Text>
 
-          <View style={styles.impactPanel}>
-            <Text style={styles.impactHeader}>Why we matter?</Text>
-            {reasons.map((reason) => (
-              <View key={reason} style={styles.reasonPill}>
-                <Text style={styles.reasonText}>{reason}</Text>
-              </View>
-            ))}
-          </View>
-        </View>
-      </ScrollView>
-    </SafeAreaView>
-  );
+                    <View style={styles.stepperContainer}>
+                        <View style={styles.stepperLine} />
+
+                        <View style={styles.stepItem}>
+                            <View style={[styles.stepCircle, { backgroundColor: colors.primary }]}>
+                                <Text style={styles.stepNumber}>1</Text>
+                            </View>
+                            <View style={styles.stepCard}>
+                                <MaterialIcons name="photo-camera" size={20} color={colors.primary} />
+                                <View style={styles.stepTextContent}>
+                                    <Text style={styles.stepTitle}>Report</Text>
+                                    <Text style={styles.stepDesc}>Snap photo and location.</Text>
+                                </View>
+                            </View>
+                        </View>
+
+                        <View style={styles.stepItem}>
+                            <View style={[styles.stepCircle, { backgroundColor: colors.primary }]}>
+                                <Text style={styles.stepNumber}>2</Text>
+                            </View>
+                            <View style={styles.stepCard}>
+                                <MaterialIcons name="location-on" size={20} color={colors.primary} />
+                                <View style={styles.stepTextContent}>
+                                    <Text style={styles.stepTitle}>AI Checks for Duplicacy</Text>
+                                    <Text style={styles.stepDesc}>Automatic verification.</Text>
+                                </View>
+                            </View>
+                        </View>
+
+                        <View style={styles.stepItem}>
+                            <View style={[styles.stepCircle, { backgroundColor: colors.primary }]}>
+                                <Text style={styles.stepNumber}>3</Text>
+                            </View>
+                            <View style={styles.stepCard}>
+                                <MaterialIcons name="assignment" size={20} color={colors.primary} />
+                                <View style={styles.stepTextContent}>
+                                    <Text style={styles.stepTitle}>Authority Reviews</Text>
+                                    <Text style={styles.stepDesc}>Work order approved.</Text>
+                                </View>
+                            </View>
+                        </View>
+
+                        <View style={styles.stepItem}>
+                            <View style={[styles.stepCircle, { backgroundColor: colors.primary }]}>
+                                <Text style={styles.stepNumber}>4</Text>
+                            </View>
+                            <View style={styles.stepCard}>
+                                <MaterialIcons name="people" size={20} color={colors.primary} />
+                                <View style={styles.stepTextContent}>
+                                    <Text style={styles.stepTitle}>Work Begins</Text>
+                                    <Text style={styles.stepDesc}>Repairs in progress.</Text>
+                                </View>
+                            </View>
+                        </View>
+
+                        <View style={[styles.stepItem, { marginBottom: 0 }]}>
+                            <View style={[styles.stepCircle, { backgroundColor: colors.secondary }]}>
+                                <Text style={styles.stepNumber}>5</Text>
+                            </View>
+                            <View style={styles.stepCard}>
+                                <MaterialIcons name="check-circle-outline" size={20} color={colors.secondary} />
+                                <View style={styles.stepTextContent}>
+                                    <Text style={[styles.stepTitle, { color: colors.secondary }]}>Issue Resolved</Text>
+                                    <Text style={styles.stepDesc}>Community is fixed!</Text>
+                                </View>
+                            </View>
+                        </View>
+
+                    </View>
+                </View>
+
+                {/* Key Features */}
+                <View style={styles.section}>
+                    <Text style={styles.sectionTitle}>Key Features</Text>
+                    <View style={styles.featuresGrid}>
+
+                        <View style={styles.featureItem}>
+                            <MaterialIcons name="location-pin" size={24} color={colors.secondary} />
+                            <View style={styles.featureTextContainer}>
+                                <Text style={styles.featureTitle}>Photos/Location</Text>
+                                <Text style={styles.featureDesc}>Precise reporting.</Text>
+                            </View>
+                        </View>
+
+                        <View style={styles.featureItem}>
+                            <MaterialIcons name="category" size={24} color={colors.secondary} />
+                            <View style={styles.featureTextContainer}>
+                                <Text style={styles.featureTitle}>AI Categorization</Text>
+                                <Text style={styles.featureDesc}>Smart filtering.</Text>
+                            </View>
+                        </View>
+
+                        <View style={styles.featureItem}>
+                            <MaterialIcons name="show-chart" size={24} color={colors.secondary} />
+                            <View style={styles.featureTextContainer}>
+                                <Text style={styles.featureTitle}>Real-Time Tracking</Text>
+                                <Text style={styles.featureDesc}>Status updates.</Text>
+                            </View>
+                        </View>
+
+                        <View style={styles.featureItem}>
+                            <MaterialIcons name="notifications-active" size={24} color={colors.secondary} />
+                            <View style={styles.featureTextContainer}>
+                                <Text style={styles.featureTitle}>Instant Alerts</Text>
+                                <Text style={styles.featureDesc}>Stay informed.</Text>
+                            </View>
+                        </View>
+
+                    </View>
+                </View>
+
+                {/* Why Choose Nogor Shomadhan? */}
+                <View style={[styles.section, { paddingHorizontal: 16 }]}>
+                    <View style={styles.darkCard}>
+                        <Text style={styles.darkCardTitle}>Why Choose Nogor Shomadhan?</Text>
+
+                        <View style={styles.checkItem}>
+                            <MaterialIcons name="check-circle-outline" size={20} color={colors.secondaryContainer} />
+                            <Text style={styles.checkItemText}>Direct access to community authorities.</Text>
+                        </View>
+                        <View style={styles.checkItem}>
+                            <MaterialIcons name="check-circle-outline" size={20} color={colors.secondaryContainer} />
+                            <Text style={styles.checkItemText}>100% Transparency in report handling.</Text>
+                        </View>
+                        <View style={styles.checkItem}>
+                            <MaterialIcons name="check-circle-outline" size={20} color={colors.secondaryContainer} />
+                            <Text style={styles.checkItemText}>Faster resolution through digital automation.</Text>
+                        </View>
+                        <View style={styles.checkItem}>
+                            <MaterialIcons name="check-circle-outline" size={20} color={colors.secondaryContainer} />
+                            <Text style={styles.checkItemText}>Community-driven urban improvement.</Text>
+                        </View>
+                    </View>
+                </View>
+
+                {/* Our Vision */}
+                <View style={styles.section}>
+                    <Image
+                        source={require("../../../assets/images/about3.png")}
+                        style={styles.visionImage}
+                    />
+                    <View style={styles.visionCard}>
+                        <Text style={styles.visionTitle}>Our Vision</Text>
+                        <Text style={styles.visionText}>
+                            To transform every urban center into a smart city where technology serves humanity, creating a seamless feedback loop between residents and their surroundings for a cleaner, safer, and more comfortable living environment.
+                        </Text>
+                    </View>
+                </View>
+
+                {/* Contact Us */}
+                <View style={[styles.section, { marginBottom: 32 }]}>
+                    <Text style={styles.sectionTitle}>Contact Us</Text>
+
+                    <View style={styles.contactCard}>
+                        <View style={styles.contactItem}>
+                            <MaterialIcons name="email" size={20} color={colors.primary} />
+                            <Text style={styles.contactText}>support@nogorshomadhan.bd</Text>
+                        </View>
+                        <View style={styles.contactItem}>
+                            <MaterialIcons name="phone" size={20} color={colors.primary} />
+                            <Text style={styles.contactText}>+880 1234 567890</Text>
+                        </View>
+                        <View style={styles.contactItem}>
+                            <MaterialIcons name="location-on" size={20} color={colors.primary} />
+                            <Text style={styles.contactText}>Civic Tech Hub, Dhaka,{'\n'}Bangladesh</Text>
+                        </View>
+                        <View style={styles.contactItem}>
+                            <MaterialIcons name="language" size={20} color={colors.primary} />
+                            <Text style={styles.contactText}>www.nogorshomadhan.bd</Text>
+                        </View>
+                        <View style={styles.contactItem}>
+                            <MaterialIcons name="facebook" size={20} color={colors.primary} />
+                            <Text style={styles.contactText}>facebook.com/NogorShomadhan</Text>
+                        </View>
+                    </View>
+                </View>
+
+            </ScrollView>
+
+            {/* CTAs & Footer */}
+            <Animated.View style={[styles.bottomSection, { transform: [{ translateY: panY }] }]}>
+                <View {...panResponder.panHandlers} style={styles.dragHandleContainer}>
+                    <View style={styles.dragHandle} />
+                </View>
+
+                <View style={styles.ctaContainer}>
+                    <TouchableOpacity
+                        style={styles.primaryButton}
+                        onPress={() => router.push('/(public)/register')}
+                        activeOpacity={0.8}
+                    >
+                        <Text style={styles.primaryButtonText}>Register</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        style={styles.secondaryButton}
+                        onPress={() => router.push('/(public)/sign-in')}
+                        activeOpacity={0.8}
+                    >
+                        <Text style={styles.secondaryButtonText}>Sign In</Text>
+                    </TouchableOpacity>
+                </View>
+
+                <View style={styles.footerLinks}>
+                    <TouchableOpacity onPress={() => router.push('/(public)/about')}>
+                        <Text style={styles.footerLinkText}>About</Text>
+                    </TouchableOpacity>
+                    <View style={styles.footerDot} />
+                    <TouchableOpacity onPress={() => router.push('/(public)/impact')}>
+                        <Text style={styles.footerLinkText}>Impact</Text>
+                    </TouchableOpacity>
+                    <View style={styles.footerDot} />
+                    <TouchableOpacity onPress={() => router.push('/(public)/contact')}>
+                        <Text style={styles.footerLinkText}>Contact</Text>
+                    </TouchableOpacity>
+                </View>
+            </Animated.View>
+        </SafeAreaView>
+    );
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  content: {
-    paddingHorizontal: 12,
-    paddingBottom: 24,
-    gap: 14,
-  },
-  topNav: {
-    backgroundColor: colors.surface,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.outlineVariant,
-    paddingVertical: 8,
-    paddingHorizontal: 10,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    flexWrap: "wrap",
-    rowGap: 8,
-    marginTop: 2,
-  },
-  brand: {
-    fontFamily: "Inter",
-    fontWeight: "700",
-    fontSize: 20,
-    color: colors.onSurface,
-  },
-  navLinks: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-  },
-  navLink: {
-    fontFamily: "Inter",
-    fontWeight: "500",
-    fontSize: 12,
-    color: colors.onSurfaceVariant,
-  },
-  navActivePill: {
-    backgroundColor: "#e9edf1",
-    borderRadius: 8,
-    paddingVertical: 5,
-    paddingHorizontal: 10,
-  },
-  navActiveText: {
-    fontFamily: "Inter",
-    fontWeight: "700",
-    fontSize: 12,
-    color: colors.onSurface,
-  },
-  authActions: {
-    flexDirection: "row",
-    gap: 8,
-  },
-  loginBtn: {
-    borderWidth: 1,
-    borderColor: colors.outlineVariant,
-    borderRadius: 14,
-    paddingVertical: 6,
-    paddingHorizontal: 16,
-    backgroundColor: "#f2f4f6",
-  },
-  loginText: {
-    fontFamily: "Inter",
-    fontWeight: "600",
-    fontSize: 12,
-    color: colors.onSurface,
-  },
-  registerBtn: {
-    borderRadius: 14,
-    paddingVertical: 6,
-    paddingHorizontal: 16,
-    backgroundColor: "#355c8a",
-  },
-  registerText: {
-    fontFamily: "Inter",
-    fontWeight: "600",
-    fontSize: 12,
-    color: colors.onPrimary,
-  },
-  heroGrid: {
-    flexDirection: "row",
-    gap: 10,
-    flexWrap: "wrap",
-  },
-  leftColumn: {
-    flex: 1,
-    minWidth: 250,
-  },
-  rightColumn: {
-    flex: 1,
-    minWidth: 220,
-    gap: 10,
-  },
-  headingPill: {
-    alignSelf: "flex-start",
-    backgroundColor: "#bbd5e5",
-    borderRadius: 10,
-    paddingVertical: 3,
-    paddingHorizontal: 10,
-    marginBottom: 8,
-  },
-  heading: {
-    fontFamily: "Inter",
-    fontWeight: "700",
-    fontSize: 38,
-    lineHeight: 44,
-    color: colors.onSurface,
-  },
-  leadText: {
-    fontFamily: "Inter",
-    fontWeight: "400",
-    fontSize: 14,
-    color: colors.onSurfaceVariant,
-    lineHeight: 22,
-    marginBottom: 12,
-    maxWidth: 560,
-  },
-  sectionTitle: {
-    fontFamily: "Inter",
-    fontWeight: "800",
-    fontSize: 36,
-    lineHeight: 40,
-    color: colors.onSurface,
-    marginBottom: 8,
-  },
-  identityCard: {
-    backgroundColor: "#4c6f99",
-    borderRadius: 10,
-    padding: 12,
-  },
-  identityText: {
-    fontFamily: "Inter",
-    fontWeight: "400",
-    fontSize: 13,
-    lineHeight: 20,
-    color: "#dfe9f4",
-  },
-  heroImage: {
-    width: "100%",
-    height: 190,
-    borderRadius: 10,
-  },
-  missionSection: {
-    backgroundColor: "#c2cfdd",
-    borderRadius: 14,
-    paddingVertical: 10,
-    paddingHorizontal: 10,
-  },
-  missionTitle: {
-    fontFamily: "Inter",
-    fontWeight: "800",
-    fontSize: 38,
-    lineHeight: 44,
-    color: colors.onSurface,
-    textAlign: "center",
-    marginBottom: 6,
-  },
-  missionCard: {
-    backgroundColor: "#eceff3",
-    borderRadius: 10,
-    padding: 14,
-  },
-  missionText: {
-    fontFamily: "Inter",
-    fontWeight: "500",
-    fontSize: 14,
-    lineHeight: 24,
-    color: "#30363a",
-  },
-  sectionTitleLarge: {
-    fontFamily: "Inter",
-    fontWeight: "800",
-    fontSize: 42,
-    lineHeight: 48,
-    color: colors.onSurface,
-    marginTop: 4,
-  },
-  audienceRow: {
-    flexDirection: "row",
-    gap: 10,
-    flexWrap: "wrap",
-  },
-  audienceChip: {
-    backgroundColor: "#72829a",
-    borderRadius: 999,
-    minHeight: 54,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  audienceChipPrimary: {
-    backgroundColor: "#355c8a",
-    borderRadius: 999,
-    minHeight: 54,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  audienceText: {
-    fontFamily: "Inter",
-    fontWeight: "700",
-    fontSize: 18,
-    color: colors.onPrimary,
-  },
-  commitmentTitle: {
-    fontFamily: "Inter",
-    fontWeight: "700",
-    fontSize: 40,
-    lineHeight: 44,
-    color: "#355c8a",
-    textAlign: "center",
-    marginTop: 2,
-  },
-  commitmentWrap: {
-    backgroundColor: "#c9d9eb",
-    borderRadius: 14,
-    padding: 10,
-    gap: 8,
-    flexDirection: "row",
-    flexWrap: "wrap",
-  },
-  commitmentCard: {
-    backgroundColor: colors.surface,
-    borderRadius: 10,
-    padding: 10,
-    flexGrow: 1,
-    flexBasis: 180,
-    minHeight: 124,
-  },
-  commitmentBadge: {
-    backgroundColor: "#e4ecf6",
-    borderRadius: 6,
-    alignSelf: "flex-start",
-    paddingVertical: 2,
-    paddingHorizontal: 6,
-    marginBottom: 8,
-  },
-  commitmentBadgeText: {
-    fontFamily: "Inter",
-    fontWeight: "700",
-    fontSize: 12,
-    color: "#52647a",
-  },
-  commitmentHead: {
-    fontFamily: "Inter",
-    fontWeight: "700",
-    fontSize: 16,
-    color: colors.onSurface,
-    marginBottom: 6,
-  },
-  commitmentBody: {
-    fontFamily: "Inter",
-    fontWeight: "500",
-    fontSize: 13,
-    lineHeight: 18,
-    color: colors.onSurfaceVariant,
-  },
-  impactRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-    alignItems: "stretch",
-  },
-  impactImage: {
-    flex: 1,
-    minWidth: 220,
-    height: 210,
-    borderRadius: 10,
-  },
-  impactPanel: {
-    flex: 2,
-    minWidth: 250,
-    backgroundColor: "#3d6cab",
-    borderRadius: 10,
-    padding: 8,
-    gap: 6,
-  },
-  impactHeader: {
-    fontFamily: "Inter",
-    fontWeight: "700",
-    fontSize: 20,
-    color: colors.onPrimary,
-    textAlign: "center",
-    marginBottom: 2,
-  },
-  reasonPill: {
-    backgroundColor: "#d6e4f3",
-    borderRadius: 8,
-    paddingVertical: 8,
-    paddingHorizontal: 10,
-  },
-  reasonText: {
-    fontFamily: "Inter",
-    fontWeight: "500",
-    fontSize: 15,
-    color: "#2b435c",
-    textAlign: "left",
-  },
+    safeArea: {
+        flex: 1,
+        backgroundColor: colors.background,
+    },
+    header: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingHorizontal: 16,
+        height: 56,
+        backgroundColor: colors.background,
+    },
+    headerLeft: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+    },
+    logoImage: {
+        width: 28,
+        height: 28,
+        borderRadius: 6,
+    },
+    headerTitle: {
+        fontFamily: 'Inter',
+        fontSize: 18,
+        fontWeight: '700',
+        color: colors.primary,
+    },
+    content: {
+        paddingBottom: 280,
+    },
+    heroContainer: {
+        width: '100%',
+        height: 240,
+        position: 'relative',
+        backgroundColor: colors.primary,
+    },
+    heroImage: {
+        width: SLIDER_WIDTH,
+        height: 240,
+        resizeMode: 'cover',
+    },
+    heroOverlay: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(0, 71, 94, 0.65)',
+        paddingHorizontal: 24,
+        paddingBottom: 24,
+        justifyContent: 'flex-end',
+    },
+    heroTitle: {
+        fontFamily: 'Inter',
+        fontSize: 20,
+        fontWeight: '700',
+        color: colors.surface,
+        marginBottom: 8,
+    },
+    heroDesc: {
+        fontFamily: 'Inter',
+        fontSize: 14,
+        color: colors.surface,
+        lineHeight: 20,
+        opacity: 0.9,
+    },
+    section: {
+        paddingHorizontal: 16,
+        marginTop: 24,
+    },
+    sectionTitle: {
+        fontFamily: 'Inter',
+        fontSize: 18,
+        fontWeight: '700',
+        color: colors.primary,
+        marginBottom: 16,
+    },
+    gridContainer: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        justifyContent: 'space-between',
+        gap: 12,
+    },
+    gridCard: {
+        width: '48%',
+        backgroundColor: colors.surface,
+        paddingVertical: 20,
+        paddingHorizontal: 8,
+        borderRadius: 12,
+        alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 8,
+        elevation: 2,
+        borderWidth: 1,
+        borderColor: 'rgba(192,200,205,0.2)',
+    },
+    gridCardText: {
+        fontFamily: 'Inter',
+        fontSize: 14,
+        fontWeight: '600',
+        color: colors.primary,
+        marginTop: 12,
+        textAlign: 'center',
+    },
+    infoAlert: {
+        flexDirection: 'row',
+        backgroundColor: '#fff3e0',
+        padding: 16,
+        borderRadius: 12,
+        marginTop: 16,
+        borderWidth: 1,
+        borderColor: 'rgba(144, 77, 0, 0.1)',
+        alignItems: 'center',
+    },
+    infoAlertText: {
+        flex: 1,
+        fontFamily: 'Inter',
+        fontSize: 13,
+        color: colors.onSurfaceVariant,
+        marginLeft: 12,
+        lineHeight: 18,
+    },
+    stepperContainer: {
+        position: 'relative',
+        paddingLeft: 32,
+        paddingRight: 16,
+        alignSelf: 'center',
+        width: '100%',
+        maxWidth: 400,
+    },
+    stepperLine: {
+        position: 'absolute',
+        left: 43,
+        top: 20,
+        bottom: 40,
+        width: 2,
+        borderStyle: 'dotted',
+        borderWidth: 1,
+        borderColor: colors.outlineVariant,
+        borderRadius: 1,
+        zIndex: 0,
+    },
+    stepItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 20,
+        position: 'relative',
+    },
+    stepCircle: {
+        width: 24,
+        height: 24,
+        borderRadius: 12,
+        alignItems: 'center',
+        justifyContent: 'center',
+        position: 'absolute',
+        left: 0,
+        zIndex: 2,
+    },
+    stepNumber: {
+        color: colors.surface,
+        fontSize: 12,
+        fontWeight: '700',
+    },
+    stepCard: {
+        backgroundColor: colors.surface,
+        padding: 12,
+        borderRadius: 12,
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginLeft: 40,
+        flex: 1,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 4,
+        elevation: 1,
+        borderWidth: 1,
+        borderColor: 'rgba(192,200,205,0.2)',
+    },
+    stepTextContent: {
+        marginLeft: 12,
+        flex: 1,
+    },
+    stepTitle: {
+        fontFamily: 'Inter',
+        fontSize: 14,
+        fontWeight: '700',
+        color: colors.primary,
+    },
+    stepDesc: {
+        fontFamily: 'Inter',
+        fontSize: 12,
+        color: colors.onSurfaceVariant,
+        marginTop: 2,
+    },
+    featuresGrid: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 16,
+        justifyContent: 'space-between',
+    },
+    featureItem: {
+        width: '47%',
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+    },
+    featureTextContainer: {
+        marginLeft: 8,
+        flex: 1,
+    },
+    featureTitle: {
+        fontFamily: 'Inter',
+        fontSize: 14,
+        fontWeight: '700',
+        color: colors.primary,
+    },
+    featureDesc: {
+        fontFamily: 'Inter',
+        fontSize: 12,
+        color: colors.onSurfaceVariant,
+        marginTop: 2,
+    },
+    darkCard: {
+        backgroundColor: colors.primary,
+        borderRadius: 16,
+        padding: 24,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 12,
+        elevation: 4,
+    },
+    darkCardTitle: {
+        fontFamily: 'Inter',
+        fontSize: 18,
+        fontWeight: '700',
+        color: colors.surface,
+        marginBottom: 16,
+    },
+    checkItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 12,
+    },
+    checkItemText: {
+        fontFamily: 'Inter',
+        fontSize: 14,
+        color: colors.surface,
+        marginLeft: 12,
+        flex: 1,
+    },
+    visionImage: {
+        width: '100%',
+        height: 180,
+        borderRadius: 16,
+        marginBottom: -24,
+        zIndex: 1,
+    },
+    visionCard: {
+        backgroundColor: colors.surfaceContainer,
+        borderRadius: 16,
+        padding: 24,
+        paddingTop: 40,
+        zIndex: 0,
+    },
+    visionTitle: {
+        fontFamily: 'Inter',
+        fontSize: 18,
+        fontWeight: '700',
+        color: colors.primary,
+        marginBottom: 8,
+    },
+    visionText: {
+        fontFamily: 'Inter',
+        fontSize: 14,
+        color: colors.onSurfaceVariant,
+        lineHeight: 22,
+    },
+    contactCard: {
+        backgroundColor: colors.surface,
+        borderRadius: 16,
+        padding: 24,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 8,
+        elevation: 2,
+        borderWidth: 1,
+        borderColor: 'rgba(192,200,205,0.2)',
+    },
+    contactItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 16,
+    },
+    contactText: {
+        fontFamily: 'Inter',
+        fontSize: 14,
+        color: colors.onSurfaceVariant,
+        marginLeft: 16,
+        flex: 1,
+        lineHeight: 20,
+    },
+    bottomSection: {
+        backgroundColor: '#f2f4f6',
+        borderTopLeftRadius: 32,
+        borderTopRightRadius: 32,
+        paddingHorizontal: 16,
+        paddingTop: 8,
+        paddingBottom: 24,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: -10 },
+        shadowOpacity: 0.1,
+        shadowRadius: 20,
+        elevation: 10,
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+    },
+    dragHandleContainer: {
+        width: '100%',
+        alignItems: 'center',
+        paddingVertical: 16,
+        marginBottom: 4,
+    },
+    dragHandle: {
+        width: 48,
+        height: 5,
+        borderRadius: 2.5,
+        backgroundColor: colors.outlineVariant,
+    },
+    ctaContainer: {
+        gap: 12,
+        marginBottom: 32,
+    },
+    primaryButton: {
+        width: '100%',
+        height: 56,
+        backgroundColor: '#00475e',
+        borderRadius: 28,
+        alignItems: 'center',
+        justifyContent: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.2,
+        shadowRadius: 8,
+        elevation: 4,
+    },
+    primaryButtonText: {
+        fontFamily: 'Inter',
+        fontSize: 20,
+        fontWeight: '700',
+        color: '#ffffff',
+    },
+    secondaryButton: {
+        width: '100%',
+        height: 56,
+        backgroundColor: 'transparent',
+        borderWidth: 2,
+        borderColor: '#00475e',
+        borderRadius: 28,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    secondaryButtonText: {
+        fontFamily: 'Inter',
+        fontSize: 20,
+        fontWeight: '700',
+        color: '#00475e',
+    },
+    footerLinks: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+        alignItems: 'center',
+        gap: 24,
+    },
+    footerLinkText: {
+        fontFamily: 'Inter',
+        fontSize: 12,
+        fontWeight: '600',
+        color: '#40484d',
+    },
+    footerDot: {
+        width: 4,
+        height: 4,
+        borderRadius: 2,
+        backgroundColor: '#c0c8cd',
+    },
 });
