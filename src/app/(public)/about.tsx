@@ -304,33 +304,6 @@ export default function AboutScreen() {
                     </View>
                 </View>
 
-                {/* Contact Us */}
-                <View style={[styles.section, { marginBottom: 32 }]}>
-                    <Text style={styles.sectionTitle}>Contact Us</Text>
-
-                    <View style={styles.contactCard}>
-                        <View style={styles.contactItem}>
-                            <MaterialIcons name="email" size={20} color={colors.primary} />
-                            <Text style={styles.contactText}>support@nogorshomadhan.bd</Text>
-                        </View>
-                        <View style={styles.contactItem}>
-                            <MaterialIcons name="phone" size={20} color={colors.primary} />
-                            <Text style={styles.contactText}>+880 1234 567890</Text>
-                        </View>
-                        <View style={styles.contactItem}>
-                            <MaterialIcons name="location-on" size={20} color={colors.primary} />
-                            <Text style={styles.contactText}>Civic Tech Hub, Dhaka,{'\n'}Bangladesh</Text>
-                        </View>
-                        <View style={styles.contactItem}>
-                            <MaterialIcons name="language" size={20} color={colors.primary} />
-                            <Text style={styles.contactText}>www.nogorshomadhan.bd</Text>
-                        </View>
-                        <View style={styles.contactItem}>
-                            <MaterialIcons name="facebook" size={20} color={colors.primary} />
-                            <Text style={styles.contactText}>facebook.com/NogorShomadhan</Text>
-                        </View>
-                    </View>
-                </View>
 
             </ScrollView>
 
@@ -658,31 +631,7 @@ const styles = StyleSheet.create({
         color: colors.onSurfaceVariant,
         lineHeight: 22,
     },
-    contactCard: {
-        backgroundColor: colors.surface,
-        borderRadius: 16,
-        padding: 24,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 8,
-        elevation: 2,
-        borderWidth: 1,
-        borderColor: 'rgba(192,200,205,0.2)',
-    },
-    contactItem: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: 16,
-    },
-    contactText: {
-        fontFamily: 'Inter',
-        fontSize: 14,
-        color: colors.onSurfaceVariant,
-        marginLeft: 16,
-        flex: 1,
-        lineHeight: 20,
-    },
+
     bottomSection: {
         backgroundColor: '#f2f4f6',
         borderTopLeftRadius: 32,

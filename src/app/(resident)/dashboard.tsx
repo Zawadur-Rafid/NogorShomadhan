@@ -1,13 +1,14 @@
-﻿import {
+import {
   FlatList,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
+  Image,
 } from "react-native";
-import Ionicons from "react-native-vector-icons/Ionicons";
+import { SafeAreaView } from "react-native-safe-area-context";
+import Ionicons from "@expo/vector-icons/Ionicons";
 
 const complaints = [
   {
@@ -338,6 +339,10 @@ export default function Dashboard() {
         <View style={styles.header}>
           <View style={styles.logoSection}>
             <Ionicons name="menu" size={22} color="#23435D" />
+            <Image
+              source={require("../../../assets/images/main_logo.png")}
+              style={{ width: 24, height: 24, borderRadius: 6, marginLeft: 8 }}
+            />
             <Text style={styles.logo}>Nogor Shomadhan</Text>
           </View>
           <View style={styles.rightSection}>

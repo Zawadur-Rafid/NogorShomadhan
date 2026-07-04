@@ -9,10 +9,12 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import BackButton from '@/components/back-button';
 
 const colors = {
   background: '#f8f9fc',
@@ -27,15 +29,13 @@ const colors = {
   accent: '#9a5b0f',
 };
 
-const areas = ['Ward 01', 'Ward 02', 'Ward 03', 'Ward 04'];
-
 type FieldName =
   | 'fullName'
   | 'nid'
   | 'email'
   | 'phone'
-  | 'address'
-  | 'area'
+  | 'houseNo'
+  | 'roadNo'
   | 'username'
   | 'password'
   | 'confirmPassword';
@@ -47,8 +47,8 @@ const initialForm: FormState = {
   nid: '',
   email: '',
   phone: '',
-  address: '',
-  area: '',
+  houseNo: '',
+  roadNo: '',
   username: '',
   password: '',
   confirmPassword: '',
@@ -63,10 +63,7 @@ export default function Register() {
     setForm((current) => ({ ...current, [name]: value }));
   };
 
-  const cycleArea = () => {
-    const currentIndex = areas.indexOf(form.area);
-    updateField('area', areas[(currentIndex + 1) % areas.length]);
-  };
+
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
@@ -75,17 +72,14 @@ export default function Register() {
         style={styles.keyboardView}
       >
         <View style={styles.header}>
-          <TouchableOpacity
-            style={styles.headerIconButton}
-            activeOpacity={0.75}
-            onPress={() => router.back()}
-          >
-            <MaterialIcons name="arrow-back" size={24} color={colors.primary} />
-          </TouchableOpacity>
-          <Text style={styles.brand}>Nogor Shomadhan</Text>
-          <TouchableOpacity style={styles.headerIconButton} activeOpacity={0.75}>
-            <MaterialIcons name="notifications-none" size={24} color={colors.primary} />
-          </TouchableOpacity>
+          <View style={styles.headerLeft}>
+            <BackButton />
+            <Image
+              source={require("../../../assets/images/main_logo.png")}
+              style={styles.logoImage}
+            />
+            <Text style={styles.brand}>Nogor Shomadhan</Text>
+          </View>
         </View>
 
         <ScrollView
@@ -131,20 +125,17 @@ export default function Register() {
 
             <SectionHeader icon="location-on" title="Residential Address" />
             <FormInput
-              label="House No & Road No"
-              placeholder="House 12, Road 5"
-              value={form.address}
-              onChangeText={(value) => updateField('address', value)}
+              label="House Number"
+              placeholder="e.g. 12"
+              value={form.houseNo}
+              onChangeText={(value) => updateField('houseNo', value)}
             />
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Area / Ward</Text>
-              <Pressable style={styles.selectInput} onPress={cycleArea}>
-                <Text style={[styles.selectText, !form.area && styles.placeholderText]}>
-                  {form.area || 'Select Area'}
-                </Text>
-                <MaterialIcons name="keyboard-arrow-down" size={24} color={colors.onSurfaceVariant} />
-              </Pressable>
-            </View>
+            <FormInput
+              label="Road Number"
+              placeholder="e.g. 5"
+              value={form.roadNo}
+              onChangeText={(value) => updateField('roadNo', value)}
+            />
 
             <SectionHeader icon="lock-outline" title="Security Credentials" />
             <FormInput
@@ -184,18 +175,12 @@ export default function Register() {
 
             <TouchableOpacity style={styles.registerButton} activeOpacity={0.85}>
               <MaterialIcons name="how-to-reg" size={23} color={colors.onPrimary} />
-              <Text style={styles.registerButtonText}>Register Button</Text>
+              <Text style={styles.registerButtonText}>Register</Text>
             </TouchableOpacity>
           </View>
         </ScrollView>
 
-        <View style={styles.bottomTabs}>
-          <BottomTab icon="home" label="Home" />
-          <BottomTab icon="map" label="Map" />
-          <BottomTab icon="person-outline" label="Profile" active />
-          <BottomTab icon="assignment" label="Complaints" />
-          <BottomTab icon="insert-chart-outlined" label="Data" />
-        </View>
+
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -246,24 +231,6 @@ function FormInput({
   );
 }
 
-function BottomTab({
-  icon,
-  label,
-  active = false,
-}: {
-  icon: keyof typeof MaterialIcons.glyphMap;
-  label: string;
-  active?: boolean;
-}) {
-  return (
-    <View style={styles.tabItem}>
-      <View style={[styles.tabIconPill, active && styles.tabIconPillActive]}>
-        <MaterialIcons name={icon} size={22} color={active ? colors.onPrimary : colors.onSurfaceVariant} />
-      </View>
-      <Text style={[styles.tabLabel, active && styles.tabLabelActive]}>{label}</Text>
-    </View>
-  );
-}
 
 const styles = StyleSheet.create({
   container: {
@@ -275,26 +242,27 @@ const styles = StyleSheet.create({
   },
   header: {
     minHeight: 64,
-    paddingHorizontal: 18,
+    paddingHorizontal: 16,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     borderBottomWidth: 1,
     borderBottomColor: '#eef1f5',
     backgroundColor: colors.background,
   },
-  headerIconButton: {
-    width: 36,
-    height: 36,
+  headerLeft: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    gap: 12,
+  },
+  logoImage: {
+    width: 28,
+    height: 28,
+    borderRadius: 6,
   },
   brand: {
-    flex: 1,
-    paddingHorizontal: 10,
     fontFamily: 'Inter',
-    fontSize: 24,
-    fontWeight: '800',
+    fontSize: 20,
+    fontWeight: '700',
     color: colors.primary,
   },
   scrollContent: {
@@ -361,25 +329,7 @@ const styles = StyleSheet.create({
     color: colors.onSurface,
     backgroundColor: colors.field,
   },
-  selectInput: {
-    minHeight: 48,
-    borderWidth: 1,
-    borderColor: colors.outline,
-    borderRadius: 8,
-    paddingHorizontal: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: colors.field,
-  },
-  selectText: {
-    fontFamily: 'Inter',
-    fontSize: 15,
-    color: colors.onSurface,
-  },
-  placeholderText: {
-    color: colors.onSurfaceVariant,
-  },
+
   termsRow: {
     flexDirection: 'row',
     gap: 12,
@@ -427,39 +377,5 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: colors.onPrimary,
   },
-  bottomTabs: {
-    height: 66,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-around',
-    paddingHorizontal: 8,
-    borderTopWidth: 1,
-    borderTopColor: '#dce2e7',
-    backgroundColor: colors.card,
-  },
-  tabItem: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 2,
-  },
-  tabIconPill: {
-    minWidth: 44,
-    height: 32,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  tabIconPillActive: {
-    backgroundColor: '#1b7890',
-  },
-  tabLabel: {
-    fontFamily: 'Inter',
-    fontSize: 11,
-    fontWeight: '700',
-    color: colors.onSurfaceVariant,
-  },
-  tabLabelActive: {
-    color: '#1b7890',
-  },
+
 });

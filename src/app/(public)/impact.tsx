@@ -1,6 +1,6 @@
 import BackButton from "@/components/back-button";
 import { MaterialIcons } from "@expo/vector-icons";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import {
   Image,
   Modal,
@@ -9,8 +9,11 @@ import {
   Text,
   TouchableOpacity,
   View,
+  Animated,
+  PanResponder,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useRouter } from "expo-router";
 
 const IMPACT_IMAGES = [
   require("../../../assets/images/impact_1.png"),
@@ -31,8 +34,48 @@ const colors = {
 };
 
 export default function ImpactScreen() {
+  const router = useRouter();
   // State to manage the currently selected full-screen image
   const [selectedImage, setSelectedImage] = useState<any | null>(null);
+
+  const panY = useRef(new Animated.Value(0)).current;
+  const panYOffset = useRef(0);
+
+  const panResponder = useRef(
+      PanResponder.create({
+          onStartShouldSetPanResponder: () => true,
+          onPanResponderGrant: () => {
+              panY.setOffset(panYOffset.current);
+              panY.setValue(0);
+          },
+          onPanResponderMove: (_, gestureState) => {
+              let newY = gestureState.dy;
+              if (panYOffset.current + newY < 0) {
+                  newY = -panYOffset.current;
+              }
+              panY.setValue(newY);
+          },
+          onPanResponderRelease: (_, gestureState) => {
+              panY.flattenOffset();
+              let targetValue = 0;
+              if (gestureState.dy > 50 || gestureState.vy > 0.5) {
+                  targetValue = 180; // Keep dragger visible and higher
+              } else if (gestureState.dy < -50 || gestureState.vy < -0.5) {
+                  targetValue = 0; // Show fully
+              } else {
+                  targetValue = panYOffset.current > 90 ? 180 : 0;
+              }
+
+              panYOffset.current = targetValue;
+
+              Animated.spring(panY, {
+                  toValue: targetValue,
+                  useNativeDriver: true,
+                  bounciness: 4,
+              }).start();
+          }
+      })
+  ).current;
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -116,6 +159,46 @@ export default function ImpactScreen() {
         </View>
       </ScrollView>
 
+      {/* CTAs & Footer */}
+      <Animated.View style={[styles.bottomSection, { transform: [{ translateY: panY }] }]}>
+          <View {...panResponder.panHandlers} style={styles.dragHandleContainer}>
+              <View style={styles.dragHandle} />
+          </View>
+
+          <View style={styles.ctaContainer}>
+              <TouchableOpacity
+                  style={styles.primaryButton}
+                  onPress={() => router.push('/(public)/register')}
+                  activeOpacity={0.8}
+              >
+                  <Text style={styles.primaryButtonText}>Register</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                  style={styles.secondaryButton}
+                  onPress={() => router.push('/(public)/sign-in')}
+                  activeOpacity={0.8}
+              >
+                  <Text style={styles.secondaryButtonText}>Sign In</Text>
+              </TouchableOpacity>
+          </View>
+
+          <View style={styles.footerLinks}>
+              <TouchableOpacity onPress={() => router.push('/(public)/about')}>
+                  <Text style={styles.footerLinkText}>About</Text>
+              </TouchableOpacity>
+              <View style={styles.footerDot} />
+              <TouchableOpacity onPress={() => router.push('/(public)/impact')}>
+                  <Text style={styles.footerLinkText}>Impact</Text>
+              </TouchableOpacity>
+              <View style={styles.footerDot} />
+              <TouchableOpacity onPress={() => router.push('/(public)/contact')}>
+                  <Text style={styles.footerLinkText}>Contact</Text>
+              </TouchableOpacity>
+          </View>
+      </Animated.View>
+
+
       {/* Full-Screen Image Modal Viewer */}
       <Modal
         visible={selectedImage !== null}
@@ -180,7 +263,7 @@ const styles = StyleSheet.create({
   content: {
     paddingHorizontal: 16,
     paddingTop: 16,
-    paddingBottom: 32,
+    paddingBottom: 280,
   },
   scrollView: {
     flex: 1,
@@ -294,5 +377,91 @@ const styles = StyleSheet.create({
   fullScreenImage: {
     width: "100%",
     height: "100%",
+  },
+  bottomSection: {
+    backgroundColor: '#f2f4f6',
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -10 },
+    shadowOpacity: 0.1,
+    shadowRadius: 20,
+    elevation: 10,
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+  },
+  dragHandleContainer: {
+    width: '100%',
+    alignItems: 'center',
+    paddingVertical: 16,
+    marginBottom: 4,
+  },
+  dragHandle: {
+    width: 48,
+    height: 5,
+    borderRadius: 2.5,
+    backgroundColor: '#c0c8cd',
+  },
+  ctaContainer: {
+    gap: 12,
+    marginBottom: 32,
+  },
+  primaryButton: {
+    width: '100%',
+    height: 56,
+    backgroundColor: '#00475e',
+    borderRadius: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  primaryButtonText: {
+    fontFamily: 'Inter',
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#ffffff',
+  },
+  secondaryButton: {
+    width: '100%',
+    height: 56,
+    backgroundColor: 'transparent',
+    borderWidth: 2,
+    borderColor: '#00475e',
+    borderRadius: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  secondaryButtonText: {
+    fontFamily: 'Inter',
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#00475e',
+  },
+  footerLinks: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 24,
+  },
+  footerLinkText: {
+    fontFamily: 'Inter',
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#40484d',
+  },
+  footerDot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#c0c8cd',
   },
 });
