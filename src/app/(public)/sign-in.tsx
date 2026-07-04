@@ -174,7 +174,7 @@ export default function SignInScreen() {
             {role === 'resident' && (
               <View style={styles.footer}>
                 <Text style={styles.footerText}>Don't have an account? </Text>
-                <Link href="/(public)/register" asChild>
+                <Link href="/register" asChild>
                   <TouchableOpacity>
                     <Text style={styles.registerText}>Register</Text>
                   </TouchableOpacity>

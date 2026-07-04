@@ -98,7 +98,7 @@ export default function OnboardingScreen() {
         <View style={styles.ctaContainer}>
           <TouchableOpacity 
             style={styles.primaryButton}
-            onPress={() => router.push('/(public)/register')}
+            onPress={() => router.push('/register')}
             activeOpacity={0.8}
           >
             <Text style={styles.primaryButtonText}>Register</Text>
