@@ -68,6 +68,7 @@ export default function Dashboard() {
       fontSize: 18,
       fontWeight: "700",
       color: "#23435D",
+      fontFamily: "Inter",
     },
     rightSection: {
       flexDirection: "row",
@@ -82,12 +83,14 @@ export default function Dashboard() {
       color: "#B9854B",
       fontWeight: "700",
       letterSpacing: 0.8,
+      fontFamily: "Inter",
     },
     bigTitle: {
       fontSize: 24,
       fontWeight: "700",
       color: "#111827",
       marginTop: 2,
+      fontFamily: "Inter",
     },
     statsRow: {
       flexDirection: "row",
@@ -113,12 +116,14 @@ export default function Dashboard() {
       marginTop: 6,
       fontSize: 11,
       color: "#555",
+      fontFamily: "Inter",
     },
     cardNumber: {
       fontSize: 24,
       fontWeight: "700",
       marginTop: 4,
       color: "#222",
+      fontFamily: "Inter",
     },
     sectionHeader: {
       marginTop: 20,
@@ -131,11 +136,13 @@ export default function Dashboard() {
       fontSize: 18,
       fontWeight: "700",
       color: "#1F2937",
+      fontFamily: "Inter",
     },
     viewAll: {
       color: "#3B82F6",
       fontWeight: "600",
       fontSize: 13,
+      fontFamily: "Inter",
     },
     complaintCard: {
       backgroundColor: "#fff",
@@ -167,12 +174,14 @@ export default function Dashboard() {
       fontSize: 14,
       fontWeight: "700",
       color: "#222",
+      fontFamily: "Inter",
     },
     complaintDesc: {
       marginTop: 2,
       color: "#666",
       lineHeight: 18,
       fontSize: 12,
+      fontFamily: "Inter",
     },
     statusBadge: {
       paddingHorizontal: 6,
@@ -182,6 +191,7 @@ export default function Dashboard() {
     statusText: {
       fontWeight: "700",
       fontSize: 9,
+      fontFamily: "Inter",
     },
     bottomRow: {
       flexDirection: "row",
@@ -196,6 +206,7 @@ export default function Dashboard() {
       marginLeft: 3,
       color: "#777",
       fontSize: 10,
+      fontFamily: "Inter",
     },
     mapCard: {
       height: 160,
@@ -211,6 +222,7 @@ export default function Dashboard() {
       fontSize: 16,
       fontWeight: "700",
       color: "#374151",
+      fontFamily: "Inter",
     },
     mapSubtitle: {
       marginTop: 4,
@@ -218,6 +230,7 @@ export default function Dashboard() {
       color: "#6B7280",
       textAlign: "center",
       paddingHorizontal: 20,
+      fontFamily: "Inter",
     },
     helpCard: {
       marginHorizontal: 16,
@@ -232,6 +245,7 @@ export default function Dashboard() {
       color: "#fff",
       fontWeight: "700",
       fontSize: 18,
+      fontFamily: "Inter",
     },
     helpText: {
       color: "#D9E4EC",
@@ -239,6 +253,7 @@ export default function Dashboard() {
       lineHeight: 18,
       width: "90%",
       fontSize: 12,
+      fontFamily: "Inter",
     },
     helpButton: {
       marginTop: 12,
@@ -252,6 +267,7 @@ export default function Dashboard() {
       color: "#23435D",
       fontWeight: "700",
       fontSize: 12,
+      fontFamily: "Inter",
     },
     plusButton: {
       width: 48,
@@ -280,11 +296,13 @@ export default function Dashboard() {
       color: "#23435D",
       fontWeight: "700",
       fontSize: 10,
+      fontFamily: "Inter",
     },
     navText: {
       marginTop: 2,
       color: "#8A8A8A",
       fontSize: 10,
+      fontFamily: "Inter",
     },
   });
 
@@ -338,10 +356,9 @@ export default function Dashboard() {
         {/* HEADER */}
         <View style={styles.header}>
           <View style={styles.logoSection}>
-            <Ionicons name="menu" size={22} color="#23435D" />
             <Image
               source={require("../../../assets/images/main_logo.png")}
-              style={{ width: 24, height: 24, borderRadius: 6, marginLeft: 8 }}
+              style={{ width: 24, height: 24, borderRadius: 6 }}
             />
             <Text style={styles.logo}>Nogor Shomadhan</Text>
           </View>
