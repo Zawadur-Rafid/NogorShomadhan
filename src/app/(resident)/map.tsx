@@ -5,6 +5,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
 import MapViewComponent from '../../components/MapView';
 import TopNav from '../../components/TopNav';
+import BottomNav from '../../components/BottomNav';
 import { dummyComplaints } from '../../components/store/store_complaint';
 
 export default function ResidentMap() {
@@ -19,28 +20,7 @@ export default function ResidentMap() {
       </View>
 
       {/* Bottom Navigation */}
-      <View style={styles.bottomNav}>
-        <TouchableOpacity style={styles.navItem} onPress={() => router.push('/(resident)/dashboard')}>
-          <Ionicons name="home-outline" size={20} color="#888" />
-          <Text style={styles.navText}>Home</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem}>
-          <Ionicons name="map" size={20} color="#23435D" />
-          <Text style={styles.activeNav}>Map</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem}>
-          <Ionicons name="document-text-outline" size={20} color="#888" />
-          <Text style={styles.navText}>Complaints</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem}>
-          <Ionicons name="bar-chart-outline" size={20} color="#888" />
-          <Text style={styles.navText}>Data</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem} onPress={() => router.push('/(resident)/profile')}>
-          <Ionicons name="person-outline" size={20} color="#888" />
-          <Text style={styles.navText}>Profile</Text>
-        </TouchableOpacity>
-      </View>
+      <BottomNav activeRoute="map" />
     </SafeAreaView>
   );
 }

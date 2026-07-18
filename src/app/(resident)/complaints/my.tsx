@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 
-export default function AllComplaintsScreen() {
+export default function MyComplaintsScreen() {
   return (
     <View style={styles.contentContainer}>
       <View style={styles.placeholderCard}>
@@ -9,7 +9,7 @@ export default function AllComplaintsScreen() {
           Work is in progress for now
         </Text>
         <Text style={styles.subText}>
-          (All Complaints Section)
+          (My Complaints Section)
         </Text>
       </View>
     </View>

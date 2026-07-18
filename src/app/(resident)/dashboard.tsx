@@ -12,6 +12,7 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import { useRouter } from "expo-router";
 import MapViewComponent from "../../components/MapView";
 import TopNav from "../../components/TopNav";
+import BottomNav from "../../components/BottomNav";
 
 import { dummyComplaints as complaints } from "../../components/store/store_complaint";
 
@@ -416,28 +417,7 @@ export default function Dashboard() {
       </ScrollView>
 
       {/* Bottom Navigation */}
-      <View style={styles.bottomNav}>
-        <TouchableOpacity style={styles.navItem}>
-          <Ionicons name="home" size={20} color="#23435D" />
-          <Text style={styles.activeNav}>Home</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem} onPress={() => router.push('/(resident)/map')}>
-          <Ionicons name="map-outline" size={20} color="#888" />
-          <Text style={styles.navText}>Map</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem}>
-          <Ionicons name="document-text-outline" size={20} color="#888" />
-          <Text style={styles.navText}>Complaints</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem}>
-          <Ionicons name="bar-chart-outline" size={20} color="#888" />
-          <Text style={styles.navText}>Data</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem}>
-          <Ionicons name="person-outline" size={20} color="#888" />
-          <Text style={styles.navText}>Profile</Text>
-        </TouchableOpacity>
-      </View>
+      <BottomNav activeRoute="home" />
     </SafeAreaView>
   );
 }
