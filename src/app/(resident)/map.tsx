@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
 import MapViewComponent from '../../components/MapView';
+import TopNav from '../../components/TopNav';
 import { dummyComplaints } from '../../components/store/store_complaint';
 
 export default function ResidentMap() {
@@ -11,9 +12,7 @@ export default function ResidentMap() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Interactive Map</Text>
-      </View>
+      <TopNav />
       
       <View style={styles.mapContainer}>
         <MapViewComponent locations={dummyComplaints} />

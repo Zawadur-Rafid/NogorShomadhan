@@ -11,6 +11,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useRouter } from "expo-router";
 import MapViewComponent from "../../components/MapView";
+import TopNav from "../../components/TopNav";
 
 import { dummyComplaints as complaints } from "../../components/store/store_complaint";
 
@@ -323,24 +324,7 @@ export default function Dashboard() {
     <SafeAreaView style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* HEADER */}
-        <View style={styles.header}>
-          <View style={styles.logoSection}>
-            <Image
-              source={require("../../../assets/images/main_logo.png")}
-              style={{ width: 24, height: 24, borderRadius: 6 }}
-            />
-            <Text style={styles.logo}>Nogor Shomadhan</Text>
-          </View>
-          <View style={styles.rightSection}>
-            <Ionicons name="notifications-outline" size={20} color="#23435D" />
-            <Ionicons
-              style={{ marginLeft: 12 }}
-              name="person-circle"
-              size={30}
-              color="#23435D"
-            />
-          </View>
-        </View>
+        <TopNav />
 
         {/* Welcome */}
         <View style={styles.welcome}>
