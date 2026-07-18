@@ -1,461 +1,623 @@
-// src/app/(admin)/accounts/pending.tsx
-
-import { useMemo, useState } from "react";
+import AdminBottomNav from "@/components/AdminBottomNav";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import {
-       Alert,
-       Modal,
-       Pressable,
-       SafeAreaView,
-       ScrollView,
-       StyleSheet,
-       Text,
-       TouchableOpacity,
-       View,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
-import {
-       useAdminAccounts,
-       type PendingAdminAccount,
-} from "@/store/admin-accounts-store";
+const colors = {
+  background: "#F5F6FA",
+  white: "#FFFFFF",
+  primary: "#1F4868",
+  text: "#1E1E1E",
+  subtitle: "#707070",
+  border: "#E5E7EB",
 
-type SelectedPendingAccount = PendingAdminAccount | null;
+  blue: "#E8F2FF",
+  orange: "#FFF3E5",
+  red: "#FFECEC",
 
-export default function Pending() {
-  const { pendingAccounts, approveAccount, rejectAccount } = useAdminAccounts();
-  const [selectedAccount, setSelectedAccount] =
-    useState<SelectedPendingAccount>(pendingAccounts[0] ?? null);
+  blueIcon: "#2D6CDF",
+  orangeIcon: "#C97816",
+  redIcon: "#C0392B",
 
-  const selectedAccountId = selectedAccount?.id;
+  shadow: "#000",
+};
 
-  const displayedSelectedAccount = useMemo(() => {
-    if (!selectedAccountId) {
-      return null;
-    }
-
-    return (
-      pendingAccounts.find((account) => account.id === selectedAccountId) ??
-      null
-    );
-  }, [pendingAccounts, selectedAccountId]);
-
-  const openAccount = (account: PendingAdminAccount) => {
-    setSelectedAccount(account);
-  };
-
-  const handleApprove = (account: PendingAdminAccount) => {
-    Alert.alert(
-      "Account approved",
-      `${account.fullName} has been moved to registered accounts.`,
-    );
-    approveAccount(account.id);
-    setSelectedAccount((currentSelected) => {
-      if (currentSelected?.id !== account.id) {
-        return currentSelected;
-      }
-
-      const nextAccount =
-        pendingAccounts.find((item) => item.id !== account.id) ?? null;
-      return nextAccount;
-    });
-  };
-
-  const handleReject = (account: PendingAdminAccount) => {
-    Alert.alert(
-      "Account rejected",
-      `${account.fullName} has been removed from pending verification.`,
-    );
-    rejectAccount(account.id);
-    setSelectedAccount((currentSelected) => {
-      if (currentSelected?.id !== account.id) {
-        return currentSelected;
-      }
-
-      const nextAccount =
-        pendingAccounts.find((item) => item.id !== account.id) ?? null;
-      return nextAccount;
-    });
-  };
-
+export default function VerificationDesk() {
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{
+          paddingBottom: 25,
+        }}
+      >
+        {/* Header */}
+
         <View style={styles.header}>
-          <Text style={styles.kicker}>Pending verification</Text>
-          <Text style={styles.title}>Accounts waiting to be approved</Text>
-          <Text style={styles.subtitle}>
-            Tap any card to review the full account information before taking
-            action.
+          <View style={styles.headerLeft}>
+            <Ionicons name="menu" size={22} color={colors.primary} />
+
+            <Text style={styles.logo}>Verification Desk</Text>
+          </View>
+
+          <View style={styles.headerRight}>
+            <Ionicons name="notifications-outline" size={20} color="#000" />
+
+            <View style={styles.adminCircle}>
+              <Text style={styles.adminText}>AD</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Pending */}
+
+        <View style={styles.statsCard}>
+          <View style={styles.iconBlue}>
+            <Ionicons name="people-outline" size={24} color={colors.blueIcon} />
+          </View>
+
+          <View style={{ marginLeft: 15 }}>
+            <Text style={styles.smallLabel}>PENDING</Text>
+
+            <Text style={styles.bigText}>24 Accounts</Text>
+          </View>
+        </View>
+
+        {/* Verified */}
+
+        <View style={styles.statsCard}>
+          <View style={styles.iconOrange}>
+            <Ionicons
+              name="shield-checkmark-outline"
+              size={24}
+              color={colors.orangeIcon}
+            />
+          </View>
+
+          <View style={{ marginLeft: 15 }}>
+            <Text style={styles.smallLabel}>VERIFIED TODAY</Text>
+
+            <Text style={styles.bigText}>156 Citizens</Text>
+          </View>
+        </View>
+
+        {/* Rejected */}
+
+        <View style={styles.statsCard}>
+          <View style={styles.iconRed}>
+            <Ionicons
+              name="close-circle-outline"
+              size={24}
+              color={colors.redIcon}
+            />
+          </View>
+
+          <View style={{ marginLeft: 15 }}>
+            <Text style={styles.smallLabel}>REJECTED</Text>
+
+            <Text style={styles.bigText}>12 Flags</Text>
+          </View>
+        </View>
+        {/* Search */}
+
+        <View style={styles.searchBar}>
+          <Ionicons name="search" size={18} color="#777" />
+
+          <Text style={styles.searchPlaceholder}>
+            Search by name, ID or email...
           </Text>
         </View>
 
-        {pendingAccounts.length === 0 ? (
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyTitle}>No pending accounts</Text>
-            <Text style={styles.emptySubtitle}>
-              All submitted accounts have already been reviewed.
-            </Text>
+        {/* Filters */}
+
+        <View style={styles.filterRow}>
+          <TouchableOpacity style={styles.chip}>
+            <Text style={styles.chipText}>Resident</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.filterIcon}>
+            <Ionicons name="options-outline" size={18} color="#666" />
+          </TouchableOpacity>
+        </View>
+
+        {/* Request Card 1 */}
+
+        <View style={styles.requestCard}>
+          <View style={styles.profileRow}>
+            <View style={styles.avatar}>
+              <Ionicons name="person" size={30} color="#555" />
+            </View>
+
+            <View style={{ flex: 1, marginLeft: 12 }}>
+              <Text style={styles.personName}>Ahmed Karim Chowdhury</Text>
+
+              <Text style={styles.personInfo}>Resident • ID: NID-8829-102</Text>
+
+              <View style={styles.roleBadge}>
+                <Text style={styles.roleBadgeText}>NEW RESIDENT</Text>
+              </View>
+            </View>
           </View>
-        ) : (
-          pendingAccounts.map((account) => {
-            const isActive = selectedAccount?.id === account.id;
 
-            return (
-              <TouchableOpacity
-                key={account.id}
-                activeOpacity={0.85}
-                onPress={() => openAccount(account)}
-                style={[styles.card, isActive && styles.cardActive]}
-              >
-                <View style={styles.cardHeader}>
-                  <View>
-                    <Text style={styles.cardName}>{account.fullName}</Text>
-                    <Text style={styles.cardMeta}>{account.role}</Text>
-                  </View>
-                  <View style={styles.pill}>
-                    <Text style={styles.pillText}>Pending</Text>
-                  </View>
-                </View>
+          <View style={styles.buttonRow}>
+            <TouchableOpacity style={styles.rejectButton}>
+              <Ionicons name="close-circle-outline" size={18} color="#C0392B" />
 
-                <View style={styles.cardGrid}>
-                  <View style={styles.cardField}>
-                    <Text style={styles.label}>NID</Text>
-                    <Text style={styles.value}>{account.nidNumber}</Text>
-                  </View>
-                  <View style={styles.cardField}>
-                    <Text style={styles.label}>Username</Text>
-                    <Text style={styles.value}>{account.username}</Text>
-                  </View>
-                </View>
+              <Text style={styles.rejectText}>Reject</Text>
+            </TouchableOpacity>
 
-                <Text style={styles.tapHint}>Tap to view full details</Text>
+            <TouchableOpacity style={styles.approveButton}>
+              <Ionicons
+                name="checkmark-circle-outline"
+                size={18}
+                color="#fff"
+              />
 
-                <View style={styles.actionRow}>
-                  <TouchableOpacity
-                    activeOpacity={0.85}
-                    style={[styles.actionButton, styles.rejectButton]}
-                    onPress={() => handleReject(account)}
-                  >
-                    <Text style={styles.rejectButtonText}>Reject</Text>
-                  </TouchableOpacity>
+              <Text style={styles.approveText}>Approve</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
 
-                  <TouchableOpacity
-                    activeOpacity={0.85}
-                    style={[styles.actionButton, styles.approveButton]}
-                    onPress={() => handleApprove(account)}
-                  >
-                    <Text style={styles.approveButtonText}>Approve</Text>
-                  </TouchableOpacity>
-                </View>
-              </TouchableOpacity>
-            );
-          })
-        )}
+        {/* Request Card 2 */}
+
+        <View style={styles.requestCard}>
+          <View style={styles.profileRow}>
+            <View style={styles.avatar}>
+              <Ionicons name="person" size={30} color="#555" />
+            </View>
+
+            <View style={{ flex: 1, marginLeft: 12 }}>
+              <Text style={styles.personName}>Nusrat Jahan Mim</Text>
+
+              <Text style={styles.personInfo}>Resident • ID: BC-1123-990</Text>
+
+              <View style={styles.roleBadgeBlue}>
+                <Text style={styles.roleBadgeBlueText}>NEW RESIDENT</Text>
+              </View>
+            </View>
+          </View>
+
+          <View style={styles.buttonRow}>
+            <TouchableOpacity style={styles.rejectButton}>
+              <Ionicons name="close-circle-outline" size={18} color="#C0392B" />
+
+              <Text style={styles.rejectText}>Reject</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.approveButton}>
+              <Ionicons
+                name="checkmark-circle-outline"
+                size={18}
+                color="#fff"
+              />
+
+              <Text style={styles.approveText}>Approve</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Request Card 3 */}
+
+        <View style={styles.requestCard}>
+          <View style={styles.profileRow}>
+            <View style={styles.avatar}>
+              <Ionicons name="person" size={30} color="#555" />
+            </View>
+
+            <View style={{ flex: 1, marginLeft: 12 }}>
+              <Text style={styles.personName}>Nusrat Jahan Mim</Text>
+
+              <Text style={styles.personInfo}>Resident • ID: BC-1123-990</Text>
+
+              <View style={styles.roleBadgeBlue}>
+                <Text style={styles.roleBadgeBlueText}>NEW RESIDENT</Text>
+              </View>
+            </View>
+          </View>
+
+          <View style={styles.buttonRow}>
+            <TouchableOpacity style={styles.rejectButton}>
+              <Ionicons name="close-circle-outline" size={18} color="#C0392B" />
+
+              <Text style={styles.rejectText}>Reject</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.approveButton}>
+              <Ionicons
+                name="checkmark-circle-outline"
+                size={18}
+                color="#fff"
+              />
+
+              <Text style={styles.approveText}>Approve</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+        {/* Load More */}
+
+        <TouchableOpacity activeOpacity={0.8} style={styles.loadMoreButton}>
+          <Text style={styles.loadMoreText}>Load more requests</Text>
+
+          <Ionicons name="chevron-down" size={16} color="#666" />
+        </TouchableOpacity>
       </ScrollView>
 
-      <Modal
-        visible={Boolean(displayedSelectedAccount)}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setSelectedAccount(null)}
-      >
-        <Pressable
-          style={styles.backdrop}
-          onPress={() => setSelectedAccount(null)}
-        >
-          <Pressable style={styles.modalCard} onPress={() => {}}>
-            {displayedSelectedAccount && (
-              <>
-                <Text style={styles.modalTitle}>
-                  {displayedSelectedAccount.fullName}
-                </Text>
-                <Text style={styles.modalSubtitle}>
-                  {displayedSelectedAccount.role} • Requested on{" "}
-                  {displayedSelectedAccount.requestedOn}
-                </Text>
-
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>NID Number</Text>
-                  <Text style={styles.detailValue}>
-                    {displayedSelectedAccount.nidNumber}
-                  </Text>
-                </View>
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>Email Address</Text>
-                  <Text style={styles.detailValue}>
-                    {displayedSelectedAccount.emailAddress}
-                  </Text>
-                </View>
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>Phone Number</Text>
-                  <Text style={styles.detailValue}>
-                    {displayedSelectedAccount.phoneNumber}
-                  </Text>
-                </View>
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>Residential Address</Text>
-                  <Text style={styles.detailValue}>
-                    {displayedSelectedAccount.houseNo},{" "}
-                    {displayedSelectedAccount.roadNo}
-                  </Text>
-                </View>
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>Username</Text>
-                  <Text style={styles.detailValue}>
-                    {displayedSelectedAccount.username}
-                  </Text>
-                </View>
-
-                <View style={styles.modalActionRow}>
-                  <TouchableOpacity
-                    style={[styles.modalActionButton, styles.rejectButton]}
-                    activeOpacity={0.85}
-                    onPress={() => handleReject(displayedSelectedAccount)}
-                  >
-                    <Text style={styles.rejectButtonText}>Reject</Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={[styles.modalActionButton, styles.approveButton]}
-                    activeOpacity={0.85}
-                    onPress={() => handleApprove(displayedSelectedAccount)}
-                  >
-                    <Text style={styles.approveButtonText}>Approve</Text>
-                  </TouchableOpacity>
-                </View>
-              </>
-            )}
-          </Pressable>
-        </Pressable>
-      </Modal>
+      <AdminBottomNav activeRoute="users" />
     </SafeAreaView>
   );
 }
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F6F7FB",
+    backgroundColor: colors.background,
   },
-  content: {
-    padding: 16,
-    paddingBottom: 28,
-  },
+
   header: {
-    marginBottom: 16,
-  },
-  kicker: {
-    fontSize: 12,
-    fontWeight: "700",
-    fontFamily: "Times New Roman",
-    color: "#1E4867",
-    textTransform: "uppercase",
-    letterSpacing: 1,
-    marginBottom: 8,
-  },
-  title: {
-    fontSize: 26,
-    fontWeight: "800",
-    fontFamily: "Times New Roman",
-    color: "#1B1B1B",
-  },
-  subtitle: {
-    marginTop: 8,
-    fontSize: 14,
-    lineHeight: 20,
-    fontFamily: "Times New Roman",
-    color: "#666",
-  },
-  emptyState: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 18,
-    padding: 20,
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 3,
-  },
-  emptyTitle: {
-    fontSize: 18,
-    fontWeight: "800",
-    fontFamily: "Times New Roman",
-    color: "#1B1B1B",
-  },
-  emptySubtitle: {
-    marginTop: 8,
-    fontSize: 14,
-    fontFamily: "Times New Roman",
-    color: "#666",
-    textAlign: "center",
-  },
-  card: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 18,
-    padding: 16,
-    marginBottom: 14,
-    shadowColor: "#000",
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 3,
-    borderWidth: 1,
-    borderColor: "transparent",
-  },
-  cardActive: {
-    borderColor: "#1E4867",
-  },
-  cardHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "flex-start",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingTop: 14,
     marginBottom: 14,
   },
-  cardName: {
-    fontSize: 18,
-    fontWeight: "800",
-    fontFamily: "Times New Roman",
-    color: "#1B1B1B",
-  },
-  cardMeta: {
-    marginTop: 4,
-    fontSize: 13,
-    fontFamily: "Times New Roman",
-    color: "#777",
-  },
-  pill: {
-    backgroundColor: "#EAF3FF",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 999,
-  },
-  pillText: {
-    color: "#1E4867",
-    fontWeight: "700",
-    fontSize: 12,
-    fontFamily: "Times New Roman",
-  },
-  cardGrid: {
+
+  headerLeft: {
     flexDirection: "row",
-    gap: 12,
-  },
-  cardField: {
-    flex: 1,
-    backgroundColor: "#F6F7FB",
-    borderRadius: 14,
-    padding: 12,
-  },
-  label: {
-    fontSize: 12,
-    fontWeight: "700",
-    fontFamily: "Times New Roman",
-    color: "#666",
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-  },
-  value: {
-    marginTop: 6,
-    fontSize: 14,
-    fontWeight: "600",
-    fontFamily: "Times New Roman",
-    color: "#1B1B1B",
-  },
-  tapHint: {
-    marginTop: 12,
-    fontSize: 12,
-    fontFamily: "Times New Roman",
-    color: "#1E4867",
-    fontWeight: "600",
-  },
-  actionRow: {
-    flexDirection: "row",
-    gap: 16,
-    marginTop: 14,
-    justifyContent: "center",
-  },
-  actionButton: {
-    flex: 1, // Using flex: 1 to fill available space
-    maxWidth: 180, // Maximum width to prevent buttons from being too wide
-    borderRadius: 14,
-    paddingVertical: 14,
-    paddingHorizontal: 20,
     alignItems: "center",
   },
-  approveButton: {
-    backgroundColor: "#1E8E3E",
-  },
-  rejectButton: {
-    backgroundColor: "#BA1A1A",
-  },
-  approveButtonText: {
-    color: "#FFFFFF",
-    fontSize: 15,
-    fontWeight: "800",
-    fontFamily: "Times New Roman",
-  },
-  rejectButtonText: {
-    color: "#FFFFFF",
-    fontSize: 15,
-    fontWeight: "800",
-    fontFamily: "Times New Roman",
-  },
-  backdrop: {
-    flex: 1,
-    backgroundColor: "rgba(18, 24, 38, 0.55)",
-    justifyContent: "center",
-    padding: 20,
-  },
-  modalCard: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 20,
-    padding: 18,
-  },
-  modalTitle: {
+
+  logo: {
+    marginLeft: 10,
     fontSize: 22,
-    fontWeight: "800",
     fontFamily: "Times New Roman",
-    color: "#1B1B1B",
+    fontWeight: "700",
+    color: colors.text,
   },
-  modalSubtitle: {
-    marginTop: 6,
-    marginBottom: 16,
+
+  headerRight: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+
+  adminCircle: {
+    marginLeft: 15,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: "#D9E8F5",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  adminText: {
+    fontSize: 13,
+    color: colors.primary,
+    fontFamily: "Times New Roman",
+    fontWeight: "700",
+  },
+
+  statsCard: {
+    backgroundColor: "#fff",
+    marginHorizontal: 16,
+    marginBottom: 12,
+    padding: 15,
+    borderRadius: 14,
+    flexDirection: "row",
+    alignItems: "center",
+
+    shadowColor: "#000",
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    shadowOffset: {
+      width: 0,
+      height: 3,
+    },
+    elevation: 3,
+  },
+
+  iconBlue: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    backgroundColor: colors.blue,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  iconOrange: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    backgroundColor: colors.orange,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  iconRed: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    backgroundColor: colors.red,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  smallLabel: {
+    fontSize: 10,
+    color: "#666",
+    fontFamily: "Times New Roman",
+    fontWeight: "700",
+  },
+
+  bigText: {
+    marginTop: 2,
+    fontSize: 28,
+    color: "#222",
+    fontFamily: "Times New Roman",
+    fontWeight: "700",
+  },
+
+  searchBar: {
+    marginHorizontal: 16,
+    marginTop: 8,
+    marginBottom: 14,
+    backgroundColor: "#ECEFF3",
+    borderRadius: 22,
+    height: 44,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 14,
+  },
+
+  searchPlaceholder: {
+    marginLeft: 8,
+    color: "#8A8A8A",
     fontSize: 13,
     fontFamily: "Times New Roman",
-    color: "#666",
   },
-  detailRow: {
-    marginBottom: 12,
-    paddingBottom: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: "#EEF1F5",
-  },
-  detailLabel: {
-    fontSize: 12,
-    fontWeight: "700",
-    fontFamily: "Times New Roman",
-    color: "#777",
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-    marginBottom: 4,
-  },
-  detailValue: {
-    fontSize: 15,
-    fontWeight: "600",
-    fontFamily: "Times New Roman",
-    color: "#1B1B1B",
-  },
-  modalActionRow: {
+
+  filterRow: {
     flexDirection: "row",
-    gap: 16,
-    marginTop: 4,
-    justifyContent: "center",
-  },
-  modalActionButton: {
-    flex: 1, // Using flex: 1 to fill available space
-    maxWidth: 180, // Maximum width to prevent buttons from being too wide
-    borderRadius: 14,
-    paddingVertical: 14,
-    paddingHorizontal: 20,
     alignItems: "center",
+    marginHorizontal: 16,
+    marginBottom: 15,
+  },
+
+  activeChip: {
+    backgroundColor: "#23435D",
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+
+  activeChipText: {
+    color: "#fff",
+    fontSize: 11,
+    fontFamily: "Times New Roman",
+    fontWeight: "700",
+  },
+
+  chip: {
+    backgroundColor: "#E8E8E8",
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    marginLeft: 8,
+  },
+
+  chipText: {
+    color: "#666",
+    fontSize: 11,
+    fontFamily: "Times New Roman",
+  },
+
+  filterIcon: {
+    marginLeft: "auto",
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: "#EFEFEF",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  requestCard: {
+    backgroundColor: "#fff",
+    marginHorizontal: 16,
+    marginBottom: 16,
+    borderRadius: 16,
+    padding: 15,
+
+    shadowColor: "#000",
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    shadowOffset: {
+      width: 0,
+      height: 3,
+    },
+    elevation: 3,
+  },
+
+  profileRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+
+  avatar: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "#EAEAEA",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  personName: {
+    fontSize: 16,
+    color: "#222",
+    fontFamily: "Times New Roman",
+    fontWeight: "700",
+  },
+
+  personInfo: {
+    marginTop: 2,
+    fontSize: 11,
+    color: "#666",
+    fontFamily: "Times New Roman",
+  },
+
+  roleBadge: {
+    alignSelf: "flex-start",
+    marginTop: 5,
+    backgroundColor: "#F8E5BF",
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+
+  roleBadgeText: {
+    color: "#8A5A00",
+    fontSize: 10,
+    fontFamily: "Times New Roman",
+    fontWeight: "700",
+  },
+
+  roleBadgeBlue: {
+    alignSelf: "flex-start",
+    marginTop: 5,
+    backgroundColor: "#E8F2FF",
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+
+  roleBadgeBlueText: {
+    color: "#1F63C6",
+    fontSize: 10,
+    fontFamily: "Times New Roman",
+    fontWeight: "700",
+  },
+
+  documentTitle: {
+    marginTop: 14,
+    marginBottom: 8,
+    fontSize: 12,
+    color: "#444",
+    fontFamily: "Times New Roman",
+    fontWeight: "700",
+  },
+
+  documentImage: {
+    height: 80,
+    backgroundColor: "#F3F3F3",
+    borderRadius: 8,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  buttonRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 15,
+  },
+
+  rejectButton: {
+    flex: 0.47,
+    borderWidth: 1,
+    borderColor: "#D9534F",
+    borderRadius: 22,
+    paddingVertical: 11,
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  rejectText: {
+    marginLeft: 5,
+    color: "#C0392B",
+    fontSize: 14,
+    fontFamily: "Times New Roman",
+    fontWeight: "700",
+  },
+
+  approveButton: {
+    flex: 0.47,
+    backgroundColor: "#23435D",
+    borderRadius: 22,
+    paddingVertical: 11,
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  approveText: {
+    marginLeft: 5,
+    color: "#fff",
+    fontSize: 14,
+    fontFamily: "Times New Roman",
+    fontWeight: "700",
+  },
+
+  loadMoreButton: {
+    alignSelf: "center",
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#ECECEC",
+    borderRadius: 22,
+    paddingHorizontal: 22,
+    paddingVertical: 10,
+    marginTop: 8,
+  },
+
+  loadMoreText: {
+    marginRight: 6,
+    color: "#666",
+    fontSize: 13,
+    fontFamily: "Times New Roman",
+    fontWeight: "700",
+  },
+
+  bottomNavigation: {
+    height: 68,
+    backgroundColor: "#fff",
+    borderTopWidth: 1,
+    borderTopColor: "#E8E8E8",
+    flexDirection: "row",
+    justifyContent: "space-around",
+    alignItems: "center",
+  },
+
+  navItem: {
+    alignItems: "center",
+  },
+
+  activeNavIcon: {
+    backgroundColor: "#23435D",
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  navText: {
+    marginTop: 4,
+    color: "#666",
+    fontSize: 11,
+    fontFamily: "Times New Roman",
+  },
+
+  activeNavText: {
+    marginTop: 4,
+    color: "#23435D",
+    fontSize: 11,
+    fontFamily: "Times New Roman",
+    fontWeight: "700",
   },
 });
