@@ -30,7 +30,7 @@ export default function AdminBottomNav({ activeRoute }: AdminBottomNavProps) {
       label: "Users",
       activeIcon: "people",
       inactiveIcon: "people-outline",
-      path: "/(admin)/accounts/registered",
+      path: "/(admin)/accounts/pending",
     },
     {
       key: "complaints",
@@ -66,7 +66,7 @@ export default function AdminBottomNav({ activeRoute }: AdminBottomNavProps) {
             style={styles.navButton}
             activeOpacity={0.85}
             onPress={() => {
-              if (item.path && !isActive) {
+              if (item.path) {
                 router.push(item.path as any);
               }
             }}

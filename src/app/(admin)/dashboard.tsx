@@ -9,6 +9,8 @@ import {
   View,
 } from "react-native";
 
+import AdminBottomNav from "@/components/AdminBottomNav";
+
 const colors = {
   background: "#F6F7FB",
   primary: "#1E4867",
@@ -239,39 +241,7 @@ export default function AdminDashboard() {
         </TouchableOpacity>
       </ScrollView>
 
-      {/* Bottom Navigation */}
-
-      <View style={styles.bottomNavigation}>
-        <TouchableOpacity style={styles.navButton}>
-          <Ionicons name="home" size={20} color="#1E4867" />
-
-          <Text style={styles.activeNavText}>Home</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.navButton}>
-          <Ionicons name="people-outline" size={20} color="#888" />
-
-          <Text style={styles.navText}>Users</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.navButton}>
-          <Ionicons name="document-text-outline" size={20} color="#888" />
-
-          <Text style={styles.navText}>Complaints</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.navButton}>
-          <Ionicons name="bar-chart-outline" size={20} color="#888" />
-
-          <Text style={styles.navText}>Reports</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.navButton}>
-          <Ionicons name="person-outline" size={20} color="#888" />
-
-          <Text style={styles.navText}>Profile</Text>
-        </TouchableOpacity>
-      </View>
+      <AdminBottomNav activeRoute="home" />
     </SafeAreaView>
   );
 }
@@ -476,35 +446,5 @@ const styles = StyleSheet.create({
     backgroundColor: "#F3F4F6",
     justifyContent: "center",
     alignItems: "center",
-  },
-
-  bottomNavigation: {
-    height: 66,
-    backgroundColor: "#FFFFFF",
-    borderTopWidth: 1,
-    borderTopColor: "#E8E8E8",
-
-    flexDirection: "row",
-    justifyContent: "space-around",
-    alignItems: "center",
-  },
-
-  navButton: {
-    alignItems: "center",
-  },
-
-  activeNavText: {
-    marginTop: 4,
-    fontSize: 11,
-    fontWeight: "700",
-    fontFamily: "Times New Roman",
-    color: colors.primary,
-  },
-
-  navText: {
-    marginTop: 4,
-    fontSize: 11,
-    fontFamily: "Times New Roman",
-    color: "#888",
   },
 });
