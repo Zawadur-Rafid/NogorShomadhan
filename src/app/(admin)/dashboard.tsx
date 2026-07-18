@@ -1,4 +1,5 @@
 ﻿import Ionicons from "@expo/vector-icons/Ionicons";
+import { useRouter } from "expo-router";
 import {
   SafeAreaView,
   ScrollView,
@@ -22,6 +23,8 @@ const colors = {
 };
 
 export default function AdminDashboard() {
+  const router = useRouter();
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView
@@ -115,7 +118,11 @@ export default function AdminDashboard() {
         <Text style={styles.sectionTitle}>Administrative Actions</Text>
         {/* Verify Accounts */}
 
-        <TouchableOpacity activeOpacity={0.85} style={styles.actionCard}>
+        <TouchableOpacity
+          activeOpacity={0.85}
+          style={styles.actionCard}
+          onPress={() => router.push("/(admin)/accounts/pending")}
+        >
           <View style={styles.actionIconBlue}>
             <Ionicons
               name="shield-checkmark-outline"
@@ -147,6 +154,29 @@ export default function AdminDashboard() {
 
             <Text style={styles.actionDescription}>
               Monitor complaint progress, assign authorities and resolve cases.
+            </Text>
+          </View>
+
+          <Ionicons name="chevron-forward" size={24} color="#888" />
+        </TouchableOpacity>
+
+        {/* Registered Accounts */}
+
+        <TouchableOpacity
+          activeOpacity={0.85}
+          style={styles.actionCard}
+          onPress={() => router.push("/(admin)/accounts/registered")}
+        >
+          <View style={styles.actionIconGray}>
+            <Ionicons name="people-outline" size={28} color="#555" />
+          </View>
+
+          <View style={styles.actionContent}>
+            <Text style={styles.actionTitle}>Registered Accounts</Text>
+
+            <Text style={styles.actionDescription}>
+              Browse all approved resident and authority accounts with their
+              profile details.
             </Text>
           </View>
 
