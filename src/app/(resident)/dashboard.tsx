@@ -9,44 +9,14 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Ionicons from "@expo/vector-icons/Ionicons";
+import { useRouter } from "expo-router";
+import MapViewComponent from "../../components/MapView";
 
-const complaints = [
-  {
-    id: "1",
-    title: "Broken Main Pipe",
-    description:
-      "Significant water leakage on Sector 4 Main Road near the mosque.",
-    date: "Oct 24, 2023",
-    location: "Sector 4, Uttara",
-    status: "PENDING",
-    color: "#F87171",
-    icon: "water-outline",
-  },
-  {
-    id: "2",
-    title: "Major Pothole",
-    description:
-      "Deep pothole causing traffic hazards at the intersection of Road 12.",
-    date: "Oct 21, 2023",
-    location: "Road 12, Banani",
-    status: "RESOLVED",
-    color: "#60A5FA",
-    icon: "construct-outline",
-  },
-  {
-    id: "3",
-    title: "Street Light Failure",
-    description:
-      "Three consecutive lamps are out, making the park perimeter dark at night.",
-    date: "Oct 19, 2023",
-    location: "Dhanmondi Lake Area",
-    status: "PENDING",
-    color: "#FBBF24",
-    icon: "bulb-outline",
-  },
-];
+import { dummyComplaints as complaints } from "../../components/store/store_complaint";
 
 export default function Dashboard() {
+  const router = useRouter();
+  
   const styles = StyleSheet.create({
     container: {
       flex: 1,
@@ -198,13 +168,12 @@ export default function Dashboard() {
       fontSize: 10,
     },
     mapCard: {
-      height: 160,
+      height: 250,
       marginHorizontal: 16,
       marginTop: 12,
       borderRadius: 14,
       backgroundColor: "#E8EDF4",
-      justifyContent: "center",
-      alignItems: "center",
+      overflow: "hidden",
     },
     mapTitle: {
       marginTop: 8,
@@ -417,18 +386,14 @@ export default function Dashboard() {
         {/* Nearby Issues */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Nearby Issues</Text>
-          <TouchableOpacity>
+          <TouchableOpacity onPress={() => router.push('/(resident)/map')}>
             <Text style={styles.viewAll}>Expand</Text>
           </TouchableOpacity>
         </View>
 
         {/* Map */}
         <View style={styles.mapCard}>
-          <Ionicons name="map" size={48} color="#94A3B8" />
-          <Text style={styles.mapTitle}>Interactive Map</Text>
-          <Text style={styles.mapSubtitle}>
-            Nearby reported issues will appear here.
-          </Text>
+          <MapViewComponent locations={complaints} />
         </View>
 
         {/* Help Center */}
@@ -455,7 +420,7 @@ export default function Dashboard() {
           <Ionicons name="home" size={20} color="#23435D" />
           <Text style={styles.activeNav}>Home</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem}>
+        <TouchableOpacity style={styles.navItem} onPress={() => router.push('/(resident)/map')}>
           <Ionicons name="map-outline" size={20} color="#888" />
           <Text style={styles.navText}>Map</Text>
         </TouchableOpacity>
