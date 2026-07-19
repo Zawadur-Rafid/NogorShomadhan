@@ -373,14 +373,14 @@ export default function Dashboard() {
         {/* Recent Complaints */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Recent Complaints</Text>
-          <TouchableOpacity>
+          <TouchableOpacity onPress={() => router.push('/(resident)/complaints')}>
             <Text style={styles.viewAll}>View All</Text>
           </TouchableOpacity>
         </View>
 
         <FlatList
           scrollEnabled={false}
-          data={complaints}
+          data={complaints.slice(0, 3)}
           keyExtractor={(item) => item.id}
           renderItem={renderComplaint}
         />

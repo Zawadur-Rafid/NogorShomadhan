@@ -11,6 +11,12 @@ export default function NewComplaintForm() {
   const [description, setDescription] = useState('');
   const [selectedLocation, setSelectedLocation] = useState<{lat: number, lng: number} | null>(null);
   const [photos, setPhotos] = useState<string[]>([]);
+  const [errors, setErrors] = useState({
+    title: false,
+    description: false,
+    location: false,
+    photos: false,
+  });
 
   const handleClearLocation = () => {
     setSelectedLocation(null);
@@ -31,6 +37,7 @@ export default function NewComplaintForm() {
 
     if (!result.canceled) {
       setPhotos([...photos, result.assets[0].uri]);
+      if (errors.photos) setErrors({ ...errors, photos: false });
     }
   };
 
@@ -49,6 +56,7 @@ export default function NewComplaintForm() {
 
     if (!result.canceled) {
       setPhotos([...photos, result.assets[0].uri]);
+      if (errors.photos) setErrors({ ...errors, photos: false });
     }
   };
 
@@ -56,6 +64,35 @@ export default function NewComplaintForm() {
     const newPhotos = [...photos];
     newPhotos.splice(index, 1);
     setPhotos(newPhotos);
+  };
+
+  const handleSubmit = () => {
+    const newErrors = {
+      title: title.trim() === '',
+      description: description.trim() === '',
+      location: selectedLocation === null,
+      photos: photos.length === 0,
+    };
+    setErrors(newErrors);
+
+    if (!newErrors.title && !newErrors.description && !newErrors.location && !newErrors.photos) {
+      Alert.alert(
+        'Successful', 
+        'Successful. your complaint is in the queue for review',
+        [
+          {
+            text: 'OK',
+            onPress: () => {
+              setTitle('');
+              setDescription('');
+              setSelectedLocation(null);
+              setPhotos([]);
+              setErrors({ title: false, description: false, location: false, photos: false });
+            }
+          }
+        ]
+      );
+    }
   };
 
   return (
@@ -69,8 +106,12 @@ export default function NewComplaintForm() {
           placeholder="Brief summary (e.g., Broken streetlight)"
           placeholderTextColor="#9CA3AF"
           value={title}
-          onChangeText={setTitle}
+          onChangeText={(text) => {
+            setTitle(text);
+            if (errors.title) setErrors({ ...errors, title: false });
+          }}
         />
+        {errors.title && <Text style={styles.errorText}>This field is required</Text>}
       </View>
 
 
@@ -86,8 +127,12 @@ export default function NewComplaintForm() {
           numberOfLines={4}
           textAlignVertical="top"
           value={description}
-          onChangeText={setDescription}
+          onChangeText={(text) => {
+            setDescription(text);
+            if (errors.description) setErrors({ ...errors, description: false });
+          }}
         />
+        {errors.description && <Text style={styles.errorText}>This field is required</Text>}
       </View>
 
       {/* Location Picker */}
@@ -102,7 +147,10 @@ export default function NewComplaintForm() {
         <View style={styles.mapPlaceholder}>
           <LocationPickerMap 
             selectedLocation={selectedLocation} 
-            onLocationSelect={setSelectedLocation} 
+            onLocationSelect={(loc) => {
+              setSelectedLocation(loc);
+              if (errors.location) setErrors({ ...errors, location: false });
+            }} 
           />
         </View>
         {selectedLocation && (
@@ -110,6 +158,7 @@ export default function NewComplaintForm() {
             Lat: {selectedLocation.lat.toFixed(6)}, Lng: {selectedLocation.lng.toFixed(6)}
           </Text>
         )}
+        {errors.location && <Text style={styles.errorText}>This field is required</Text>}
       </View>
 
       {/* Photo Upload */}
@@ -138,10 +187,11 @@ export default function NewComplaintForm() {
             ))}
           </View>
         )}
+        {errors.photos && <Text style={styles.errorText}>This field is required</Text>}
       </View>
 
       {/* Submit Button */}
-      <TouchableOpacity style={styles.submitButton}>
+      <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
         <MaterialIcons name="send" size={20} color="#FFF" />
         <Text style={styles.submitText}>SUBMIT COMPLAINT</Text>
       </TouchableOpacity>
@@ -304,5 +354,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     fontFamily: 'Inter',
+  },
+  errorText: {
+    color: '#EF4444',
+    fontSize: 12,
+    fontFamily: 'Inter',
+    marginTop: 4,
   }
 });
