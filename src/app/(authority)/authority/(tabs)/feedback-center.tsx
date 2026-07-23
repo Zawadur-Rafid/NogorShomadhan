@@ -1,27 +1,68 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { useState } from 'react';
+import { useRouter } from 'expo-router';
+import { useMemo, useState } from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import AuthorityPageHeader from '../../components/authority/authority-page-header';
-import {
-  authorityFeedback,
-  authorityFeedbackComments,
-  authorityFeedbackSummary,
-} from '../../components/authority/store-authority-feedback';
+import { useAuthorityComplaints } from '@/components/authority/authority-complaints-context';
+import AuthorityPageHeader from '@/components/authority/authority-page-header';
 
 const filters = ['All Feedback', '5 Stars', '4 Stars'] as const;
 
+type DiscussionComment = {
+  id: string;
+  author: string;
+  initials: string;
+  message: string;
+  postedAt: string;
+  authority?: boolean;
+  replyTo?: string;
+};
+
 export default function AuthorityFeedbackCenter() {
+  const router = useRouter();
   const { width } = useWindowDimensions();
+  const { complaints } = useAuthorityComplaints();
   const [filter, setFilter] = useState<(typeof filters)[number]>('All Feedback');
-  const [comments, setComments] = useState(authorityFeedbackComments);
+  const [comments, setComments] = useState<Record<string, DiscussionComment[]>>({});
   const [drafts, setDrafts] = useState<Record<string, string>>({});
-  const [openDiscussions, setOpenDiscussions] = useState<Record<string, boolean>>({
-    'FDB-201': true,
-    'FDB-196': true,
-  });
+  const [openDiscussions, setOpenDiscussions] = useState<Record<string, boolean>>({});
   const wide = width >= 900;
+  const authorityFeedback = useMemo(
+    () =>
+      complaints.flatMap((complaint) =>
+        complaint.feedback.map((feedback) => ({
+          id: feedback.id,
+          complaintId: complaint.id,
+          complaintTitle: complaint.title,
+          category: complaint.category,
+          resident: feedback.resident,
+          initials: feedback.residentInitials,
+          rating: feedback.rating,
+          comment: feedback.comment,
+          receivedAt: feedback.receivedAt,
+          location: complaint.location,
+          image: complaint.finalEvidence ?? complaint.evidence,
+        })),
+      ),
+    [complaints],
+  );
+  const authorityFeedbackSummary = useMemo(() => {
+    const totalFeedback = authorityFeedback.length;
+    const averageRating =
+      totalFeedback === 0
+        ? 0
+        : authorityFeedback.reduce((total, item) => total + item.rating, 0) /
+          totalFeedback;
+    const satisfied = authorityFeedback.filter((item) => item.rating >= 4).length;
+
+    return {
+      averageRating: averageRating.toFixed(1),
+      totalFeedback,
+      satisfaction:
+        totalFeedback === 0 ? 0 : Math.round((satisfied / totalFeedback) * 100),
+    };
+  }, [authorityFeedback]);
   const visibleFeedback = authorityFeedback.filter((item) => {
     if (filter === 'All Feedback') return true;
     return item.rating === Number(filter.charAt(0));
@@ -48,8 +89,12 @@ export default function AuthorityFeedbackCenter() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <AuthorityPageHeader title="Dashboard" />
+    <SafeAreaView edges={['top', 'left', 'right']} style={styles.safeArea}>
+      <AuthorityPageHeader
+        title="Home"
+        icon="home-outline"
+        onBack={() => router.navigate('/authority/dashboard' as never)}
+      />
       <ScrollView
         contentInsetAdjustmentBehavior="automatic"
         showsVerticalScrollIndicator={false}
