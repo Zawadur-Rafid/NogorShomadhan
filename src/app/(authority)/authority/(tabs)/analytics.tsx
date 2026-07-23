@@ -1,29 +1,232 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
+import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import AuthorityPageHeader from '../../components/authority/authority-page-header';
-import {
-  authorityAnalyticsSummary,
-  authorityCategoryDistribution,
-  authorityStatusDistribution,
-  authorityUrgencyHotspots,
-  authorityWeeklyTrend,
-} from '../../components/authority/store-authority-analytics';
+import { useAuthorityComplaints } from '@/components/authority/authority-complaints-context';
+import AuthorityPageHeader from '@/components/authority/authority-page-header';
+import type { AuthorityComplaintDetail } from '@/components/authority/store-authority-complaint-details';
 
 const periods = ['7 Days', '30 Days', 'This Year'] as const;
+const distributionColors = ['#23435D', '#3B82F6', '#B9854B', '#26A69A', '#7C6BC4'];
+
+const getComplaintArea = (location: string) =>
+  location.match(/Block\s+[A-Z0-9-]+/i)?.[0] ??
+  location.split(',').at(-1)?.trim() ??
+  location;
+
+const parseAuthorityDate = (value?: string) => {
+  if (!value) return Number.NaN;
+  return Date.parse(value.replace(',', ''));
+};
+
+function buildTrendData(
+  period: (typeof periods)[number],
+  complaints: AuthorityComplaintDetail[],
+) {
+  if (period === '7 Days') {
+    return [15, 16, 17, 18, 19, 20, 21].map((day) => ({
+      label: `${day} Jul`,
+      value: complaints.filter(
+        (item) => Number(item.submittedAt.match(/^\d+/)?.[0]) === day,
+      ).length,
+    }));
+  }
+
+  if (period === '30 Days') {
+    return [
+      { label: 'Week 1', start: 1, end: 7 },
+      { label: 'Week 2', start: 8, end: 14 },
+      { label: 'Week 3', start: 15, end: 21 },
+      { label: 'Week 4', start: 22, end: 31 },
+    ].map((week) => ({
+      label: week.label,
+      value: complaints.filter((item) => {
+        const day = Number(item.submittedAt.match(/^\d+/)?.[0]);
+        return day >= week.start && day <= week.end;
+      }).length,
+    }));
+  }
+
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  return months.map((month) => ({
+    label: month,
+    value: complaints.filter((item) => item.submittedAt.includes(month)).length,
+  }));
+}
 
 export default function AuthorityAnalytics() {
+  const router = useRouter();
   const { width } = useWindowDimensions();
+  const { complaints } = useAuthorityComplaints();
   const [period, setPeriod] = useState<(typeof periods)[number]>('30 Days');
   const [reportGenerated, setReportGenerated] = useState(false);
   const wide = width >= 900;
-  const maxWeekly = useMemo(() => Math.max(...authorityWeeklyTrend.map((item) => item.value)), []);
+  const {
+    authorityAnalyticsSummary,
+    authorityCategoryDistribution,
+    authorityResolutionPerformance,
+    authorityStatusDistribution,
+    authorityUrgencyHotspots,
+    authorityZoneDistribution,
+  } = useMemo(() => {
+    const total = complaints.length;
+    const resolvedComplaints = complaints.filter((item) => item.status === 'RESOLVED');
+    const statusDistribution = [
+      { label: 'Pending', status: 'PENDING', color: '#EF4444' },
+      { label: 'In Progress', status: 'IN PROGRESS', color: '#C67B00' },
+      { label: 'Resolved', status: 'RESOLVED', color: '#2563EB' },
+    ].map((item) => {
+      const value = complaints.filter((complaint) => complaint.status === item.status).length;
+      return {
+        label: item.label,
+        value,
+        percent: total === 0 ? 0 : Math.round((value / total) * 100),
+        color: item.color,
+      };
+    });
+
+    const categoryCounts = Object.entries(
+      complaints.reduce<Record<string, number>>((counts, item) => {
+        counts[item.category] = (counts[item.category] ?? 0) + 1;
+        return counts;
+      }, {}),
+    ).sort((first, second) => second[1] - first[1]);
+    const maxCategory = Math.max(1, ...categoryCounts.map(([, count]) => count));
+    const categoryDistribution = categoryCounts.map(([label, value], index) => ({
+      label,
+      value,
+      percent: Math.round((value / maxCategory) * 100),
+      color: distributionColors[index % distributionColors.length],
+    }));
+
+    const zoneCounts = Object.entries(
+      complaints.reduce<Record<string, number>>((counts, item) => {
+        const area = getComplaintArea(item.location);
+        counts[area] = (counts[area] ?? 0) + 1;
+        return counts;
+      }, {}),
+    ).sort((first, second) => second[1] - first[1]);
+    const maxZone = Math.max(1, ...zoneCounts.map(([, count]) => count));
+    const zoneDistribution = zoneCounts.map(([label, value], index) => ({
+      label,
+      value,
+      percent: Math.round((value / maxZone) * 100),
+      color: distributionColors[index % distributionColors.length],
+    }));
+
+    const resolvedDurations = resolvedComplaints
+      .map((item) => {
+        const submitted = parseAuthorityDate(item.submittedAt);
+        const completed = parseAuthorityDate(item.completedAt);
+        return Number.isNaN(submitted) || Number.isNaN(completed)
+          ? Number.NaN
+          : Math.max(0, (completed - submitted) / 86_400_000);
+      })
+      .filter((value) => !Number.isNaN(value));
+    const averageDays =
+      resolvedDurations.length === 0
+        ? 0
+        : resolvedDurations.reduce((sum, value) => sum + value, 0) /
+          resolvedDurations.length;
+    const withinDeadline = resolvedComplaints.filter((item) => {
+      const completed = parseAuthorityDate(item.completedAt);
+      const deadline = parseAuthorityDate(item.deadline);
+      return (
+        !Number.isNaN(completed) &&
+        !Number.isNaN(deadline) &&
+        completed <= deadline + 86_399_999
+      );
+    }).length;
+    const overdue = Math.max(0, resolvedComplaints.length - withinDeadline);
+    const onTimeRate =
+      resolvedComplaints.length === 0
+        ? 0
+        : Math.round((withinDeadline / resolvedComplaints.length) * 100);
+    const urgencyHotspots = [...complaints]
+      .sort((first, second) => second.urgency - first.urgency)
+      .slice(0, 3)
+      .map((item) => ({
+        location: item.location,
+        category: item.category,
+        signals: item.urgency,
+      }));
+    const resolutionRate =
+      total === 0 ? 0 : Math.round((resolvedComplaints.length / total) * 100);
+    const hotspotCount = complaints.filter((item) => item.urgency >= 25).length;
+
+    return {
+      authorityAnalyticsSummary: [
+        {
+          label: 'Total Complaints',
+          value: String(total),
+          change: 'Live assigned records',
+          icon: 'documents-outline' as const,
+          color: '#3B82F6',
+          background: '#EEF6FF',
+        },
+        {
+          label: 'Resolution Rate',
+          value: `${resolutionRate}%`,
+          change: `${resolvedComplaints.length} resolved`,
+          icon: 'checkmark-done-outline' as const,
+          color: '#16845B',
+          background: '#EAF8F1',
+        },
+        {
+          label: 'Average Resolution',
+          value: `${averageDays.toFixed(1)} days`,
+          change: 'From submission to completion',
+          icon: 'timer-outline' as const,
+          color: '#C67B00',
+          background: '#FFF7E8',
+        },
+        {
+          label: 'Urgency Hotspots',
+          value: String(hotspotCount),
+          change: '25+ resident signals',
+          icon: 'flame-outline' as const,
+          color: '#E0524D',
+          background: '#FFF1F1',
+        },
+      ],
+      authorityStatusDistribution: statusDistribution,
+      authorityCategoryDistribution: categoryDistribution,
+      authorityZoneDistribution: zoneDistribution,
+      authorityUrgencyHotspots: urgencyHotspots,
+      authorityResolutionPerformance: {
+        resolved: resolvedComplaints.length,
+        withinDeadline,
+        overdue,
+        onTimeRate,
+        averageDays: Number(averageDays.toFixed(1)),
+        targetDays: 4,
+      },
+    };
+  }, [complaints]);
+  const trendData = useMemo(
+    () => buildTrendData(period, complaints),
+    [complaints, period],
+  );
+  const maxTrend = useMemo(
+    () => Math.max(1, ...trendData.map((item) => item.value)),
+    [trendData],
+  );
+  const trendTitle =
+    period === '7 Days'
+      ? 'Daily Complaint Trend'
+      : period === '30 Days'
+        ? 'Weekly Complaint Trend'
+        : 'Monthly Complaint Trend';
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <AuthorityPageHeader title="Dashboard" />
+    <SafeAreaView edges={['top', 'left', 'right']} style={styles.safeArea}>
+      <AuthorityPageHeader
+        title="Home"
+        icon="home-outline"
+        onBack={() => router.navigate('/authority/dashboard' as never)}
+      />
       <ScrollView
         contentInsetAdjustmentBehavior="automatic"
         showsVerticalScrollIndicator={false}
@@ -78,7 +281,7 @@ export default function AuthorityAnalytics() {
               <View style={styles.generatedCopy}>
                 <Text style={styles.generatedTitle}>Total authority report generated</Text>
                 <Text style={styles.generatedText}>
-                  The {period.toLowerCase()} report includes 128 complaints, status distribution, category trends,
+                  The {period.toLowerCase()} report includes {complaints.length} complaints, status distribution, category trends,
                   resolution performance, and urgency hotspots.
                 </Text>
               </View>
@@ -91,7 +294,7 @@ export default function AuthorityAnalytics() {
               <View style={styles.panelHeader}>
                 <View>
                   <Text style={styles.panelTitle}>Status Distribution</Text>
-                  <Text style={styles.panelSubtitle}>128 assigned complaints</Text>
+                  <Text style={styles.panelSubtitle}>{complaints.length} assigned complaints</Text>
                 </View>
                 <Ionicons name="pie-chart-outline" size={21} color="#23435D" />
               </View>
@@ -115,17 +318,17 @@ export default function AuthorityAnalytics() {
             <View style={styles.panel}>
               <View style={styles.panelHeader}>
                 <View>
-                  <Text style={styles.panelTitle}>Weekly Complaint Trend</Text>
-                  <Text style={styles.panelSubtitle}>Reports received by day</Text>
+                  <Text style={styles.panelTitle}>{trendTitle}</Text>
+                  <Text style={styles.panelSubtitle}>Reports received during {period.toLowerCase()}</Text>
                 </View>
                 <Ionicons name="trending-up-outline" size={21} color="#23435D" />
               </View>
               <View style={styles.chart}>
-                {authorityWeeklyTrend.map((item) => (
+                {trendData.map((item) => (
                   <View key={item.label} style={styles.chartColumn}>
                     <Text style={styles.chartValue}>{item.value}</Text>
                     <View style={styles.chartTrack}>
-                      <View style={[styles.chartBar, { height: `${Math.round((item.value / maxWeekly) * 100)}%` }]} />
+                      <View style={[styles.chartBar, { height: `${Math.round((item.value / maxTrend) * 100)}%` }]} />
                     </View>
                     <Text style={styles.chartLabel}>{item.label}</Text>
                   </View>
@@ -180,6 +383,77 @@ export default function AuthorityAnalytics() {
                     </View>
                   </View>
                 ))}
+              </View>
+            </View>
+          </View>
+
+          <View style={[styles.analyticsGrid, wide && styles.analyticsGridWide]}>
+            <View style={styles.panel}>
+              <View style={styles.panelHeader}>
+                <View>
+                  <Text style={styles.panelTitle}>Area-wise Distribution</Text>
+                  <Text style={styles.panelSubtitle}>Assigned complaints by community block</Text>
+                </View>
+                <Ionicons name="map-outline" size={21} color="#23435D" />
+              </View>
+              <View style={styles.categoryList}>
+                {authorityZoneDistribution.map((item) => (
+                  <View key={item.label} style={styles.categoryRow}>
+                    <View style={styles.categoryTopLine}>
+                      <Text style={styles.categoryLabel}>{item.label}</Text>
+                      <Text style={styles.categoryValue}>{item.value}</Text>
+                    </View>
+                    <View style={styles.categoryTrack}>
+                      <View style={[styles.categoryBar, { width: `${item.percent}%`, backgroundColor: item.color }]} />
+                    </View>
+                  </View>
+                ))}
+              </View>
+            </View>
+
+            <View style={styles.panel}>
+              <View style={styles.panelHeader}>
+                <View>
+                  <Text style={styles.panelTitle}>Resolution Performance</Text>
+                  <Text style={styles.panelSubtitle}>Deadline compliance for resolved complaints</Text>
+                </View>
+                <Ionicons name="speedometer-outline" size={21} color="#16845B" />
+              </View>
+
+              <View style={styles.performanceGrid}>
+                <View style={styles.performanceStat}>
+                  <Text style={styles.performanceValue}>{authorityResolutionPerformance.withinDeadline}</Text>
+                  <Text style={styles.performanceLabel}>Within deadline</Text>
+                </View>
+                <View style={styles.performanceStat}>
+                  <Text style={[styles.performanceValue, styles.overdueValue]}>{authorityResolutionPerformance.overdue}</Text>
+                  <Text style={styles.performanceLabel}>Overdue</Text>
+                </View>
+                <View style={styles.performanceStat}>
+                  <Text style={styles.performanceValue}>{authorityResolutionPerformance.averageDays}d</Text>
+                  <Text style={styles.performanceLabel}>Average time</Text>
+                </View>
+              </View>
+
+              <View style={styles.performanceHeading}>
+                <Text style={styles.performanceHeadingText}>On-time resolution rate</Text>
+                <Text style={styles.performanceRate}>{authorityResolutionPerformance.onTimeRate}%</Text>
+              </View>
+              <View style={styles.performanceTrack}>
+                <View
+                  style={[
+                    styles.performanceBar,
+                    { width: `${authorityResolutionPerformance.onTimeRate}%` },
+                  ]}
+                />
+              </View>
+              <View style={styles.performanceFooter}>
+                <Text style={styles.performanceFootnote}>
+                  {authorityResolutionPerformance.resolved} complaints resolved
+                </Text>
+                <Text style={styles.performanceTarget}>
+                  Target: ≤ {authorityResolutionPerformance.targetDays} days
+                </Text>
               </View>
             </View>
           </View>
@@ -249,6 +523,19 @@ const styles = StyleSheet.create({
   categoryValue: { color: '#1F2937', fontSize: 10, fontWeight: '800', fontVariant: ['tabular-nums'] },
   categoryTrack: { height: 7, borderRadius: 4, backgroundColor: '#EEF1F4', overflow: 'hidden' },
   categoryBar: { height: '100%', borderRadius: 4 },
+  performanceGrid: { flexDirection: 'row', gap: 8, marginBottom: 18 },
+  performanceStat: { flex: 1, minHeight: 72, justifyContent: 'center', padding: 11, borderRadius: 11, backgroundColor: '#F8FAFB' },
+  performanceValue: { color: '#16845B', fontSize: 18, fontWeight: '900', fontVariant: ['tabular-nums'] },
+  overdueValue: { color: '#E0524D' },
+  performanceLabel: { color: '#7A8493', fontSize: 8, fontWeight: '700', marginTop: 4 },
+  performanceHeading: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
+  performanceHeadingText: { color: '#475467', fontSize: 10, fontWeight: '700' },
+  performanceRate: { color: '#16845B', fontSize: 16, fontWeight: '900' },
+  performanceTrack: { height: 10, overflow: 'hidden', borderRadius: 5, backgroundColor: '#E6ECE9', marginTop: 8 },
+  performanceBar: { height: '100%', borderRadius: 5, backgroundColor: '#16845B' },
+  performanceFooter: { flexDirection: 'row', justifyContent: 'space-between', gap: 10, marginTop: 8 },
+  performanceFootnote: { color: '#8A93A1', fontSize: 8 },
+  performanceTarget: { color: '#16845B', fontSize: 8, fontWeight: '800' },
   hotspotList: { gap: 10 },
   hotspotRow: { minHeight: 58, flexDirection: 'row', alignItems: 'center', gap: 10, padding: 10, borderRadius: 11, backgroundColor: '#FAFBFC' },
   hotspotRank: { width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center', backgroundColor: '#FFF1E5' },

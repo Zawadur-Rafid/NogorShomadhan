@@ -1,13 +1,26 @@
-import { createElement, useMemo } from 'react';
+import { createElement, useEffect, useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import type { ComplaintLocation } from '../MapView';
 
 type AuthorityMapProps = {
   locations: ComplaintLocation[];
+  onLocationPress?: (location: ComplaintLocation) => void;
 };
 
-export default function AuthorityMap({ locations }: AuthorityMapProps) {
+export default function AuthorityMap({ locations, onLocationPress }: AuthorityMapProps) {
+  useEffect(() => {
+    const handleMarkerPress = (event: MessageEvent) => {
+      const message = event.data as { type?: string; id?: string } | undefined;
+      if (message?.type !== 'authority-complaint-marker' || !message.id) return;
+      const location = locations.find((item) => item.id === message.id);
+      if (location) onLocationPress?.(location);
+    };
+
+    window.addEventListener('message', handleMarkerPress);
+    return () => window.removeEventListener('message', handleMarkerPress);
+  }, [locations, onLocationPress]);
+
   const mapDocument = useMemo(() => {
     const locationData = JSON.stringify(locations).replaceAll('<', '\\u003c');
 
@@ -50,11 +63,17 @@ export default function AuthorityMap({ locations }: AuthorityMapProps) {
                 iconAnchor: [12, 27],
                 popupAnchor: [0, -25]
               });
-              L.marker([item.lat, item.lng], { icon }).addTo(map).bindPopup(
+              const marker = L.marker([item.lat, item.lng], { icon }).addTo(map).bindPopup(
                 '<p class="title">' + item.title + '</p>' +
                 '<span class="status" style="color:' + color + ';background:' + background + '">' + item.status + '</span>' +
                 '<p class="description">' + item.description + '</p>'
               );
+              marker.on('click', () => {
+                window.parent.postMessage({
+                  type: 'authority-complaint-marker',
+                  id: item.id
+                }, '*');
+              });
               bounds.push([item.lat, item.lng]);
             });
             if (bounds.length) map.fitBounds(bounds, { padding: [35, 35], maxZoom: 16 });

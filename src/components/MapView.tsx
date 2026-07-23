@@ -13,6 +13,7 @@ export interface ComplaintLocation {
 
 interface MapViewProps {
   locations: ComplaintLocation[];
+  onLocationPress?: (location: ComplaintLocation) => void;
 }
 
 const htmlContent = `
@@ -72,6 +73,14 @@ const htmlContent = `
                 });
 
                 var marker = L.marker([item.lat, item.lng], { icon: customIcon }).addTo(map);
+                marker.on('click', function() {
+                    if (window.ReactNativeWebView) {
+                        window.ReactNativeWebView.postMessage(JSON.stringify({
+                            type: 'complaint-marker',
+                            id: item.id
+                        }));
+                    }
+                });
 
                 var popupContent = '<div class="popup-title">' + item.title + '</div>' +
                                    '<div class="popup-status" style="color:' + statusColor + '; background:' + statusBg + ';">' + item.status + '</div>' +
@@ -94,7 +103,7 @@ const htmlContent = `
 </html>
 `;
 
-export default function MapViewComponent({ locations }: MapViewProps) {
+export default function MapViewComponent({ locations, onLocationPress }: MapViewProps) {
   const webviewRef = useRef<WebView>(null);
 
   useEffect(() => {
@@ -114,6 +123,19 @@ export default function MapViewComponent({ locations }: MapViewProps) {
         nestedScrollEnabled={true}
         overScrollMode="never"
         javaScriptEnabled={true}
+        onMessage={(event) => {
+          try {
+            const message = JSON.parse(event.nativeEvent.data) as {
+              type?: string;
+              id?: string;
+            };
+            if (message.type !== 'complaint-marker' || !message.id) return;
+            const location = locations.find((item) => item.id === message.id);
+            if (location) onLocationPress?.(location);
+          } catch {
+            // Ignore messages that are not produced by the complaint map.
+          }
+        }}
         onLoadEnd={() => {
           const script = `if(window.setMarkers) { window.setMarkers(${JSON.stringify(locations)}); } true;`;
           webviewRef.current?.injectJavaScript(script);

@@ -1,7 +1,5 @@
-﻿// src/app/(authority)/_layout.tsx
+import Stack from 'expo-router/stack';
 
-import { Stack } from 'expo-router';
-
-export default function Layout() {
+export default function AuthorityGroupLayout() {
   return <Stack screenOptions={{ headerShown: false }} />;
 }

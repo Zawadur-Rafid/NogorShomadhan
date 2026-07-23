@@ -3,11 +3,30 @@ import { useRouter } from 'expo-router';
 import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 type AuthorityPageHeaderProps = {
-  title: string;
+  title?: string;
+  fallbackPath?: string;
+  icon?: keyof typeof Ionicons.glyphMap;
+  onBack?: () => void;
 };
 
-export default function AuthorityPageHeader({ title }: AuthorityPageHeaderProps) {
+export default function AuthorityPageHeader({
+  title = 'Back',
+  fallbackPath = '/authority/dashboard',
+  icon = 'arrow-back',
+  onBack,
+}: AuthorityPageHeaderProps) {
   const router = useRouter();
+  const handlePress = () => {
+    if (onBack) {
+      onBack();
+      return;
+    }
+    if (router.canGoBack()) {
+      router.back();
+      return;
+    }
+    router.replace(fallbackPath as never);
+  };
 
   return (
     <View style={styles.header}>
@@ -18,8 +37,11 @@ export default function AuthorityPageHeader({ title }: AuthorityPageHeaderProps)
           <Text style={styles.brandRole}>Community Authority</Text>
         </View>
       </View>
-      <TouchableOpacity style={styles.backButton} onPress={() => router.push('/authority/dashboard' as never)}>
-        <Ionicons name="arrow-back" size={17} color="#23435D" />
+      <TouchableOpacity
+        style={styles.backButton}
+        onPress={handlePress}
+      >
+        <Ionicons name={icon} size={17} color="#23435D" />
         <Text style={styles.backText}>{title}</Text>
       </TouchableOpacity>
     </View>

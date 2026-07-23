@@ -78,7 +78,7 @@ export default function SignInScreen() {
     if (role === 'resident') {
       router.replace('/(resident)/dashboard');
     } else if (role === 'authority') {
-      router.replace('/(authority)/dashboard');
+      router.replace('/authority/dashboard');
     } else if (role === 'admin') {
       router.replace('/(admin)/dashboard');
     }
