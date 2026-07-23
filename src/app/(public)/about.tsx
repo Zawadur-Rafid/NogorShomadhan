@@ -1,7 +1,7 @@
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { Animated, Dimensions, FlatList, Image, PanResponder, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Dimensions, FlatList, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import BackButton from '@/components/back-button';
 
@@ -34,45 +34,6 @@ export default function AboutScreen() {
     const router = useRouter();
     const flatListRef = useRef<FlatList>(null);
     const [currentIndex, setCurrentIndex] = useState(0);
-
-    const panY = useRef(new Animated.Value(0)).current;
-    const panYOffset = useRef(0);
-
-    const panResponder = useRef(
-        PanResponder.create({
-            onStartShouldSetPanResponder: () => true,
-            onPanResponderGrant: () => {
-                panY.setOffset(panYOffset.current);
-                panY.setValue(0);
-            },
-            onPanResponderMove: (_, gestureState) => {
-                let newY = gestureState.dy;
-                if (panYOffset.current + newY < 0) {
-                    newY = -panYOffset.current;
-                }
-                panY.setValue(newY);
-            },
-            onPanResponderRelease: (_, gestureState) => {
-                panY.flattenOffset();
-                let targetValue = 0;
-                if (gestureState.dy > 50 || gestureState.vy > 0.5) {
-                    targetValue = 180; // Keep dragger visible and higher
-                } else if (gestureState.dy < -50 || gestureState.vy < -0.5) {
-                    targetValue = 0; // Show fully
-                } else {
-                    targetValue = panYOffset.current > 90 ? 180 : 0;
-                }
-
-                panYOffset.current = targetValue;
-
-                Animated.spring(panY, {
-                    toValue: targetValue,
-                    useNativeDriver: true,
-                    bounciness: 4,
-                }).start();
-            }
-        })
-    ).current;
 
     useEffect(() => {
         const timer = setInterval(() => {
@@ -305,13 +266,8 @@ export default function AboutScreen() {
                 </View>
 
 
-            </ScrollView>
-
-            {/* CTAs & Footer */}
-            <Animated.View style={[styles.bottomSection, { transform: [{ translateY: panY }] }]}>
-                <View {...panResponder.panHandlers} style={styles.dragHandleContainer}>
-                    <View style={styles.dragHandle} />
-                </View>
+            {/* Account actions appear after the page content, not over it. */}
+            <View style={styles.bottomSection}>
 
                 <View style={styles.ctaContainer}>
                     <TouchableOpacity
@@ -344,7 +300,8 @@ export default function AboutScreen() {
                         <Text style={styles.footerLinkText}>Contact</Text>
                     </TouchableOpacity>
                 </View>
-            </Animated.View>
+            </View>
+            </ScrollView>
         </SafeAreaView>
     );
 }
@@ -379,7 +336,7 @@ const styles = StyleSheet.create({
         color: colors.primary,
     },
     content: {
-        paddingBottom: 280,
+        paddingBottom: 0,
     },
     heroContainer: {
         width: '100%',
@@ -633,33 +590,13 @@ const styles = StyleSheet.create({
     },
 
     bottomSection: {
+        marginTop: 40,
         backgroundColor: '#f2f4f6',
         borderTopLeftRadius: 32,
         borderTopRightRadius: 32,
         paddingHorizontal: 16,
-        paddingTop: 8,
+        paddingTop: 32,
         paddingBottom: 24,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: -10 },
-        shadowOpacity: 0.1,
-        shadowRadius: 20,
-        elevation: 10,
-        position: 'absolute',
-        bottom: 0,
-        left: 0,
-        right: 0,
-    },
-    dragHandleContainer: {
-        width: '100%',
-        alignItems: 'center',
-        paddingVertical: 16,
-        marginBottom: 4,
-    },
-    dragHandle: {
-        width: 48,
-        height: 5,
-        borderRadius: 2.5,
-        backgroundColor: colors.outlineVariant,
     },
     ctaContainer: {
         gap: 12,

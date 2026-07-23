@@ -177,6 +177,13 @@ export default function Register() {
               <MaterialIcons name="how-to-reg" size={23} color={colors.onPrimary} />
               <Text style={styles.registerButtonText}>Register</Text>
             </TouchableOpacity>
+
+            <View style={styles.accountPrompt}>
+              <Text style={styles.accountPromptText}>Already have an account?</Text>
+              <Pressable onPress={() => router.push('/(public)/sign-in')} hitSlop={8}>
+                <Text style={styles.accountPromptLink}>Sign In</Text>
+              </Pressable>
+            </View>
           </View>
         </ScrollView>
 
@@ -376,6 +383,24 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '800',
     color: colors.onPrimary,
+  },
+  accountPrompt: {
+    marginTop: 2,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 5,
+  },
+  accountPromptText: {
+    fontFamily: 'Inter',
+    fontSize: 14,
+    color: colors.onSurfaceVariant,
+  },
+  accountPromptLink: {
+    fontFamily: 'Inter',
+    fontSize: 14,
+    fontWeight: '800',
+    color: colors.primary,
   },
 
 });

@@ -1,6 +1,6 @@
 import BackButton from "@/components/back-button";
 import { MaterialIcons } from "@expo/vector-icons";
-import { useState, useRef } from "react";
+import { useState } from "react";
 import {
   Image,
   Modal,
@@ -9,8 +9,6 @@ import {
   Text,
   TouchableOpacity,
   View,
-  Animated,
-  PanResponder,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
@@ -37,45 +35,6 @@ export default function ImpactScreen() {
   const router = useRouter();
   // State to manage the currently selected full-screen image
   const [selectedImage, setSelectedImage] = useState<any | null>(null);
-
-  const panY = useRef(new Animated.Value(0)).current;
-  const panYOffset = useRef(0);
-
-  const panResponder = useRef(
-      PanResponder.create({
-          onStartShouldSetPanResponder: () => true,
-          onPanResponderGrant: () => {
-              panY.setOffset(panYOffset.current);
-              panY.setValue(0);
-          },
-          onPanResponderMove: (_, gestureState) => {
-              let newY = gestureState.dy;
-              if (panYOffset.current + newY < 0) {
-                  newY = -panYOffset.current;
-              }
-              panY.setValue(newY);
-          },
-          onPanResponderRelease: (_, gestureState) => {
-              panY.flattenOffset();
-              let targetValue = 0;
-              if (gestureState.dy > 50 || gestureState.vy > 0.5) {
-                  targetValue = 180; // Keep dragger visible and higher
-              } else if (gestureState.dy < -50 || gestureState.vy < -0.5) {
-                  targetValue = 0; // Show fully
-              } else {
-                  targetValue = panYOffset.current > 90 ? 180 : 0;
-              }
-
-              panYOffset.current = targetValue;
-
-              Animated.spring(panY, {
-                  toValue: targetValue,
-                  useNativeDriver: true,
-                  bounciness: 4,
-              }).start();
-          }
-      })
-  ).current;
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -157,13 +116,8 @@ export default function ImpactScreen() {
             ))}
           </View>
         </View>
-      </ScrollView>
-
-      {/* CTAs & Footer */}
-      <Animated.View style={[styles.bottomSection, { transform: [{ translateY: panY }] }]}>
-          <View {...panResponder.panHandlers} style={styles.dragHandleContainer}>
-              <View style={styles.dragHandle} />
-          </View>
+      {/* Account actions appear after the page content, not over it. */}
+      <View style={styles.bottomSection}>
 
           <View style={styles.ctaContainer}>
               <TouchableOpacity
@@ -196,7 +150,8 @@ export default function ImpactScreen() {
                   <Text style={styles.footerLinkText}>Contact</Text>
               </TouchableOpacity>
           </View>
-      </Animated.View>
+      </View>
+      </ScrollView>
 
 
       {/* Full-Screen Image Modal Viewer */}
@@ -263,7 +218,7 @@ const styles = StyleSheet.create({
   content: {
     paddingHorizontal: 16,
     paddingTop: 16,
-    paddingBottom: 280,
+    paddingBottom: 0,
   },
   scrollView: {
     flex: 1,
@@ -379,33 +334,13 @@ const styles = StyleSheet.create({
     height: "100%",
   },
   bottomSection: {
+    marginTop: 40,
     backgroundColor: '#f2f4f6',
     borderTopLeftRadius: 32,
     borderTopRightRadius: 32,
     paddingHorizontal: 16,
-    paddingTop: 8,
+    paddingTop: 32,
     paddingBottom: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -10 },
-    shadowOpacity: 0.1,
-    shadowRadius: 20,
-    elevation: 10,
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-  },
-  dragHandleContainer: {
-    width: '100%',
-    alignItems: 'center',
-    paddingVertical: 16,
-    marginBottom: 4,
-  },
-  dragHandle: {
-    width: 48,
-    height: 5,
-    borderRadius: 2.5,
-    backgroundColor: '#c0c8cd',
   },
   ctaContainer: {
     gap: 12,
