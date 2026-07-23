@@ -13,14 +13,12 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import AuthorityMap from '../../components/authority/authority-map';
+import AuthorityMap from '@/components/authority/authority-map';
+import { useAuthorityComplaints } from '@/components/authority/authority-complaints-context';
 import {
-  authorityComplaints,
   authorityDashboardProfile,
-  authorityDashboardStats,
-  type AuthorityComplaint,
   type AuthorityComplaintStatus,
-} from '../../components/authority/store-authority-dashboard';
+} from '@/components/authority/store-authority-dashboard';
 
 const statusTheme: Record<AuthorityComplaintStatus, { color: string; background: string }> = {
   PENDING: { color: '#EF4444', background: '#FEF2F2' },
@@ -31,33 +29,75 @@ const statusTheme: Record<AuthorityComplaintStatus, { color: string; background:
 export default function AuthorityDashboard() {
   const router = useRouter();
   const { width } = useWindowDimensions();
+  const { complaints } = useAuthorityComplaints();
   const [profileOpen, setProfileOpen] = useState(false);
   const wide = width >= 920;
 
   const priorityComplaints = useMemo(
-    () => [...authorityComplaints].sort((first, second) => second.urgency - first.urgency),
-    [],
+    () => [...complaints].sort((first, second) => second.urgency - first.urgency),
+    [complaints],
+  );
+  const authorityDashboardStats = useMemo(
+    () => [
+      {
+        label: 'Total Issues',
+        value: complaints.length,
+        icon: 'document-text-outline' as const,
+        color: '#3B82F6',
+        background: '#FFFFFF',
+      },
+      {
+        label: 'Pending',
+        value: complaints.filter((item) => item.status === 'PENDING').length,
+        icon: 'time-outline' as const,
+        color: '#EF4444',
+        background: '#FFF1F1',
+      },
+      {
+        label: 'In Progress',
+        value: complaints.filter((item) => item.status === 'IN PROGRESS').length,
+        icon: 'construct-outline' as const,
+        color: '#C67B00',
+        background: '#F8F2EA',
+      },
+      {
+        label: 'Resolved',
+        value: complaints.filter((item) => item.status === 'RESOLVED').length,
+        icon: 'checkmark-circle-outline' as const,
+        color: '#2563EB',
+        background: '#EEF6FF',
+      },
+    ],
+    [complaints],
   );
 
   const urgentCount = priorityComplaints.filter((complaint) => complaint.urgency >= 25).length;
   const urgencySignals = priorityComplaints.reduce((total, complaint) => total + complaint.urgency, 0);
 
-  const openComplaint = (complaint: AuthorityComplaint) => {
-    const folder =
-      complaint.status === 'PENDING'
-        ? 'pending'
-        : complaint.status === 'IN PROGRESS'
-          ? 'in-progress'
-          : 'resolved';
+  const openComplaint = (complaint: { id: string }) => {
+    router.push({
+      pathname: '/authority/complaints/[complaintId]',
+      params: { complaintId: complaint.id },
+    } as never);
+  };
 
-    router.push(`/(authority)/complaints/${folder}/${complaint.id}` as never);
+  const openComplaintList = (status?: AuthorityComplaintStatus) => {
+    router.navigate({
+      pathname: '/authority/complaints',
+      params: {
+        status: status ?? '',
+        category: '',
+        area: '',
+        query: '',
+      },
+    } as never);
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView edges={['top', 'left', 'right']} style={styles.safeArea}>
       <View style={styles.header}>
         <View style={styles.logoSection}>
-          <Image source={require('../../../assets/images/main_logo.png')} style={styles.logoImage} />
+          <Image source={require('@/assets/images/main_logo.png')} style={styles.logoImage} />
           <View>
             <Text style={styles.logoText}>Nogor Shomadhan</Text>
             <Text style={styles.logoSubtitle}>Community Authority</Text>
@@ -65,7 +105,11 @@ export default function AuthorityDashboard() {
         </View>
 
         <View style={styles.headerActions}>
-          <TouchableOpacity style={styles.headerIcon} accessibilityLabel="Notifications">
+          <TouchableOpacity
+            style={styles.headerIcon}
+            accessibilityLabel="Notifications"
+            onPress={() => router.push('/authority/notifications' as never)}
+          >
             <Ionicons name="notifications-outline" size={21} color="#23435D" />
             <View style={styles.notificationDot} />
           </TouchableOpacity>
@@ -84,15 +128,33 @@ export default function AuthorityDashboard() {
               <Text style={styles.profileMeta}>{authorityDashboardProfile.email}</Text>
               <Text style={styles.profileMeta}>{authorityDashboardProfile.role}</Text>
               <View style={styles.menuDivider} />
-              <TouchableOpacity style={styles.menuItem}>
+              <TouchableOpacity
+                style={styles.menuItem}
+                onPress={() => {
+                  setProfileOpen(false);
+                  router.push('/authority/profile' as never);
+                }}
+              >
                 <Ionicons name="person-outline" size={18} color="#23435D" />
                 <Text style={styles.menuItemText}>Profile information</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.menuItem}>
+              <TouchableOpacity
+                style={styles.menuItem}
+                onPress={() => {
+                  setProfileOpen(false);
+                  router.push('/authority/change-password' as never);
+                }}
+              >
                 <Ionicons name="lock-closed-outline" size={18} color="#23435D" />
                 <Text style={styles.menuItemText}>Change password</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.menuItem}>
+              <TouchableOpacity
+                style={styles.menuItem}
+                onPress={() => {
+                  setProfileOpen(false);
+                  router.push('/authority/activity-log' as never);
+                }}
+              >
                 <Ionicons name="time-outline" size={18} color="#23435D" />
                 <Text style={styles.menuItemText}>Activity log</Text>
               </TouchableOpacity>
@@ -120,7 +182,7 @@ export default function AuthorityDashboard() {
             </View>
             <TouchableOpacity
               style={styles.allComplaintsButton}
-              onPress={() => router.push('/authority/complaints' as never)}
+              onPress={() => openComplaintList()}
             >
               <Ionicons name="documents-outline" size={18} color="#FFFFFF" />
               <Text style={styles.allComplaintsButtonText}>All Complaints</Text>
@@ -129,8 +191,19 @@ export default function AuthorityDashboard() {
 
           <View style={styles.statsGrid}>
             {authorityDashboardStats.map((stat) => (
-              <View
+              <Pressable
                 key={stat.label}
+                onPress={() =>
+                  openComplaintList(
+                    stat.label === 'Pending'
+                      ? 'PENDING'
+                      : stat.label === 'In Progress'
+                        ? 'IN PROGRESS'
+                        : stat.label === 'Resolved'
+                          ? 'RESOLVED'
+                          : undefined,
+                  )
+                }
                 style={[
                   styles.statCard,
                   { backgroundColor: stat.background },
@@ -142,7 +215,7 @@ export default function AuthorityDashboard() {
                 <Text style={[styles.cardNumber, { color: stat.label === 'Total Issues' ? '#222222' : stat.color }]}>
                   {stat.value}
                 </Text>
-              </View>
+              </Pressable>
             ))}
           </View>
 
@@ -168,7 +241,7 @@ export default function AuthorityDashboard() {
                   <Text style={styles.sectionTitle}>Priority Complaints</Text>
                   <Text style={styles.sectionSubtitle}>Highest urgency appears first</Text>
                 </View>
-                <TouchableOpacity onPress={() => router.push('/authority/complaints' as never)}>
+                <TouchableOpacity onPress={() => openComplaintList()}>
                   <Text style={styles.viewAll}>All Complaints</Text>
                 </TouchableOpacity>
               </View>
@@ -221,7 +294,10 @@ export default function AuthorityDashboard() {
                 <Ionicons name="map-outline" size={22} color="#23435D" />
               </View>
               <View style={styles.mapCard}>
-                <AuthorityMap locations={authorityComplaints} />
+                <AuthorityMap
+                  locations={complaints}
+                  onLocationPress={openComplaint}
+                />
               </View>
               <View style={styles.mapLegend}>
                 <View style={styles.legendItem}><View style={[styles.legendDot, { backgroundColor: '#EF4444' }]} /><Text style={styles.legendText}>Pending</Text></View>
@@ -239,7 +315,7 @@ export default function AuthorityDashboard() {
             <View style={[styles.toolsGrid, wide && styles.toolsGridWide]}>
               <TouchableOpacity
                 style={[styles.toolCard, styles.analyticsToolCard]}
-                onPress={() => router.push('/authority/analytics' as never)}
+                onPress={() => router.navigate('/authority/analytics' as never)}
               >
                 <View style={[styles.toolIcon, styles.analyticsToolIcon]}>
                   <Ionicons name="bar-chart-outline" size={24} color="#FFFFFF" />
@@ -258,7 +334,7 @@ export default function AuthorityDashboard() {
 
               <TouchableOpacity
                 style={[styles.toolCard, styles.feedbackToolCard]}
-                onPress={() => router.push('/authority/feedback-center' as never)}
+                onPress={() => router.navigate('/authority/feedback-center' as never)}
               >
                 <View style={[styles.toolIcon, styles.feedbackToolIcon]}>
                   <Ionicons name="chatbox-ellipses-outline" size={24} color="#FFFFFF" />
@@ -278,6 +354,7 @@ export default function AuthorityDashboard() {
           </View>
         </View>
       </ScrollView>
+
     </SafeAreaView>
   );
 }
