@@ -257,7 +257,10 @@ export default function AuthorityAllComplaints() {
           <View style={styles.resultSummary}>
             <View>
               <Text style={styles.resultText}>{filteredComplaints.length} complaints found</Text>
-              {(filter !== 'ALL' || category !== 'ALL' || area !== 'ALL' || search) && (
+              {(filter !== 'ALL' ||
+                category !== 'ALL' ||
+                area !== 'ALL' ||
+                search.length > 0) && (
                 <Pressable
                   onPress={() => {
                     updateFilters({
