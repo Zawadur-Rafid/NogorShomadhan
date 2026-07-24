@@ -1,12 +1,12 @@
 ﻿import Ionicons from "@expo/vector-icons/Ionicons";
 import { useRouter } from "expo-router";
 import {
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    SafeAreaView,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 
 import AdminBottomNav from "@/components/AdminBottomNav";
@@ -205,7 +205,11 @@ export default function AdminDashboard() {
 
         {/* View Analytics */}
 
-        <TouchableOpacity activeOpacity={0.85} style={styles.actionCard}>
+        <TouchableOpacity
+          activeOpacity={0.85}
+          style={styles.actionCard}
+          onPress={() => router.push("/(admin)/analytics")}
+        >
           <View style={styles.actionIconOrange}>
             <Ionicons name="bar-chart-outline" size={28} color="#C6761A" />
           </View>
