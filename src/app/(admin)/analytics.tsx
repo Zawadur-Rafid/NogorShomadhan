@@ -1,5 +1,4 @@
 ﻿import Ionicons from "@expo/vector-icons/Ionicons";
-import { useRouter } from "expo-router";
 import { useMemo, useState } from "react";
 import {
   Pressable,
@@ -12,8 +11,8 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import AdminBottomNav from "@/components/AdminBottomNav";
 import { useAuthorityComplaints } from "@/components/authority/authority-complaints-context";
-import AuthorityPageHeader from "@/components/authority/authority-page-header";
 import type { AuthorityComplaintDetail } from "@/components/authority/store-authority-complaint-details";
 
 const periods = ["7 Days", "30 Days", "This Year"] as const;
@@ -84,7 +83,6 @@ function buildTrendData(
 }
 
 export default function AuthorityAnalytics() {
-  const router = useRouter();
   const { width } = useWindowDimensions();
   const { complaints } = useAuthorityComplaints();
   const [period, setPeriod] = useState<(typeof periods)[number]>("30 Days");
@@ -257,12 +255,7 @@ export default function AuthorityAnalytics() {
         : "Monthly Complaint Trend";
 
   return (
-    <SafeAreaView edges={["top", "left", "right"]} style={styles.safeArea}>
-      <AuthorityPageHeader
-        title="Home"
-        icon="home-outline"
-        onBack={() => router.navigate("/(admin)/dashboard" as never)}
-      />
+    <SafeAreaView edges={["left", "right"]} style={styles.safeArea}>
       <ScrollView
         contentInsetAdjustmentBehavior="automatic"
         showsVerticalScrollIndicator={false}
@@ -616,13 +609,14 @@ export default function AuthorityAnalytics() {
           </View>
         </View>
       </ScrollView>
+      <AdminBottomNav activeRoute="analytics" />
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: "#F7F8FA" },
-  scrollContent: { paddingBottom: 34 },
+  scrollContent: { paddingBottom: 102 },
   container: {
     width: "100%",
     maxWidth: 1180,
@@ -638,14 +632,9 @@ const styles = StyleSheet.create({
   },
   heroCompact: { alignItems: "flex-start", flexDirection: "column" },
   heroCopy: { flex: 1 },
-  eyebrow: {
-    color: "#B9854B",
-    fontSize: 10,
-    fontWeight: "800",
-    letterSpacing: 0.8,
-  },
-  title: { color: "#111827", fontSize: 25, fontWeight: "800", marginTop: 3 },
-  subtitle: { color: "#6B7280", fontSize: 12, marginTop: 5 },
+  eyebrow: { color: "#B9854B", fontSize: 12, fontWeight: "600", letterSpacing: 0.8 },
+  title: { color: "#00475E", fontSize: 32, fontWeight: "700", letterSpacing: -0.5, marginTop: 3 },
+  subtitle: { color: "#40484D", fontSize: 14, lineHeight: 20, marginTop: 5 },
   reportButton: {
     minHeight: 44,
     flexDirection: "row",
@@ -656,7 +645,7 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     backgroundColor: "#23435D",
   },
-  reportButtonText: { color: "#FFFFFF", fontSize: 11, fontWeight: "800" },
+  reportButtonText: { color: "#FFFFFF", fontSize: 12, fontWeight: "700" },
   periodRow: {
     flexDirection: "row",
     flexWrap: "wrap",
@@ -664,7 +653,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     gap: 10,
   },
-  periodLabel: { color: "#475467", fontSize: 11, fontWeight: "700" },
+  periodLabel: { color: "#40484D", fontSize: 14, fontWeight: "600" },
   periodButtons: { flexDirection: "row", gap: 7 },
   periodButton: {
     paddingHorizontal: 12,
@@ -675,7 +664,7 @@ const styles = StyleSheet.create({
     borderColor: "#E2E6EB",
   },
   periodButtonActive: { backgroundColor: "#23435D", borderColor: "#23435D" },
-  periodButtonText: { color: "#667085", fontSize: 10, fontWeight: "700" },
+  periodButtonText: { color: "#40484D", fontSize: 12, fontWeight: "600" },
   periodButtonTextActive: { color: "#FFFFFF" },
   summaryGrid: { flexDirection: "row", flexWrap: "wrap", gap: 12 },
   summaryCard: {
@@ -697,18 +686,18 @@ const styles = StyleSheet.create({
   },
   summaryLabel: {
     color: "#667085",
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: "600",
     marginTop: 10,
   },
   summaryValue: {
     color: "#1F2937",
-    fontSize: 21,
-    fontWeight: "800",
+    fontSize: 30,
+    fontWeight: "700",
     marginTop: 3,
     fontVariant: ["tabular-nums"],
   },
-  summaryChange: { fontSize: 9, fontWeight: "700", marginTop: 4 },
+  summaryChange: { fontSize: 12, fontWeight: "600", marginTop: 4 },
   generatedReport: {
     flexDirection: "row",
     alignItems: "center",
@@ -728,11 +717,11 @@ const styles = StyleSheet.create({
     backgroundColor: "#16845B",
   },
   generatedCopy: { flex: 1 },
-  generatedTitle: { color: "#165C43", fontSize: 13, fontWeight: "800" },
+  generatedTitle: { color: "#165C43", fontSize: 16, fontWeight: "600" },
   generatedText: {
     color: "#4C7565",
-    fontSize: 10,
-    lineHeight: 15,
+    fontSize: 12,
+    lineHeight: 18,
     marginTop: 3,
   },
   readyBadge: {
@@ -741,7 +730,7 @@ const styles = StyleSheet.create({
     borderRadius: 11,
     backgroundColor: "#D5F0E4",
   },
-  readyText: { color: "#16845B", fontSize: 8, fontWeight: "900" },
+  readyText: { color: "#16845B", fontSize: 11, fontWeight: "700" },
   analyticsGrid: { gap: 14 },
   analyticsGridWide: { flexDirection: "row" },
   panel: {
@@ -760,8 +749,8 @@ const styles = StyleSheet.create({
     gap: 12,
     marginBottom: 15,
   },
-  panelTitle: { color: "#1F2937", fontSize: 15, fontWeight: "800" },
-  panelSubtitle: { color: "#8A93A1", fontSize: 9, marginTop: 3 },
+  panelTitle: { color: "#191C1E", fontSize: 20, fontWeight: "600" },
+  panelSubtitle: { color: "#70787D", fontSize: 12, marginTop: 3 },
   statusBar: {
     height: 13,
     flexDirection: "row",
@@ -772,19 +761,19 @@ const styles = StyleSheet.create({
   statusRows: { gap: 11, marginTop: 17 },
   statusRow: { flexDirection: "row", alignItems: "center" },
   dot: { width: 8, height: 8, borderRadius: 4, marginRight: 8 },
-  statusLabel: { flex: 1, color: "#475467", fontSize: 11, fontWeight: "600" },
+  statusLabel: { flex: 1, color: "#40484D", fontSize: 12, fontWeight: "600" },
   statusValue: {
     width: 34,
     color: "#1F2937",
-    fontSize: 11,
-    fontWeight: "800",
+    fontSize: 12,
+    fontWeight: "700",
     textAlign: "right",
     fontVariant: ["tabular-nums"],
   },
   statusPercent: {
     width: 38,
     color: "#8A93A1",
-    fontSize: 9,
+    fontSize: 12,
     textAlign: "right",
     fontVariant: ["tabular-nums"],
   },
@@ -803,8 +792,8 @@ const styles = StyleSheet.create({
   },
   chartValue: {
     color: "#5C6676",
-    fontSize: 8,
-    fontWeight: "700",
+    fontSize: 11,
+    fontWeight: "600",
     marginBottom: 5,
   },
   chartTrack: {
@@ -821,15 +810,15 @@ const styles = StyleSheet.create({
     borderRadius: 7,
     backgroundColor: "#3B82F6",
   },
-  chartLabel: { color: "#7B8492", fontSize: 8, marginTop: 6 },
+  chartLabel: { color: "#70787D", fontSize: 11, marginTop: 6 },
   categoryList: { gap: 13 },
   categoryRow: { gap: 5 },
   categoryTopLine: { flexDirection: "row", justifyContent: "space-between" },
-  categoryLabel: { color: "#475467", fontSize: 10, fontWeight: "600" },
+  categoryLabel: { color: "#40484D", fontSize: 12, fontWeight: "600" },
   categoryValue: {
     color: "#1F2937",
-    fontSize: 10,
-    fontWeight: "800",
+    fontSize: 12,
+    fontWeight: "700",
     fontVariant: ["tabular-nums"],
   },
   categoryTrack: {
@@ -850,15 +839,15 @@ const styles = StyleSheet.create({
   },
   performanceValue: {
     color: "#16845B",
-    fontSize: 18,
-    fontWeight: "900",
+    fontSize: 24,
+    fontWeight: "700",
     fontVariant: ["tabular-nums"],
   },
   overdueValue: { color: "#E0524D" },
   performanceLabel: {
     color: "#7A8493",
-    fontSize: 8,
-    fontWeight: "700",
+    fontSize: 12,
+    fontWeight: "600",
     marginTop: 4,
   },
   performanceHeading: {
@@ -867,8 +856,8 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     gap: 10,
   },
-  performanceHeadingText: { color: "#475467", fontSize: 10, fontWeight: "700" },
-  performanceRate: { color: "#16845B", fontSize: 16, fontWeight: "900" },
+  performanceHeadingText: { color: "#40484D", fontSize: 12, fontWeight: "600" },
+  performanceRate: { color: "#16845B", fontSize: 20, fontWeight: "700" },
   performanceTrack: {
     height: 10,
     overflow: "hidden",
@@ -887,8 +876,8 @@ const styles = StyleSheet.create({
     gap: 10,
     marginTop: 8,
   },
-  performanceFootnote: { color: "#8A93A1", fontSize: 8 },
-  performanceTarget: { color: "#16845B", fontSize: 8, fontWeight: "800" },
+  performanceFootnote: { color: "#70787D", fontSize: 11 },
+  performanceTarget: { color: "#16845B", fontSize: 11, fontWeight: "700" },
   hotspotList: { gap: 10 },
   hotspotRow: {
     minHeight: 58,
@@ -907,10 +896,10 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     backgroundColor: "#FFF1E5",
   },
-  hotspotRankText: { color: "#C57C1B", fontSize: 10, fontWeight: "900" },
+  hotspotRankText: { color: "#C57C1B", fontSize: 12, fontWeight: "700" },
   hotspotCopy: { flex: 1 },
-  hotspotLocation: { color: "#293241", fontSize: 10, fontWeight: "700" },
-  hotspotCategory: { color: "#8A93A1", fontSize: 9, marginTop: 3 },
+  hotspotLocation: { color: "#191C1E", fontSize: 12, fontWeight: "600" },
+  hotspotCategory: { color: "#70787D", fontSize: 11, marginTop: 3 },
   signalBadge: {
     flexDirection: "row",
     alignItems: "center",
@@ -922,8 +911,8 @@ const styles = StyleSheet.create({
   },
   signalText: {
     color: "#A7640C",
-    fontSize: 10,
-    fontWeight: "900",
+    fontSize: 12,
+    fontWeight: "700",
     fontVariant: ["tabular-nums"],
   },
 });

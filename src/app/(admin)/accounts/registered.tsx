@@ -4,7 +4,6 @@ import { useMemo, useState } from "react";
 import {
   Modal,
   Pressable,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
@@ -57,26 +56,11 @@ export default function Registered() {
   }, [registeredAccounts, selectedAccountId]);
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.content}
       >
-        <View style={styles.header}>
-          <View style={styles.headerLeft}>
-            <Ionicons name="menu" size={22} color={colors.primary} />
-            <Text style={styles.logo}>Registered Desk</Text>
-          </View>
-
-          <View style={styles.headerRight}>
-            <Ionicons name="notifications-outline" size={20} color="#000" />
-
-            <View style={styles.adminCircle}>
-              <Text style={styles.adminText}>AD</Text>
-            </View>
-          </View>
-        </View>
-
         <View style={styles.pageIntro}>
           <Text style={styles.kicker}>Registered accounts</Text>
           <Text style={styles.title}>All approved accounts</Text>
@@ -291,7 +275,7 @@ export default function Registered() {
       </Modal>
 
       <AdminBottomNav activeRoute="users" />
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -317,9 +301,9 @@ const styles = StyleSheet.create({
   logo: {
     marginLeft: 10,
     fontSize: 22,
-    fontFamily: "Times New Roman",
     fontWeight: "700",
     color: colors.text,
+    // No fontFamily - uses system default (SF Pro/Roboto)
   },
   headerRight: {
     flexDirection: "row",
@@ -337,8 +321,8 @@ const styles = StyleSheet.create({
   adminText: {
     fontSize: 13,
     color: colors.primary,
-    fontFamily: "Times New Roman",
     fontWeight: "700",
+    // No fontFamily - uses system default (SF Pro/Roboto)
   },
   pageIntro: {
     marginBottom: 16,
@@ -346,24 +330,24 @@ const styles = StyleSheet.create({
   kicker: {
     fontSize: 12,
     fontWeight: "700",
-    fontFamily: "Times New Roman",
     color: "#1E4867",
     textTransform: "uppercase",
     letterSpacing: 1,
     marginBottom: 8,
+    // No fontFamily - uses system default (SF Pro/Roboto)
   },
   title: {
     fontSize: 28,
     fontWeight: "800",
-    fontFamily: "Times New Roman",
     color: "#1B1B1B",
+    // No fontFamily - uses system default (SF Pro/Roboto)
   },
   subtitle: {
     marginTop: 8,
     fontSize: 14,
     lineHeight: 20,
-    fontFamily: "Times New Roman",
     color: "#666",
+    // No fontFamily - uses system default (SF Pro/Roboto)
   },
   statsCard: {
     backgroundColor: "#fff",
@@ -405,15 +389,15 @@ const styles = StyleSheet.create({
   smallLabel: {
     fontSize: 10,
     color: "#666",
-    fontFamily: "Times New Roman",
     fontWeight: "700",
+    // No fontFamily - uses system default (SF Pro/Roboto)
   },
   bigText: {
     marginTop: 2,
     fontSize: 28,
     color: "#222",
-    fontFamily: "Times New Roman",
     fontWeight: "700",
+    // No fontFamily - uses system default (SF Pro/Roboto)
   },
   searchBar: {
     marginTop: 8,
@@ -429,7 +413,7 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     color: "#8A8A8A",
     fontSize: 13,
-    fontFamily: "Times New Roman",
+    // No fontFamily - uses system default (SF Pro/Roboto)
   },
   filterRow: {
     flexDirection: "row",
@@ -445,8 +429,8 @@ const styles = StyleSheet.create({
   activeChipText: {
     color: "#fff",
     fontSize: 11,
-    fontFamily: "Times New Roman",
     fontWeight: "700",
+    // No fontFamily - uses system default (SF Pro/Roboto)
   },
   chip: {
     backgroundColor: "#E8E8E8",
@@ -458,7 +442,7 @@ const styles = StyleSheet.create({
   chipText: {
     color: "#666",
     fontSize: 11,
-    fontFamily: "Times New Roman",
+    // No fontFamily - uses system default (SF Pro/Roboto)
   },
   filterIcon: {
     marginLeft: "auto",
@@ -483,15 +467,15 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 18,
     fontWeight: "800",
-    fontFamily: "Times New Roman",
     color: "#1B1B1B",
+    // No fontFamily - uses system default (SF Pro/Roboto)
   },
   emptySubtitle: {
     marginTop: 8,
     fontSize: 14,
-    fontFamily: "Times New Roman",
     color: "#666",
     textAlign: "center",
+    // No fontFamily - uses system default (SF Pro/Roboto)
   },
   card: {
     backgroundColor: "#FFFFFF",
@@ -531,14 +515,14 @@ const styles = StyleSheet.create({
   cardName: {
     fontSize: 16,
     fontWeight: "700",
-    fontFamily: "Times New Roman",
     color: "#1B1B1B",
+    // No fontFamily - uses system default (SF Pro/Roboto)
   },
   cardMeta: {
     marginTop: 2,
     fontSize: 11,
-    fontFamily: "Times New Roman",
     color: "#777",
+    // No fontFamily - uses system default (SF Pro/Roboto)
   },
   pill: {
     backgroundColor: "#EEF8F1",
@@ -550,7 +534,7 @@ const styles = StyleSheet.create({
     color: "#1E8E3E",
     fontWeight: "700",
     fontSize: 12,
-    fontFamily: "Times New Roman",
+    // No fontFamily - uses system default (SF Pro/Roboto)
   },
   cardGrid: {
     flexDirection: "row",
@@ -565,17 +549,17 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 12,
     fontWeight: "700",
-    fontFamily: "Times New Roman",
     color: "#666",
     textTransform: "uppercase",
     letterSpacing: 0.5,
+    // No fontFamily - uses system default (SF Pro/Roboto)
   },
   value: {
     marginTop: 6,
     fontSize: 14,
     fontWeight: "600",
-    fontFamily: "Times New Roman",
     color: "#1B1B1B",
+    // No fontFamily - uses system default (SF Pro/Roboto)
   },
   viewButton: {
     marginTop: 14,
@@ -590,8 +574,8 @@ const styles = StyleSheet.create({
     marginRight: 6,
     color: "#fff",
     fontSize: 14,
-    fontFamily: "Times New Roman",
     fontWeight: "700",
+    // No fontFamily - uses system default (SF Pro/Roboto)
   },
   backdrop: {
     flex: 1,
@@ -607,15 +591,15 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 22,
     fontWeight: "800",
-    fontFamily: "Times New Roman",
     color: "#1B1B1B",
+    // No fontFamily - uses system default (SF Pro/Roboto)
   },
   modalSubtitle: {
     marginTop: 6,
     marginBottom: 16,
     fontSize: 13,
-    fontFamily: "Times New Roman",
     color: "#666",
+    // No fontFamily - uses system default (SF Pro/Roboto)
   },
   detailRow: {
     marginBottom: 12,
@@ -626,17 +610,17 @@ const styles = StyleSheet.create({
   detailLabel: {
     fontSize: 12,
     fontWeight: "700",
-    fontFamily: "Times New Roman",
     color: "#777",
     textTransform: "uppercase",
     letterSpacing: 0.5,
     marginBottom: 4,
+    // No fontFamily - uses system default (SF Pro/Roboto)
   },
   detailValue: {
     fontSize: 15,
     fontWeight: "600",
-    fontFamily: "Times New Roman",
     color: "#1B1B1B",
+    // No fontFamily - uses system default (SF Pro/Roboto)
   },
   closeButton: {
     marginTop: 6,
@@ -649,7 +633,7 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontWeight: "800",
     fontSize: 15,
-    fontFamily: "Times New Roman",
+    // No fontFamily - uses system default (SF Pro/Roboto)
   },
   roleBadgeBlue: {
     alignSelf: "flex-start",
@@ -662,7 +646,7 @@ const styles = StyleSheet.create({
   roleBadgeBlueText: {
     color: "#1F63C6",
     fontSize: 10,
-    fontFamily: "Times New Roman",
     fontWeight: "700",
+    // No fontFamily - uses system default (SF Pro/Roboto)
   },
 });

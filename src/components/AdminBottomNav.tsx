@@ -41,7 +41,7 @@ export default function AdminBottomNav({ activeRoute }: AdminBottomNavProps) {
     },
     {
       key: "analytics",
-      label: "analytics",
+      label: "Analytics",
       activeIcon: "bar-chart",
       inactiveIcon: "bar-chart-outline",
       path: "/(admin)/analytics",
@@ -103,13 +103,13 @@ const styles = StyleSheet.create({
     marginTop: 4,
     color: "#1E4867",
     fontSize: 11,
-    fontFamily: "Times New Roman",
     fontWeight: "700",
+    // No fontFamily - uses system default (SF Pro/Roboto)
   },
   navText: {
     marginTop: 4,
     color: "#666",
     fontSize: 11,
-    fontFamily: "Times New Roman",
+    // No fontFamily - uses system default (SF Pro/Roboto)
   },
 });

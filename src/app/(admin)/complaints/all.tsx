@@ -1,10 +1,10 @@
 import AdminBottomNav from "@/components/AdminBottomNav";
 import { dummyComplaints } from "@/components/store/store_complaint";
 import { MaterialIcons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import { useMemo, useState } from "react";
 import {
   Image,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
@@ -36,57 +36,78 @@ const theme = {
   onSecondaryContainer: "#713b00",
 };
 
+type ComplaintsListProps = {
+  reviewMode?: boolean;
+};
+
 export default function AllComplaintsScreen() {
+  return <ComplaintsListScreen />;
+}
+
+export function ComplaintsListScreen({ reviewMode = false }: ComplaintsListProps) {
+  const router = useRouter();
   const [activeFilter, setActiveFilter] = useState<ComplaintFilter>("All");
+  const [complaints, setComplaints] = useState(dummyComplaints);
 
   const filteredComplaints = useMemo(() => {
     if (activeFilter === "All") {
-      return dummyComplaints;
+      return complaints;
     }
-    return dummyComplaints.filter(
-      (complaint) => complaint.status.toUpperCase() === activeFilter.toUpperCase(),
+    return complaints.filter(
+      (complaint) =>
+        complaint.status.toUpperCase() === activeFilter.toUpperCase(),
     );
-  }, [activeFilter]);
+  }, [activeFilter, complaints]);
+
+  const removeFromReview = (complaintId: string) => {
+    setComplaints((current) => current.filter((complaint) => complaint.id !== complaintId));
+  };
 
   return (
-    <SafeAreaView style={styles.container}>
-      {/* TopAppBar */}
-      <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <TouchableOpacity style={styles.iconButton}>
-            <MaterialIcons name="menu" size={24} color={theme.primary} />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Nogor Shomadhan</Text>
-        </View>
-        <TouchableOpacity style={styles.iconButton}>
-          <MaterialIcons name="notifications" size={24} color={theme.primary} />
-        </TouchableOpacity>
-      </View>
-
+    <View style={styles.container}>
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.content}
       >
         {/* Header Section */}
         <View style={styles.pageIntro}>
-          <Text style={styles.title}>All Complaints</Text>
+          <Text style={styles.title}>{reviewMode ? "Review Complaints" : "All Complaints"}</Text>
           <Text style={styles.subtitle}>
-            Track and manage reported city issues.
+            {reviewMode
+              ? "Verify newly submitted resident reports before they enter the system."
+              : "Track and manage reported city issues."}
           </Text>
         </View>
 
         {/* Filter Tabs */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterScroll} contentContainerStyle={styles.filterContainer}>
-          {(["All", "Pending", "In Progress", "Resolved"] as ComplaintFilter[]).map((filter) => {
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.filterScroll}
+          contentContainerStyle={styles.filterContainer}
+        >
+          {(
+            ["All", "Pending", "In Progress", "Resolved"] as ComplaintFilter[]
+          ).map((filter) => {
             const isActive = activeFilter === filter;
             return (
               <TouchableOpacity
                 key={filter}
-                style={[styles.filterBtn, isActive ? styles.activeFilter : styles.inactiveFilter]}
+                style={[
+                  styles.filterBtn,
+                  isActive ? styles.activeFilter : styles.inactiveFilter,
+                ]}
                 onPress={() => setActiveFilter(filter)}
                 activeOpacity={0.8}
               >
-                <Text style={[styles.filterText, isActive ? styles.activeFilterText : styles.inactiveFilterText]}>
+                <Text
+                  style={[
+                    styles.filterText,
+                    isActive
+                      ? styles.activeFilterText
+                      : styles.inactiveFilterText,
+                  ]}
+                >
                   {filter}
                 </Text>
               </TouchableOpacity>
@@ -98,33 +119,44 @@ export default function AllComplaintsScreen() {
         <View style={styles.listContainer}>
           {filteredComplaints.length === 0 ? (
             <View style={styles.emptyState}>
-              <MaterialIcons name="error-outline" size={64} color={theme.outlineVariant} style={{ marginBottom: 16 }} />
+              <MaterialIcons
+                name="error-outline"
+                size={64}
+                color={theme.outlineVariant}
+                style={{ marginBottom: 16 }}
+              />
               <Text style={styles.emptyTitle}>No complaints found</Text>
-              <Text style={styles.emptyDesc}>There are no reports in this category.</Text>
+              <Text style={styles.emptyDesc}>
+                There are no reports in this category.
+              </Text>
             </View>
           ) : (
             filteredComplaints.map((item) => {
               // Status colors mapping
+              const displayStatus = reviewMode ? "PENDING" : item.status;
               let badgeBg = theme.pendingBg;
               let badgeText = theme.pendingText;
               let statusLabel = "Pending";
-              if (item.status === "IN PROGRESS") {
+              if (displayStatus === "IN PROGRESS") {
                 badgeBg = theme.progressBg;
                 badgeText = theme.progressText;
                 statusLabel = "In Progress";
-              } else if (item.status === "RESOLVED") {
+              } else if (displayStatus === "RESOLVED") {
                 badgeBg = theme.resolvedBg;
                 badgeText = theme.resolvedText;
                 statusLabel = "Resolved";
               }
 
               // Icon mapping from string to MaterialIcons
-              let materialIcon: keyof typeof MaterialIcons.glyphMap = "report-problem";
+              let materialIcon: keyof typeof MaterialIcons.glyphMap =
+                "report-problem";
               if (item.icon.includes("water")) materialIcon = "water-drop";
-              if (item.icon.includes("construct")) materialIcon = "construction";
+              if (item.icon.includes("construct"))
+                materialIcon = "construction";
               if (item.icon.includes("bulb")) materialIcon = "lightbulb";
               if (item.icon.includes("trash")) materialIcon = "delete";
-              if (item.icon.includes("bicycle") || item.icon.includes("car")) materialIcon = "directions-car";
+              if (item.icon.includes("bicycle") || item.icon.includes("car"))
+                materialIcon = "directions-car";
               if (item.icon.includes("leaf")) materialIcon = "park";
               if (item.icon.includes("paw")) materialIcon = "pets";
               if (item.icon.includes("warning")) materialIcon = "warning";
@@ -134,20 +166,35 @@ export default function AllComplaintsScreen() {
                   <View style={styles.cardHeader}>
                     <View style={styles.cardHeaderLeft}>
                       <View style={styles.iconCircle}>
-                        <MaterialIcons name={materialIcon} size={24} color={theme.primary} />
+                        <MaterialIcons
+                          name={materialIcon}
+                          size={24}
+                          color={theme.primary}
+                        />
                       </View>
                       <View style={styles.titleArea}>
                         <Text style={styles.cardTitle}>{item.title}</Text>
-                        <Text style={styles.cardMeta}>{item.date} • #CMP-{item.id.padStart(4, '0')}</Text>
+                        <Text style={styles.cardMeta}>
+                          {item.date} • #CMP-{item.id.padStart(4, "0")}
+                        </Text>
                       </View>
                     </View>
-                    <View style={[styles.statusBadge, { backgroundColor: badgeBg }]}>
-                      <Text style={[styles.statusBadgeText, { color: badgeText }]}>{statusLabel}</Text>
+                    <View
+                      style={[styles.statusBadge, { backgroundColor: badgeBg }]}
+                    >
+                      <Text
+                        style={[styles.statusBadgeText, { color: badgeText }]}
+                      >
+                        {statusLabel}
+                      </Text>
                     </View>
                   </View>
 
                   {item.image && (
-                    <Image source={{ uri: item.image }} style={styles.evidenceImage} />
+                    <Image
+                      source={{ uri: item.image }}
+                      style={styles.evidenceImage}
+                    />
                   )}
 
                   <Text style={styles.cardDesc} numberOfLines={2}>
@@ -155,15 +202,40 @@ export default function AllComplaintsScreen() {
                   </Text>
 
                   <View style={styles.actionRow}>
-                    <TouchableOpacity style={styles.viewBtn}>
+                    <TouchableOpacity
+                      style={styles.viewBtn}
+                      onPress={() =>
+                        router.push({
+                          pathname: "/(admin)/complaints/[complaintId]",
+                          params: { complaintId: `CMP-${item.id.padStart(4, "0")}` },
+                        } as never)
+                      }
+                    >
                       <Text style={styles.viewBtnText}>View Details</Text>
                     </TouchableOpacity>
-                    {item.status === "IN PROGRESS" && (
+                    {reviewMode ? (
+                      <>
+                        <TouchableOpacity
+                          style={styles.acceptBtn}
+                          onPress={() => removeFromReview(item.id)}
+                        >
+                          <MaterialIcons name="check" size={16} color="#FFFFFF" />
+                          <Text style={styles.acceptBtnText}>Accept</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={styles.deleteBtn}
+                          onPress={() => removeFromReview(item.id)}
+                        >
+                          <MaterialIcons name="delete-outline" size={16} color="#B42318" />
+                          <Text style={styles.deleteBtnText}>Delete</Text>
+                        </TouchableOpacity>
+                      </>
+                    ) : item.status === "IN PROGRESS" && (
                       <TouchableOpacity style={styles.trackBtn}>
                         <Text style={styles.trackBtnText}>Track Team</Text>
                       </TouchableOpacity>
                     )}
-                    {item.status === "RESOLVED" && (
+                    {!reviewMode && item.status === "RESOLVED" && (
                       <TouchableOpacity style={styles.closedBtn} disabled>
                         <Text style={styles.closedBtnText}>Case Closed</Text>
                       </TouchableOpacity>
@@ -178,11 +250,15 @@ export default function AllComplaintsScreen() {
 
       {/* Floating Action Button */}
       <TouchableOpacity style={styles.fab}>
-        <MaterialIcons name="add" size={28} color={theme.onSecondaryContainer} />
+        <MaterialIcons
+          name="add"
+          size={28}
+          color={theme.onSecondaryContainer}
+        />
       </TouchableOpacity>
 
       <AdminBottomNav activeRoute="complaints" />
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -211,10 +287,10 @@ const styles = StyleSheet.create({
     borderRadius: 999,
   },
   headerTitle: {
-    fontFamily: "Inter",
     fontSize: 24,
     fontWeight: "600",
     color: theme.primary,
+    // No fontFamily - uses system default (SF Pro/Roboto)
   },
   content: {
     paddingTop: 24,
@@ -225,17 +301,17 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   title: {
-    fontFamily: "Inter",
     fontSize: 32,
     fontWeight: "700",
     color: theme.primary,
     marginBottom: 4,
     letterSpacing: -0.5,
+    // No fontFamily - uses system default (SF Pro/Roboto)
   },
   subtitle: {
-    fontFamily: "Inter",
     fontSize: 14,
     color: theme.onSurfaceVariant,
+    // No fontFamily - uses system default (SF Pro/Roboto)
   },
   filterScroll: {
     marginBottom: 24,
@@ -250,8 +326,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 999,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   activeFilter: {
     backgroundColor: theme.primary,
@@ -265,9 +341,9 @@ const styles = StyleSheet.create({
     backgroundColor: theme.surfaceContainer,
   },
   filterText: {
-    fontFamily: "Inter",
     fontSize: 12,
     fontWeight: "600",
+    // No fontFamily - uses system default (SF Pro/Roboto)
   },
   activeFilterText: {
     color: "#fff",
@@ -316,17 +392,17 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   cardTitle: {
-    fontFamily: "Inter",
     fontSize: 20,
     fontWeight: "600",
     color: theme.onSurface,
+    // No fontFamily - uses system default (SF Pro/Roboto)
   },
   cardMeta: {
-    fontFamily: "Inter",
     fontSize: 12,
     fontWeight: "600",
     color: theme.outline,
     marginTop: 2,
+    // No fontFamily - uses system default (SF Pro/Roboto)
   },
   statusBadge: {
     paddingHorizontal: 12,
@@ -334,9 +410,9 @@ const styles = StyleSheet.create({
     borderRadius: 999,
   },
   statusBadgeText: {
-    fontFamily: "Inter",
     fontSize: 12,
     fontWeight: "600",
+    // No fontFamily - uses system default (SF Pro/Roboto)
   },
   evidenceImage: {
     width: "100%",
@@ -346,11 +422,11 @@ const styles = StyleSheet.create({
     backgroundColor: theme.surfaceContainer,
   },
   cardDesc: {
-    fontFamily: "Inter",
     fontSize: 14,
     color: theme.onSurfaceVariant,
     lineHeight: 20,
     marginBottom: 16,
+    // No fontFamily - uses system default (SF Pro/Roboto)
   },
   actionRow: {
     flexDirection: "row",
@@ -366,10 +442,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   viewBtnText: {
-    fontFamily: "Inter",
     fontSize: 12,
     fontWeight: "600",
     color: theme.primary,
+    // No fontFamily - uses system default (SF Pro/Roboto)
   },
   trackBtn: {
     flex: 1,
@@ -380,11 +456,35 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   trackBtnText: {
-    fontFamily: "Inter",
     fontSize: 12,
     fontWeight: "600",
     color: theme.onPrimaryContainer,
+    // No fontFamily - uses system default (SF Pro/Roboto)
   },
+  acceptBtn: {
+    flex: 1,
+    flexDirection: "row",
+    gap: 4,
+    paddingVertical: 8,
+    borderRadius: 8,
+    backgroundColor: "#16845B",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  acceptBtnText: { color: "#FFFFFF", fontSize: 12, fontWeight: "600" },
+  deleteBtn: {
+    flex: 1,
+    flexDirection: "row",
+    gap: 4,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#FDA29B",
+    backgroundColor: "#FFF1F0",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  deleteBtnText: { color: "#B42318", fontSize: 12, fontWeight: "600" },
   closedBtn: {
     flex: 1,
     paddingVertical: 8,
@@ -394,10 +494,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   closedBtnText: {
-    fontFamily: "Inter",
     fontSize: 12,
     fontWeight: "600",
     color: theme.onSurfaceVariant,
+    // No fontFamily - uses system default (SF Pro/Roboto)
   },
   emptyState: {
     paddingVertical: 64,
@@ -405,19 +505,19 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   emptyTitle: {
-    fontFamily: "Inter",
     fontSize: 20,
     fontWeight: "600",
     color: theme.onSurface,
     marginBottom: 4,
+    // No fontFamily - uses system default (SF Pro/Roboto)
   },
   emptyDesc: {
-    fontFamily: "Inter",
     fontSize: 14,
     color: theme.onSurfaceVariant,
+    // No fontFamily - uses system default (SF Pro/Roboto)
   },
   fab: {
-    position: 'absolute',
+    position: "absolute",
     right: 16,
     bottom: 80,
     backgroundColor: theme.secondaryContainer,
@@ -431,5 +531,5 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 4 },
     elevation: 6,
-  }
+  },
 });

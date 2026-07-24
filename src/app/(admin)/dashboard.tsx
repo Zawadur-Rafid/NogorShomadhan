@@ -1,7 +1,6 @@
 ﻿import Ionicons from "@expo/vector-icons/Ionicons";
 import { useRouter } from "expo-router";
 import {
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
@@ -28,29 +27,11 @@ export default function AdminDashboard() {
   const router = useRouter();
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 30 }}
       >
-        {/* HEADER */}
-
-        <View style={styles.header}>
-          <View style={styles.leftHeader}>
-            <Ionicons name="menu" size={22} color={colors.primary} />
-
-            <Text style={styles.logo}>Nogor Shomadhan</Text>
-          </View>
-
-          <View style={styles.rightHeader}>
-            <Ionicons name="notifications-outline" size={20} color="#B12020" />
-
-            <View style={styles.adminBadge}>
-              <Text style={styles.adminText}>AD</Text>
-            </View>
-          </View>
-        </View>
-
         {/* Pending Verification */}
 
         <View style={styles.card}>
@@ -145,28 +126,6 @@ export default function AdminDashboard() {
           <Ionicons name="chevron-forward" size={24} color="#888" />
         </TouchableOpacity>
 
-        {/* Review Complaints */}
-
-        <TouchableOpacity
-          activeOpacity={0.85}
-          style={styles.actionCard}
-          onPress={() => router.push("/(admin)/complaints/review")}
-        >
-          <View style={styles.actionIconOrange}>
-            <Ionicons name="document-text-outline" size={28} color="#C6761A" />
-          </View>
-
-          <View style={styles.actionContent}>
-            <Text style={styles.actionTitle}>Review Complaints</Text>
-
-            <Text style={styles.actionDescription}>
-              Monitor complaint progress, assign authorities and resolve cases.
-            </Text>
-          </View>
-
-          <Ionicons name="chevron-forward" size={24} color="#888" />
-        </TouchableOpacity>
-
         {/* Registered Accounts */}
 
         <TouchableOpacity
@@ -190,22 +149,67 @@ export default function AdminDashboard() {
           <Ionicons name="chevron-forward" size={24} color="#888" />
         </TouchableOpacity>
 
-        {/* System Settings */}
+        {/* Review Complaints */}
 
         <TouchableOpacity
           activeOpacity={0.85}
           style={styles.actionCard}
-          onPress={() => router.push("/(admin)/settings")}
+          onPress={() => router.push("/(admin)/complaints/review")}
         >
-          <View style={styles.actionIconGray}>
-            <Ionicons name="settings-outline" size={28} color="#555" />
+          <View style={styles.actionIconOrange}>
+            <Ionicons name="document-text-outline" size={28} color="#C6761A" />
           </View>
 
           <View style={styles.actionContent}>
-            <Text style={styles.actionTitle}>System Settings</Text>
+            <Text style={styles.actionTitle}>Review Complaints</Text>
 
             <Text style={styles.actionDescription}>
-              Manage application settings, notifications and user permissions.
+              Monitor complaint progress, assign authorities and resolve cases.
+            </Text>
+          </View>
+
+          <Ionicons name="chevron-forward" size={24} color="#888" />
+        </TouchableOpacity>
+
+        {/* All Complaints */}
+
+        <TouchableOpacity
+          activeOpacity={0.85}
+          style={styles.actionCard}
+          onPress={() => router.push("/(admin)/complaints/all")}
+        >
+          <View style={styles.actionIconOrange}>
+            <Ionicons name="document-text-outline" size={28} color="#C6761A" />
+          </View>
+
+          <View style={styles.actionContent}>
+            <Text style={styles.actionTitle}>All Complaints</Text>
+
+            <Text style={styles.actionDescription}>
+              Monitor complaint progress, assign authorities and resolve cases.
+            </Text>
+          </View>
+
+          <Ionicons name="chevron-forward" size={24} color="#888" />
+        </TouchableOpacity>
+
+        {/* Community Forum */}
+
+        <TouchableOpacity
+          activeOpacity={0.85}
+          style={styles.actionCard}
+          onPress={() => router.push("/(admin)/forum")}
+        >
+          <View style={styles.actionIconBlue}>
+            <Ionicons name="chatbubbles-outline" size={28} color="#1E63C6" />
+          </View>
+
+          <View style={styles.actionContent}>
+            <Text style={styles.actionTitle}>Community Forum</Text>
+
+            <Text style={styles.actionDescription}>
+              Moderate discussions, review reported posts, manage announcements,
+              and engage with residents.
             </Text>
           </View>
 
@@ -235,23 +239,22 @@ export default function AdminDashboard() {
           <Ionicons name="chevron-forward" size={24} color="#888" />
         </TouchableOpacity>
 
-        {/* Community Forum */}
+        {/* System Settings */}
 
         <TouchableOpacity
           activeOpacity={0.85}
           style={styles.actionCard}
-          onPress={() => router.push("/(admin)/forum")}
+          onPress={() => router.push("/(admin)/settings")}
         >
-          <View style={styles.actionIconBlue}>
-            <Ionicons name="chatbubbles-outline" size={28} color="#1E63C6" />
+          <View style={styles.actionIconGray}>
+            <Ionicons name="settings-outline" size={28} color="#555" />
           </View>
 
           <View style={styles.actionContent}>
-            <Text style={styles.actionTitle}>Community Forum</Text>
+            <Text style={styles.actionTitle}>System Settings</Text>
 
             <Text style={styles.actionDescription}>
-              Moderate discussions, review reported posts, manage announcements,
-              and engage with residents.
+              Manage application settings, notifications and user permissions.
             </Text>
           </View>
 
@@ -260,7 +263,7 @@ export default function AdminDashboard() {
       </ScrollView>
 
       <AdminBottomNav activeRoute="home" />
-    </SafeAreaView>
+    </View>
   );
 }
 

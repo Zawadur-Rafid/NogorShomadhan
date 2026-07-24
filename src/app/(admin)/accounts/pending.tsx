@@ -1,7 +1,6 @@
 import AdminBottomNav from "@/components/AdminBottomNav";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import {
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
@@ -30,31 +29,13 @@ const colors = {
 
 export default function VerificationDesk() {
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{
           paddingBottom: 25,
         }}
       >
-        {/* Header */}
-
-        <View style={styles.header}>
-          <View style={styles.headerLeft}>
-            <Ionicons name="menu" size={22} color={colors.primary} />
-
-            <Text style={styles.logo}>Verification Desk</Text>
-          </View>
-
-          <View style={styles.headerRight}>
-            <Ionicons name="notifications-outline" size={20} color="#000" />
-
-            <View style={styles.adminCircle}>
-              <Text style={styles.adminText}>AD</Text>
-            </View>
-          </View>
-        </View>
-
         {/* Pending */}
 
         <View style={styles.statsCard}>
@@ -104,6 +85,7 @@ export default function VerificationDesk() {
             <Text style={styles.bigText}>12 Flags</Text>
           </View>
         </View>
+
         {/* Search */}
 
         <View style={styles.searchBar}>
@@ -211,7 +193,7 @@ export default function VerificationDesk() {
             </View>
 
             <View style={{ flex: 1, marginLeft: 12 }}>
-              <Text style={styles.personName}>Nusrat Jahan Mim</Text>
+              <Text style={styles.personName}>Rafiqul Islam</Text>
 
               <Text style={styles.personInfo}>Resident • ID: BC-1123-990</Text>
 
@@ -239,6 +221,7 @@ export default function VerificationDesk() {
             </TouchableOpacity>
           </View>
         </View>
+
         {/* Load More */}
 
         <TouchableOpacity activeOpacity={0.8} style={styles.loadMoreButton}>
@@ -249,9 +232,10 @@ export default function VerificationDesk() {
       </ScrollView>
 
       <AdminBottomNav activeRoute="users" />
-    </SafeAreaView>
+    </View>
   );
 }
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -275,9 +259,9 @@ const styles = StyleSheet.create({
   logo: {
     marginLeft: 10,
     fontSize: 22,
-    fontFamily: "Times New Roman",
     fontWeight: "700",
     color: colors.text,
+    // No fontFamily - uses system default (SF Pro/Roboto)
   },
 
   headerRight: {
@@ -298,8 +282,8 @@ const styles = StyleSheet.create({
   adminText: {
     fontSize: 13,
     color: colors.primary,
-    fontFamily: "Times New Roman",
     fontWeight: "700",
+    // No fontFamily - uses system default (SF Pro/Roboto)
   },
 
   statsCard: {
@@ -351,16 +335,16 @@ const styles = StyleSheet.create({
   smallLabel: {
     fontSize: 10,
     color: "#666",
-    fontFamily: "Times New Roman",
     fontWeight: "700",
+    // No fontFamily - uses system default (SF Pro/Roboto)
   },
 
   bigText: {
     marginTop: 2,
     fontSize: 28,
     color: "#222",
-    fontFamily: "Times New Roman",
     fontWeight: "700",
+    // No fontFamily - uses system default (SF Pro/Roboto)
   },
 
   searchBar: {
@@ -379,7 +363,7 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     color: "#8A8A8A",
     fontSize: 13,
-    fontFamily: "Times New Roman",
+    // No fontFamily - uses system default (SF Pro/Roboto)
   },
 
   filterRow: {
@@ -389,32 +373,17 @@ const styles = StyleSheet.create({
     marginBottom: 15,
   },
 
-  activeChip: {
-    backgroundColor: "#23435D",
-    borderRadius: 20,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-  },
-
-  activeChipText: {
-    color: "#fff",
-    fontSize: 11,
-    fontFamily: "Times New Roman",
-    fontWeight: "700",
-  },
-
   chip: {
     backgroundColor: "#E8E8E8",
     borderRadius: 20,
     paddingHorizontal: 16,
     paddingVertical: 8,
-    marginLeft: 8,
   },
 
   chipText: {
     color: "#666",
     fontSize: 11,
-    fontFamily: "Times New Roman",
+    // No fontFamily - uses system default (SF Pro/Roboto)
   },
 
   filterIcon: {
@@ -461,15 +430,15 @@ const styles = StyleSheet.create({
   personName: {
     fontSize: 16,
     color: "#222",
-    fontFamily: "Times New Roman",
     fontWeight: "700",
+    // No fontFamily - uses system default (SF Pro/Roboto)
   },
 
   personInfo: {
     marginTop: 2,
     fontSize: 11,
     color: "#666",
-    fontFamily: "Times New Roman",
+    // No fontFamily - uses system default (SF Pro/Roboto)
   },
 
   roleBadge: {
@@ -484,8 +453,8 @@ const styles = StyleSheet.create({
   roleBadgeText: {
     color: "#8A5A00",
     fontSize: 10,
-    fontFamily: "Times New Roman",
     fontWeight: "700",
+    // No fontFamily - uses system default (SF Pro/Roboto)
   },
 
   roleBadgeBlue: {
@@ -500,25 +469,8 @@ const styles = StyleSheet.create({
   roleBadgeBlueText: {
     color: "#1F63C6",
     fontSize: 10,
-    fontFamily: "Times New Roman",
     fontWeight: "700",
-  },
-
-  documentTitle: {
-    marginTop: 14,
-    marginBottom: 8,
-    fontSize: 12,
-    color: "#444",
-    fontFamily: "Times New Roman",
-    fontWeight: "700",
-  },
-
-  documentImage: {
-    height: 80,
-    backgroundColor: "#F3F3F3",
-    borderRadius: 8,
-    justifyContent: "center",
-    alignItems: "center",
+    // No fontFamily - uses system default (SF Pro/Roboto)
   },
 
   buttonRow: {
@@ -542,8 +494,8 @@ const styles = StyleSheet.create({
     marginLeft: 5,
     color: "#C0392B",
     fontSize: 14,
-    fontFamily: "Times New Roman",
     fontWeight: "700",
+    // No fontFamily - uses system default (SF Pro/Roboto)
   },
 
   approveButton: {
@@ -560,8 +512,8 @@ const styles = StyleSheet.create({
     marginLeft: 5,
     color: "#fff",
     fontSize: 14,
-    fontFamily: "Times New Roman",
     fontWeight: "700",
+    // No fontFamily - uses system default (SF Pro/Roboto)
   },
 
   loadMoreButton: {
@@ -579,45 +531,7 @@ const styles = StyleSheet.create({
     marginRight: 6,
     color: "#666",
     fontSize: 13,
-    fontFamily: "Times New Roman",
     fontWeight: "700",
-  },
-
-  bottomNavigation: {
-    height: 68,
-    backgroundColor: "#fff",
-    borderTopWidth: 1,
-    borderTopColor: "#E8E8E8",
-    flexDirection: "row",
-    justifyContent: "space-around",
-    alignItems: "center",
-  },
-
-  navItem: {
-    alignItems: "center",
-  },
-
-  activeNavIcon: {
-    backgroundColor: "#23435D",
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-
-  navText: {
-    marginTop: 4,
-    color: "#666",
-    fontSize: 11,
-    fontFamily: "Times New Roman",
-  },
-
-  activeNavText: {
-    marginTop: 4,
-    color: "#23435D",
-    fontSize: 11,
-    fontFamily: "Times New Roman",
-    fontWeight: "700",
+    // No fontFamily - uses system default (SF Pro/Roboto)
   },
 });
