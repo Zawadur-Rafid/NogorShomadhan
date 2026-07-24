@@ -1,12 +1,12 @@
 ﻿import Ionicons from "@expo/vector-icons/Ionicons";
 import { useRouter } from "expo-router";
 import {
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 import AdminBottomNav from "@/components/AdminBottomNav";
@@ -55,7 +55,7 @@ export default function AdminDashboard() {
 
         <View style={styles.card}>
           <View style={{ flex: 1 }}>
-            <Text style={styles.cardLabel}>PENDING ACCOUNNT VERIFICATIONS</Text>
+            <Text style={styles.cardLabel}>PENDING ACCOUNT VERIFICATIONS</Text>
 
             <Text style={styles.bigNumber}>14</Text>
 
@@ -75,7 +75,7 @@ export default function AdminDashboard() {
           </View>
         </View>
 
-        {/* System Health */}
+        {/* Pending Complaint Verification */}
 
         <View style={styles.card}>
           <View style={{ flex: 1 }}>
@@ -118,6 +118,7 @@ export default function AdminDashboard() {
         {/* Administrative Actions */}
 
         <Text style={styles.sectionTitle}>Administrative Actions</Text>
+
         {/* Verify Accounts */}
 
         <TouchableOpacity
@@ -146,7 +147,11 @@ export default function AdminDashboard() {
 
         {/* Review Complaints */}
 
-        <TouchableOpacity activeOpacity={0.85} style={styles.actionCard}>
+        <TouchableOpacity
+          activeOpacity={0.85}
+          style={styles.actionCard}
+          onPress={() => router.push("/(admin)/complaints/review")}
+        >
           <View style={styles.actionIconOrange}>
             <Ionicons name="document-text-outline" size={28} color="#C6761A" />
           </View>
@@ -187,7 +192,11 @@ export default function AdminDashboard() {
 
         {/* System Settings */}
 
-        <TouchableOpacity activeOpacity={0.85} style={styles.actionCard}>
+        <TouchableOpacity
+          activeOpacity={0.85}
+          style={styles.actionCard}
+          onPress={() => router.push("/(admin)/settings")}
+        >
           <View style={styles.actionIconGray}>
             <Ionicons name="settings-outline" size={28} color="#555" />
           </View>
@@ -227,7 +236,12 @@ export default function AdminDashboard() {
         </TouchableOpacity>
 
         {/* Community Forum */}
-        <TouchableOpacity activeOpacity={0.85} style={styles.actionCard}>
+
+        <TouchableOpacity
+          activeOpacity={0.85}
+          style={styles.actionCard}
+          onPress={() => router.push("/(admin)/forum")}
+        >
           <View style={styles.actionIconBlue}>
             <Ionicons name="chatbubbles-outline" size={28} color="#1E63C6" />
           </View>
@@ -249,6 +263,7 @@ export default function AdminDashboard() {
     </SafeAreaView>
   );
 }
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -273,8 +288,8 @@ const styles = StyleSheet.create({
     marginLeft: 10,
     fontSize: 20,
     fontWeight: "700",
-    fontFamily: "Times New Roman",
     color: colors.primary,
+    // No fontFamily - uses system default (SF Pro/Roboto)
   },
 
   rightHeader: {
@@ -295,8 +310,8 @@ const styles = StyleSheet.create({
   adminText: {
     fontSize: 13,
     fontWeight: "700",
-    fontFamily: "Times New Roman",
     color: colors.primary,
+    // No fontFamily - uses system default (SF Pro/Roboto)
   },
 
   card: {
@@ -322,17 +337,17 @@ const styles = StyleSheet.create({
   cardLabel: {
     fontSize: 12,
     fontWeight: "700",
-    fontFamily: "Times New Roman",
     color: "#666",
     letterSpacing: 1,
+    // No fontFamily - uses system default (SF Pro/Roboto)
   },
 
   bigNumber: {
     marginTop: 5,
     fontSize: 30,
     fontWeight: "700",
-    fontFamily: "Times New Roman",
     color: "#222",
+    // No fontFamily - uses system default (SF Pro/Roboto)
   },
 
   warningRow: {
@@ -344,15 +359,15 @@ const styles = StyleSheet.create({
   warningText: {
     marginLeft: 5,
     fontSize: 12,
-    fontFamily: "Times New Roman",
     color: "#C0392B",
+    // No fontFamily - uses system default (SF Pro/Roboto)
   },
 
   greenText: {
     marginTop: 8,
     fontSize: 12,
-    fontFamily: "Times New Roman",
     color: "#1E8E3E",
+    // No fontFamily - uses system default (SF Pro/Roboto)
   },
 
   blueCircle: {
@@ -379,8 +394,8 @@ const styles = StyleSheet.create({
     marginBottom: 14,
     fontSize: 22,
     fontWeight: "700",
-    fontFamily: "Times New Roman",
     color: "#1F2937",
+    // No fontFamily - uses system default (SF Pro/Roboto)
   },
 
   actionCard: {
@@ -413,16 +428,16 @@ const styles = StyleSheet.create({
   actionTitle: {
     fontSize: 17,
     fontWeight: "700",
-    fontFamily: "Times New Roman",
     color: "#222",
+    // No fontFamily - uses system default (SF Pro/Roboto)
   },
 
   actionDescription: {
     marginTop: 5,
     fontSize: 13,
     lineHeight: 19,
-    fontFamily: "Times New Roman",
     color: "#666",
+    // No fontFamily - uses system default (SF Pro/Roboto)
   },
 
   actionIconBlue: {
