@@ -40,8 +40,22 @@ export default function ComplaintDetailScreen() {
   // Find complaint by ID or default to first
   const complaint = dummyComplaints.find((item) => item.id === complaintId) || dummyComplaints[0];
 
+  // Images list handling
+  const imageList = complaint.images && complaint.images.length > 0 
+    ? complaint.images 
+    : (complaint.image ? [complaint.image] : []);
+
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [urgencyCount, setUrgencyCount] = useState(complaint.urgencyCount);
   const [hasVotedUrgency, setHasVotedUrgency] = useState(false);
+
+  const handlePrevImage = () => {
+    setCurrentImageIndex((prev) => (prev > 0 ? prev - 1 : imageList.length - 1));
+  };
+
+  const handleNextImage = () => {
+    setCurrentImageIndex((prev) => (prev < imageList.length - 1 ? prev + 1 : 0));
+  };
 
   const handleUrgencyUpvote = () => {
     if (hasVotedUrgency) {
@@ -77,6 +91,7 @@ export default function ComplaintDetailScreen() {
   if (complaint.category === 'Parks & Recreation') categoryIcon = 'park';
   if (complaint.category === 'Public Safety') categoryIcon = 'shield';
   if (complaint.category === 'Drainage System') categoryIcon = 'water-damage';
+  if (complaint.category === 'Electricity') categoryIcon = 'flash-on';
 
   return (
     <SafeAreaView style={styles.container}>
@@ -91,22 +106,67 @@ export default function ComplaintDetailScreen() {
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
         
-        {/* Evidence Picture Header */}
+        {/* Evidence Picture Gallery Header */}
         <View style={styles.imageCard}>
-          {complaint.image ? (
-            <Image source={{ uri: complaint.image }} style={styles.evidenceImage} resizeMode="cover" />
+          {imageList.length > 0 ? (
+            <Image 
+              source={{ uri: imageList[currentImageIndex] }} 
+              style={styles.evidenceImage} 
+              resizeMode="cover" 
+            />
           ) : (
             <View style={styles.noImagePlaceholder}>
               <MaterialIcons name="image-not-supported" size={48} color={theme.outline} />
               <Text style={styles.noImageText}>No evidence photo uploaded</Text>
             </View>
           )}
+
+          {/* Navigation Controls Overlay for Multiple Images */}
+          {imageList.length > 1 && (
+            <>
+              <TouchableOpacity style={styles.prevButton} onPress={handlePrevImage} activeOpacity={0.8}>
+                <MaterialIcons name="chevron-left" size={32} color="#FFF" />
+              </TouchableOpacity>
+              
+              <TouchableOpacity style={styles.nextButton} onPress={handleNextImage} activeOpacity={0.8}>
+                <MaterialIcons name="chevron-right" size={32} color="#FFF" />
+              </TouchableOpacity>
+
+              {/* Image Counter Badge */}
+              <View style={styles.imageCounterBadge}>
+                <MaterialIcons name="photo-library" size={14} color="#FFF" />
+                <Text style={styles.imageCounterText}>
+                  {currentImageIndex + 1} / {imageList.length}
+                </Text>
+              </View>
+            </>
+          )}
+
+          {/* Status Badge Overlay */}
           <View style={styles.imageBadgeOverlay}>
             <View style={[styles.statusBadge, { backgroundColor: badgeBg }]}>
               <Text style={[styles.statusBadgeText, { color: badgeText }]}>{statusLabel}</Text>
             </View>
           </View>
         </View>
+
+        {/* Thumbnails Bar when multiple images exist */}
+        {imageList.length > 1 && (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.thumbnailScroll}>
+            {imageList.map((imgUri, index) => (
+              <TouchableOpacity
+                key={index}
+                style={[
+                  styles.thumbnailWrapper,
+                  currentImageIndex === index && styles.activeThumbnailWrapper,
+                ]}
+                onPress={() => setCurrentImageIndex(index)}
+              >
+                <Image source={{ uri: imgUri }} style={styles.thumbnailImage} />
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        )}
 
         {/* Title & Metadata Card */}
         <View style={styles.card}>
@@ -183,7 +243,7 @@ export default function ComplaintDetailScreen() {
 
         {/* Evidence Details */}
         <View style={styles.card}>
-          <Text style={styles.sectionHeading}>EVIDENCE ATTACHMENT</Text>
+          <Text style={styles.sectionHeading}>EVIDENCE ATTACHMENTS ({imageList.length} Photos)</Text>
           <View style={styles.evidenceContainer}>
             <MaterialIcons name="verified" size={20} color={theme.primary} />
             <Text style={styles.evidenceText}>{complaint.evidence}</Text>
@@ -231,7 +291,7 @@ const styles = StyleSheet.create({
   },
   imageCard: {
     width: '100%',
-    height: 220,
+    height: 240,
     borderRadius: 16,
     overflow: 'hidden',
     backgroundColor: theme.surfaceContainer,
@@ -254,6 +314,50 @@ const styles = StyleSheet.create({
     color: theme.outline,
     marginTop: 8,
   },
+  prevButton: {
+    position: 'absolute',
+    left: 12,
+    top: '50%',
+    marginTop: -20,
+    backgroundColor: 'rgba(0, 0, 0, 0.55)',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
+  },
+  nextButton: {
+    position: 'absolute',
+    right: 12,
+    top: '50%',
+    marginTop: -20,
+    backgroundColor: 'rgba(0, 0, 0, 0.55)',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
+  },
+  imageCounterBadge: {
+    position: 'absolute',
+    bottom: 12,
+    left: 12,
+    backgroundColor: 'rgba(0, 0, 0, 0.75)',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  imageCounterText: {
+    color: '#FFF',
+    fontFamily: 'Inter',
+    fontSize: 12,
+    fontWeight: '700',
+  },
   imageBadgeOverlay: {
     position: 'absolute',
     top: 12,
@@ -268,6 +372,26 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter',
     fontSize: 12,
     fontWeight: '700',
+  },
+  thumbnailScroll: {
+    flexDirection: 'row',
+    marginTop: -4,
+  },
+  thumbnailWrapper: {
+    width: 64,
+    height: 64,
+    borderRadius: 10,
+    overflow: 'hidden',
+    marginRight: 10,
+    borderWidth: 2,
+    borderColor: 'transparent',
+  },
+  activeThumbnailWrapper: {
+    borderColor: theme.primary,
+  },
+  thumbnailImage: {
+    width: '100%',
+    height: '100%',
   },
   card: {
     backgroundColor: theme.surface,
