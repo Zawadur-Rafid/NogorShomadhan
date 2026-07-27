@@ -4,16 +4,34 @@ import { MaterialIcons } from '@expo/vector-icons';
 import LocationPickerMap from '../../../components/LocationPickerMap';
 import * as ImagePicker from 'expo-image-picker';
 
+const CATEGORIES = [
+  { id: 'ROADS', label: 'Roads & Potholes', icon: 'add-road' },
+  { id: 'DRAINAGE', label: 'Drainage System', icon: 'water-damage' },
+  { id: 'WASTE', label: 'Waste & Garbage', icon: 'delete-outline' },
+  { id: 'STREETLIGHTS', label: 'Streetlights', icon: 'lightbulb-outline' },
+  { id: 'WATER', label: 'Water Supply', icon: 'invert-colors' },
+  { id: 'ELECTRICITY', label: 'Electricity', icon: 'power' },
+  { id: 'OTHER', label: 'Other Issue', icon: 'more-horiz' },
+];
 
+const URGENCY_LEVELS = [
+  { id: 'LOW', label: 'Low', color: '#10B981' },
+  { id: 'MEDIUM', label: 'Medium', color: '#F59E0B' },
+  { id: 'HIGH', label: 'High', color: '#EF4444' },
+  { id: 'CRITICAL', label: 'Critical', color: '#B91C1C' },
+];
 
 export default function NewComplaintForm() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [category, setCategory] = useState('');
+  const [urgency, setUrgency] = useState('MEDIUM');
   const [selectedLocation, setSelectedLocation] = useState<{lat: number, lng: number} | null>(null);
   const [photos, setPhotos] = useState<string[]>([]);
   const [errors, setErrors] = useState({
     title: false,
     description: false,
+    category: false,
     location: false,
     photos: false,
   });
@@ -23,71 +41,80 @@ export default function NewComplaintForm() {
   };
 
   const handleCamera = async () => {
-    const { status } = await ImagePicker.requestCameraPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert('Permission needed', 'Sorry, we need camera permissions to make this work!');
-      return;
-    }
+    try {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission needed', 'Camera permission is required to capture photos of the issue.');
+        return;
+      }
 
-    let result = await ImagePicker.launchCameraAsync({
-      mediaTypes: ['images'],
-      allowsEditing: true,
-      quality: 0.8,
-    });
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        quality: 0.8,
+      });
 
-    if (!result.canceled) {
-      setPhotos([...photos, result.assets[0].uri]);
-      if (errors.photos) setErrors({ ...errors, photos: false });
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        setPhotos(prev => [...prev, result.assets[0].uri]);
+        if (errors.photos) setErrors(prev => ({ ...prev, photos: false }));
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Failed to open camera.');
     }
   };
 
   const handleGallery = async () => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert('Permission needed', 'Sorry, we need media library permissions to make this work!');
-      return;
-    }
+    try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission needed', 'Media library permission is required to select photos.');
+        return;
+      }
 
-    let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      allowsEditing: true,
-      quality: 0.8,
-    });
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        quality: 0.8,
+      });
 
-    if (!result.canceled) {
-      setPhotos([...photos, result.assets[0].uri]);
-      if (errors.photos) setErrors({ ...errors, photos: false });
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        setPhotos(prev => [...prev, result.assets[0].uri]);
+        if (errors.photos) setErrors(prev => ({ ...prev, photos: false }));
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Failed to pick image from gallery.');
     }
   };
 
   const removePhoto = (index: number) => {
-    const newPhotos = [...photos];
-    newPhotos.splice(index, 1);
-    setPhotos(newPhotos);
+    setPhotos(prev => prev.filter((_, i) => i !== index));
   };
 
   const handleSubmit = () => {
     const newErrors = {
       title: title.trim() === '',
       description: description.trim() === '',
+      category: category === '',
       location: selectedLocation === null,
       photos: photos.length === 0,
     };
     setErrors(newErrors);
 
-    if (!newErrors.title && !newErrors.description && !newErrors.location && !newErrors.photos) {
+    if (!newErrors.title && !newErrors.description && !newErrors.category && !newErrors.location && !newErrors.photos) {
       Alert.alert(
-        'Successful', 
-        'Successful. your complaint is in the queue for review',
+        'Submission Successful', 
+        'Your complaint has been logged and queued for review.',
         [
           {
             text: 'OK',
             onPress: () => {
               setTitle('');
               setDescription('');
+              setCategory('');
+              setUrgency('MEDIUM');
               setSelectedLocation(null);
               setPhotos([]);
-              setErrors({ title: false, description: false, location: false, photos: false });
+              setErrors({ title: false, description: false, category: false, location: false, photos: false });
             }
           }
         ]
@@ -108,13 +135,59 @@ export default function NewComplaintForm() {
           value={title}
           onChangeText={(text) => {
             setTitle(text);
-            if (errors.title) setErrors({ ...errors, title: false });
+            if (errors.title) setErrors(prev => ({ ...prev, title: false }));
           }}
         />
         {errors.title && <Text style={styles.errorText}>This field is required</Text>}
       </View>
 
+      {/* Category Selection */}
+      <View style={styles.card}>
+        <Text style={styles.label}>CATEGORY</Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipContainer}>
+          {CATEGORIES.map((cat) => {
+            const isSelected = category === cat.id;
+            return (
+              <TouchableOpacity
+                key={cat.id}
+                style={[styles.chip, isSelected && styles.chipSelected]}
+                onPress={() => {
+                  setCategory(cat.id);
+                  if (errors.category) setErrors(prev => ({ ...prev, category: false }));
+                }}
+              >
+                <MaterialIcons name={cat.icon as any} size={18} color={isSelected ? '#FFF' : '#40484D'} />
+                <Text style={[styles.chipText, isSelected && styles.chipTextSelected]}>{cat.label}</Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+        {errors.category && <Text style={styles.errorText}>Please select a category</Text>}
+      </View>
 
+      {/* Urgency Level */}
+      <View style={styles.card}>
+        <Text style={styles.label}>URGENCY LEVEL</Text>
+        <View style={styles.urgencyContainer}>
+          {URGENCY_LEVELS.map((u) => {
+            const isSelected = urgency === u.id;
+            return (
+              <TouchableOpacity
+                key={u.id}
+                style={[
+                  styles.urgencyButton,
+                  isSelected && { backgroundColor: u.color, borderColor: u.color }
+                ]}
+                onPress={() => setUrgency(u.id)}
+              >
+                <Text style={[styles.urgencyText, isSelected && styles.urgencyTextSelected]}>
+                  {u.label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      </View>
 
       {/* Description Field */}
       <View style={styles.card}>
@@ -129,7 +202,7 @@ export default function NewComplaintForm() {
           value={description}
           onChangeText={(text) => {
             setDescription(text);
-            if (errors.description) setErrors({ ...errors, description: false });
+            if (errors.description) setErrors(prev => ({ ...prev, description: false }));
           }}
         />
         {errors.description && <Text style={styles.errorText}>This field is required</Text>}
@@ -139,17 +212,19 @@ export default function NewComplaintForm() {
       <View style={styles.card}>
         <View style={styles.locationHeader}>
           <Text style={styles.label}>INCIDENT LOCATION</Text>
-          <TouchableOpacity style={styles.detectButton} onPress={handleClearLocation}>
-            <MaterialIcons name="clear" size={16} color="#EF4444" />
-            <Text style={[styles.detectText, { color: '#EF4444' }]}>CLEAR LOCATION</Text>
-          </TouchableOpacity>
+          {selectedLocation && (
+            <TouchableOpacity style={styles.detectButton} onPress={handleClearLocation}>
+              <MaterialIcons name="clear" size={16} color="#EF4444" />
+              <Text style={[styles.detectText, { color: '#EF4444' }]}>CLEAR LOCATION</Text>
+            </TouchableOpacity>
+          )}
         </View>
         <View style={styles.mapPlaceholder}>
           <LocationPickerMap 
             selectedLocation={selectedLocation} 
             onLocationSelect={(loc) => {
               setSelectedLocation(loc);
-              if (errors.location) setErrors({ ...errors, location: false });
+              if (errors.location) setErrors(prev => ({ ...prev, location: false }));
             }} 
           />
         </View>
@@ -178,7 +253,7 @@ export default function NewComplaintForm() {
         {photos.length > 0 && (
           <View style={styles.selectedPhotosGrid}>
             {photos.map((uri, idx) => (
-              <View key={idx} style={styles.photoPreviewWrapper}>
+              <View key={`${uri}-${idx}`} style={styles.photoPreviewWrapper}>
                 <Image source={{ uri }} style={styles.photoPreview} />
                 <TouchableOpacity style={styles.removePhotoButton} onPress={() => removePhoto(idx)}>
                   <MaterialIcons name="close" size={16} color="#FFF" />
@@ -187,7 +262,7 @@ export default function NewComplaintForm() {
             ))}
           </View>
         )}
-        {errors.photos && <Text style={styles.errorText}>This field is required</Text>}
+        {errors.photos && <Text style={styles.errorText}>At least one photo attachment is required</Text>}
       </View>
 
       {/* Submit Button */}
@@ -238,7 +313,54 @@ const styles = StyleSheet.create({
     color: '#374151',
     fontFamily: 'Inter',
   },
-
+  chipContainer: {
+    flexDirection: 'row',
+    marginBottom: 4,
+  },
+  chip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: '#F3F4F6',
+    marginRight: 8,
+    gap: 6,
+  },
+  chipSelected: {
+    backgroundColor: '#00475E',
+  },
+  chipText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#40484D',
+    fontFamily: 'Inter',
+  },
+  chipTextSelected: {
+    color: '#FFFFFF',
+  },
+  urgencyContainer: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  urgencyButton: {
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    alignItems: 'center',
+    backgroundColor: '#F9FAFB',
+  },
+  urgencyText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#40484D',
+    fontFamily: 'Inter',
+  },
+  urgencyTextSelected: {
+    color: '#FFFFFF',
+  },
   textArea: {
     backgroundColor: '#F9FAFB',
     borderRadius: 8,
@@ -257,7 +379,7 @@ const styles = StyleSheet.create({
   detectButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(35, 67, 93, 0.1)',
+    backgroundColor: 'rgba(239, 68, 68, 0.1)',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 12,
@@ -266,12 +388,12 @@ const styles = StyleSheet.create({
   detectText: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#23435D',
+    color: '#EF4444',
     fontFamily: 'Inter',
   },
   mapPlaceholder: {
     width: '100%',
-    height: 300,
+    height: 260,
     borderRadius: 8,
     overflow: 'hidden',
     marginBottom: 4,
@@ -336,7 +458,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   submitButton: {
-    backgroundColor: '#23435D',
+    backgroundColor: '#00475E',
     flexDirection: 'row',
     paddingVertical: 16,
     borderRadius: 12,

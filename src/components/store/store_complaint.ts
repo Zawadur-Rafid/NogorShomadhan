@@ -1,11 +1,33 @@
-export const dummyComplaints = [
+export interface DummyComplaint {
+  id: string;
+  title: string;
+  description: string;
+  date: string;
+  location: string;
+  status: 'PENDING' | 'IN PROGRESS' | 'RESOLVED';
+  category: string;
+  urgencyCount: number;
+  urgencyLevel: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+  evidence: string; // Description of evidence
+  image: string; // Evidence picture
+  color: string;
+  icon: string;
+  lat: number;
+  lng: number;
+}
+
+export const dummyComplaints: DummyComplaint[] = [
   {
     id: "1",
     title: "Broken Main Pipe",
-    description: "Significant water leakage on Avenue 1 near the mosque.",
+    description: "Significant water leakage on Avenue 1 near the mosque. Water level rising on sidewalk.",
     date: "Oct 24, 2023",
     location: "Avenue 1, Mirpur DOHS",
     status: "PENDING",
+    category: "Water Supply",
+    urgencyCount: 14,
+    urgencyLevel: "HIGH",
+    evidence: "Photo of main pipe water bursting onto public sidewalk near Mosque entrance.",
     color: "#F87171",
     icon: "water-outline",
     lat: 23.8385,
@@ -15,10 +37,14 @@ export const dummyComplaints = [
   {
     id: "2",
     title: "Major Pothole",
-    description: "Deep pothole causing traffic hazards near the central park.",
+    description: "Deep pothole causing traffic hazards near the central park. Requires urgent asphalt resurfacing.",
     date: "Oct 21, 2023",
     location: "Park Area, Mirpur DOHS",
     status: "RESOLVED",
+    category: "Roads & Traffic",
+    urgencyCount: 8,
+    urgencyLevel: "MEDIUM",
+    evidence: "Photo showing 8-inch deep crater on main thoroughfare.",
     color: "#60A5FA",
     icon: "construct-outline",
     lat: 23.8360,
@@ -28,10 +54,14 @@ export const dummyComplaints = [
   {
     id: "3",
     title: "Street Light Failure",
-    description: "Three consecutive lamps are out, making Avenue 3 dark at night.",
+    description: "Three consecutive lamps are out, making Avenue 3 pitch dark at night. Safety hazard for pedestrians.",
     date: "Oct 19, 2023",
     location: "Avenue 3, Mirpur DOHS",
     status: "IN PROGRESS",
+    category: "Streetlights",
+    urgencyCount: 19,
+    urgencyLevel: "HIGH",
+    evidence: "Night photo showing dark street section between poles #12 and #15.",
     color: "#C67B00",
     icon: "bulb-outline",
     lat: 23.8375,
@@ -41,10 +71,14 @@ export const dummyComplaints = [
   {
     id: "4",
     title: "Garbage Overflow",
-    description: "The garbage bin near the community center is overflowing.",
+    description: "The main garbage bin near the community center is overflowing into the street creating foul odor.",
     date: "Oct 26, 2023",
     location: "Community Center, Mirpur DOHS",
     status: "PENDING",
+    category: "Waste Management",
+    urgencyCount: 25,
+    urgencyLevel: "CRITICAL",
+    evidence: "Photo of overflowing dumpster and uncollected waste bags.",
     color: "#F87171",
     icon: "trash-outline",
     lat: 23.8390,
@@ -54,10 +88,14 @@ export const dummyComplaints = [
   {
     id: "5",
     title: "Broken Swing",
-    description: "One of the swings in the children's park is broken and unsafe.",
+    description: "One of the chain swings in the children's park has snapped and has sharp metallic edges exposed.",
     date: "Oct 27, 2023",
     location: "Children's Park, Mirpur DOHS",
     status: "IN PROGRESS",
+    category: "Parks & Recreation",
+    urgencyCount: 6,
+    urgencyLevel: "MEDIUM",
+    evidence: "Photo of broken swing set chain.",
     color: "#C67B00",
     icon: "bicycle-outline",
     lat: 23.8365,
@@ -67,10 +105,14 @@ export const dummyComplaints = [
   {
     id: "6",
     title: "Illegal Parking",
-    description: "Cars are parked illegally on Avenue 5, blocking the pedestrian walkway.",
+    description: "Multiple commercial vehicles parked illegally on Avenue 5, completely blocking pedestrian walkway.",
     date: "Oct 28, 2023",
     location: "Avenue 5, Mirpur DOHS",
     status: "RESOLVED",
+    category: "Roads & Traffic",
+    urgencyCount: 11,
+    urgencyLevel: "LOW",
+    evidence: "Photo of license plates and blocked sidewalk.",
     color: "#60A5FA",
     icon: "car-outline",
     lat: 23.8380,
@@ -79,11 +121,15 @@ export const dummyComplaints = [
   },
   {
     id: "7",
-    title: "Fallen Tree",
-    description: "A large tree fell down after the storm, blocking the sidewalk.",
+    title: "Fallen Tree Branch",
+    description: "A large tree branch fell down during yesterday's rainstorm, blocking half of Avenue 2.",
     date: "Oct 29, 2023",
     location: "Avenue 2, Mirpur DOHS",
     status: "PENDING",
+    category: "Parks & Recreation",
+    urgencyCount: 16,
+    urgencyLevel: "HIGH",
+    evidence: "Photo of fallen branch obstructing northbound lane.",
     color: "#F87171",
     icon: "leaf-outline",
     lat: 23.8355,
@@ -92,11 +138,15 @@ export const dummyComplaints = [
   },
   {
     id: "8",
-    title: "Stray Dogs",
-    description: "A pack of aggressive stray dogs has been chasing pedestrians.",
+    title: "Stray Dogs Aggression",
+    description: "A pack of stray dogs has been chasing school children and residents near Avenue 4 corner.",
     date: "Oct 30, 2023",
     location: "Avenue 4, Mirpur DOHS",
     status: "IN PROGRESS",
+    category: "Public Safety",
+    urgencyCount: 22,
+    urgencyLevel: "CRITICAL",
+    evidence: "Resident video/photo report of dog pack aggregation area.",
     color: "#C67B00",
     icon: "paw-outline",
     lat: 23.8370,
@@ -105,11 +155,15 @@ export const dummyComplaints = [
   },
   {
     id: "9",
-    title: "Open Manhole",
-    description: "An open manhole is posing a severe danger to vehicles and pedestrians.",
+    title: "Open Drainage Manhole",
+    description: "An open manhole without a protective cover is posing a severe hazard to night motorists.",
     date: "Oct 31, 2023",
     location: "Avenue 6, Mirpur DOHS",
     status: "PENDING",
+    category: "Drainage System",
+    urgencyCount: 30,
+    urgencyLevel: "CRITICAL",
+    evidence: "Photo of missing concrete manhole cover.",
     color: "#F87171",
     icon: "warning-outline",
     lat: 23.8395,

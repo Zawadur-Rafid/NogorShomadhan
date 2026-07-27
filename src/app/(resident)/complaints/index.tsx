@@ -1,18 +1,28 @@
 import { MaterialIcons } from "@expo/vector-icons";
 import { useMemo, useState } from "react";
 import {
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
-    Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+  Image,
 } from "react-native";
-import BottomNav from "@/components/BottomNav";
+import { useRouter } from "expo-router";
 import { dummyComplaints } from "@/components/store/store_complaint";
 
-type ComplaintFilter = "All" | "Pending" | "In Progress" | "Resolved";
+type StatusFilter = "All" | "Pending" | "In Progress" | "Resolved";
+
+const CATEGORIES = [
+  "All Categories",
+  "Water Supply",
+  "Roads & Traffic",
+  "Streetlights",
+  "Waste Management",
+  "Parks & Recreation",
+  "Public Safety",
+  "Drainage System",
+];
 
 const theme = {
   background: "#f8f9fc",
@@ -37,16 +47,28 @@ const theme = {
 };
 
 export default function ResidentAllComplaintsScreen() {
-  const [activeFilter, setActiveFilter] = useState<ComplaintFilter>("All");
+  const router = useRouter();
+  const [activeStatusFilter, setActiveStatusFilter] = useState<StatusFilter>("All");
+  const [activeCategoryFilter, setActiveCategoryFilter] = useState<string>("All Categories");
 
   const filteredComplaints = useMemo(() => {
-    if (activeFilter === "All") {
-      return dummyComplaints;
-    }
-    return dummyComplaints.filter(
-      (complaint) => complaint.status.toUpperCase() === activeFilter.toUpperCase(),
-    );
-  }, [activeFilter]);
+    return dummyComplaints.filter((complaint) => {
+      const matchStatus =
+        activeStatusFilter === "All" ||
+        complaint.status.toUpperCase() === activeStatusFilter.toUpperCase();
+      const matchCategory =
+        activeCategoryFilter === "All Categories" ||
+        complaint.category === activeCategoryFilter;
+      return matchStatus && matchCategory;
+    });
+  }, [activeStatusFilter, activeCategoryFilter]);
+
+  const handleOpenDetails = (id: string) => {
+    router.push({
+      pathname: "/(resident)/complaints/[complaintId]",
+      params: { complaintId: id },
+    });
+  };
 
   return (
     <View style={styles.container}>
@@ -58,28 +80,53 @@ export default function ResidentAllComplaintsScreen() {
         <View style={styles.pageIntro}>
           <Text style={styles.title}>All Complaints</Text>
           <Text style={styles.subtitle}>
-            Track and manage reported city issues.
+            Track, filter, and review reported community issues.
           </Text>
         </View>
 
-        {/* Filter Tabs */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterScroll} contentContainerStyle={styles.filterContainer}>
-          {(["All", "Pending", "In Progress", "Resolved"] as ComplaintFilter[]).map((filter) => {
-            const isActive = activeFilter === filter;
-            return (
-              <TouchableOpacity
-                key={filter}
-                style={[styles.filterBtn, isActive ? styles.activeFilter : styles.inactiveFilter]}
-                onPress={() => setActiveFilter(filter)}
-                activeOpacity={0.8}
-              >
-                <Text style={[styles.filterText, isActive ? styles.activeFilterText : styles.inactiveFilterText]}>
-                  {filter}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
+        {/* Status Filter Tabs */}
+        <View style={styles.filterSection}>
+          <Text style={styles.sectionLabel}>STATUS</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterScroll} contentContainerStyle={styles.filterContainer}>
+            {(["All", "Pending", "In Progress", "Resolved"] as StatusFilter[]).map((filter) => {
+              const isActive = activeStatusFilter === filter;
+              return (
+                <TouchableOpacity
+                  key={filter}
+                  style={[styles.filterBtn, isActive ? styles.activeFilter : styles.inactiveFilter]}
+                  onPress={() => setActiveStatusFilter(filter)}
+                  activeOpacity={0.8}
+                >
+                  <Text style={[styles.filterText, isActive ? styles.activeFilterText : styles.inactiveFilterText]}>
+                    {filter}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        </View>
+
+        {/* Category Filter Chips */}
+        <View style={styles.filterSection}>
+          <Text style={styles.sectionLabel}>CATEGORY</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterScroll} contentContainerStyle={styles.filterContainer}>
+            {CATEGORIES.map((cat) => {
+              const isActive = activeCategoryFilter === cat;
+              return (
+                <TouchableOpacity
+                  key={cat}
+                  style={[styles.chipBtn, isActive ? styles.activeChip : styles.inactiveChip]}
+                  onPress={() => setActiveCategoryFilter(cat)}
+                  activeOpacity={0.8}
+                >
+                  <Text style={[styles.chipText, isActive ? styles.activeChipText : styles.inactiveChipText]}>
+                    {cat}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        </View>
 
         {/* Complaint List */}
         <View style={styles.listContainer}>
@@ -87,11 +134,10 @@ export default function ResidentAllComplaintsScreen() {
             <View style={styles.emptyState}>
               <MaterialIcons name="error-outline" size={64} color={theme.outlineVariant} style={{marginBottom: 16}} />
               <Text style={styles.emptyTitle}>No complaints found</Text>
-              <Text style={styles.emptyDesc}>There are no reports in this category.</Text>
+              <Text style={styles.emptyDesc}>There are no reports matching your active filters.</Text>
             </View>
           ) : (
             filteredComplaints.map((item) => {
-              // Status colors mapping
               let badgeBg = theme.pendingBg;
               let badgeText = theme.pendingText;
               let statusLabel = "Pending";
@@ -105,19 +151,22 @@ export default function ResidentAllComplaintsScreen() {
                 statusLabel = "Resolved";
               }
 
-              // Icon mapping from string to MaterialIcons
               let materialIcon: keyof typeof MaterialIcons.glyphMap = "report-problem";
-              if (item.icon.includes("water")) materialIcon = "water-drop";
-              if (item.icon.includes("construct")) materialIcon = "construction";
-              if (item.icon.includes("bulb")) materialIcon = "lightbulb";
-              if (item.icon.includes("trash")) materialIcon = "delete";
-              if (item.icon.includes("bicycle") || item.icon.includes("car")) materialIcon = "directions-car";
-              if (item.icon.includes("leaf")) materialIcon = "park";
-              if (item.icon.includes("paw")) materialIcon = "pets";
-              if (item.icon.includes("warning")) materialIcon = "warning";
+              if (item.category === "Water Supply") materialIcon = "water-drop";
+              if (item.category === "Roads & Traffic") materialIcon = "construction";
+              if (item.category === "Streetlights") materialIcon = "lightbulb";
+              if (item.category === "Waste Management") materialIcon = "delete";
+              if (item.category === "Parks & Recreation") materialIcon = "park";
+              if (item.category === "Public Safety") materialIcon = "shield";
+              if (item.category === "Drainage System") materialIcon = "water-damage";
 
               return (
-                <View key={item.id} style={styles.card}>
+                <TouchableOpacity 
+                  key={item.id} 
+                  style={styles.card} 
+                  activeOpacity={0.9}
+                  onPress={() => handleOpenDetails(item.id)}
+                >
                   <View style={styles.cardHeader}>
                     <View style={styles.cardHeaderLeft}>
                       <View style={styles.iconCircle}>
@@ -125,7 +174,7 @@ export default function ResidentAllComplaintsScreen() {
                       </View>
                       <View style={styles.titleArea}>
                         <Text style={styles.cardTitle}>{item.title}</Text>
-                        <Text style={styles.cardMeta}>{item.date} • #CMP-{item.id.padStart(4, '0')}</Text>
+                        <Text style={styles.cardCategory}>{item.category} • {item.date}</Text>
                       </View>
                     </View>
                     <View style={[styles.statusBadge, { backgroundColor: badgeBg }]}>
@@ -141,30 +190,38 @@ export default function ResidentAllComplaintsScreen() {
                     {item.description}
                   </Text>
                   
-                  <View style={styles.actionRow}>
-                    <TouchableOpacity style={styles.viewBtn}>
-                      <Text style={styles.viewBtnText}>View Details</Text>
-                    </TouchableOpacity>
-                    {item.status === "IN PROGRESS" && (
-                      <TouchableOpacity style={styles.trackBtn}>
-                        <Text style={styles.trackBtnText}>Track Team</Text>
-                      </TouchableOpacity>
-                    )}
-                    {item.status === "RESOLVED" && (
-                      <TouchableOpacity style={styles.closedBtn} disabled>
-                        <Text style={styles.closedBtnText}>Case Closed</Text>
-                      </TouchableOpacity>
-                    )}
+                  <View style={styles.metaRow}>
+                    <View style={styles.locationTag}>
+                      <MaterialIcons name="place" size={16} color={theme.primary} />
+                      <Text style={styles.locationText}>{item.location}</Text>
+                    </View>
+                    <View style={styles.urgencyTag}>
+                      <MaterialIcons name="priority-high" size={16} color="#EF4444" />
+                      <Text style={styles.urgencyText}>{item.urgencyCount} Urgency Votes</Text>
+                    </View>
                   </View>
-                </View>
+
+                  <View style={styles.actionRow}>
+                    <TouchableOpacity 
+                      style={styles.viewBtn}
+                      onPress={() => handleOpenDetails(item.id)}
+                    >
+                      <Text style={styles.viewBtnText}>View Details</Text>
+                      <MaterialIcons name="chevron-right" size={18} color={theme.primary} />
+                    </TouchableOpacity>
+                  </View>
+                </TouchableOpacity>
               );
             })
           )}
         </View>
       </ScrollView>
 
-      {/* Floating Action Button */}
-      <TouchableOpacity style={styles.fab}>
+      {/* Floating Action Button for New Complaint */}
+      <TouchableOpacity 
+        style={styles.fab}
+        onPress={() => router.push("/(resident)/complaints/create")}
+      >
         <MaterialIcons name="add" size={28} color={theme.onSecondaryContainer} />
       </TouchableOpacity>
     </View>
@@ -176,42 +233,17 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: theme.background,
   },
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    height: 64,
-    backgroundColor: theme.surfaceContainerLow,
-    borderBottomWidth: 1,
-    borderBottomColor: theme.outlineVariant + "40",
-  },
-  headerLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 16,
-  },
-  iconButton: {
-    padding: 8,
-    borderRadius: 999,
-  },
-  headerTitle: {
-    fontFamily: "Inter",
-    fontSize: 24,
-    fontWeight: "600",
-    color: theme.primary,
-  },
   content: {
-    paddingTop: 24,
+    paddingTop: 20,
     paddingBottom: 100,
   },
   pageIntro: {
     paddingHorizontal: 16,
-    marginBottom: 24,
+    marginBottom: 16,
   },
   title: {
     fontFamily: "Inter",
-    fontSize: 32,
+    fontSize: 28,
     fontWeight: "700",
     color: theme.primary,
     marginBottom: 4,
@@ -222,14 +254,24 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: theme.onSurfaceVariant,
   },
+  filterSection: {
+    marginBottom: 12,
+  },
+  sectionLabel: {
+    fontFamily: "Inter",
+    fontSize: 11,
+    fontWeight: "700",
+    color: theme.outline,
+    paddingHorizontal: 16,
+    marginBottom: 6,
+    letterSpacing: 0.5,
+  },
   filterScroll: {
-    marginBottom: 24,
     maxHeight: 40,
   },
   filterContainer: {
     paddingHorizontal: 16,
     gap: 8,
-    paddingBottom: 8,
   },
   filterBtn: {
     paddingHorizontal: 16,
@@ -240,11 +282,6 @@ const styles = StyleSheet.create({
   },
   activeFilter: {
     backgroundColor: theme.primary,
-    shadowColor: theme.primary,
-    shadowOpacity: 0.2,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 4,
   },
   inactiveFilter: {
     backgroundColor: theme.surfaceContainer,
@@ -260,9 +297,37 @@ const styles = StyleSheet.create({
   inactiveFilterText: {
     color: theme.onSurfaceVariant,
   },
+  chipBtn: {
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: theme.outlineVariant,
+    backgroundColor: theme.surface,
+  },
+  activeChip: {
+    backgroundColor: theme.primaryContainer,
+    borderColor: theme.primary,
+  },
+  inactiveChip: {
+    backgroundColor: theme.surfaceContainerLow,
+  },
+  chipText: {
+    fontFamily: "Inter",
+    fontSize: 12,
+    fontWeight: "500",
+  },
+  activeChipText: {
+    color: theme.onPrimaryContainer,
+    fontWeight: "700",
+  },
+  inactiveChipText: {
+    color: theme.onSurfaceVariant,
+  },
   listContainer: {
     paddingHorizontal: 16,
     gap: 16,
+    marginTop: 8,
   },
   card: {
     backgroundColor: theme.surface,
@@ -286,14 +351,14 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     flex: 1,
-    gap: 16,
+    gap: 12,
     marginRight: 8,
   },
   iconCircle: {
-    width: 48,
-    height: 48,
+    width: 44,
+    height: 44,
     backgroundColor: theme.primary + "1A", 
-    borderRadius: 24,
+    borderRadius: 22,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -302,26 +367,26 @@ const styles = StyleSheet.create({
   },
   cardTitle: {
     fontFamily: "Inter",
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: "600",
     color: theme.onSurface,
   },
-  cardMeta: {
+  cardCategory: {
     fontFamily: "Inter",
     fontSize: 12,
     fontWeight: "600",
-    color: theme.outline,
+    color: theme.primary,
     marginTop: 2,
   },
   statusBadge: {
-    paddingHorizontal: 12,
+    paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 999,
   },
   statusBadgeText: {
     fontFamily: "Inter",
-    fontSize: 12,
-    fontWeight: "600",
+    fontSize: 11,
+    fontWeight: "700",
   },
   evidenceImage: {
     width: "100%",
@@ -335,54 +400,62 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: theme.onSurfaceVariant,
     lineHeight: 20,
-    marginBottom: 16,
+    marginBottom: 12,
+  },
+  metaRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: theme.surfaceContainer,
+    marginBottom: 12,
+  },
+  locationTag: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    flex: 1,
+  },
+  locationText: {
+    fontFamily: "Inter",
+    fontSize: 12,
+    color: theme.onSurfaceVariant,
+    flex: 1,
+  },
+  urgencyTag: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: "#FEE2E2",
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 12,
+  },
+  urgencyText: {
+    fontFamily: "Inter",
+    fontSize: 11,
+    fontWeight: "700",
+    color: "#B91C1C",
   },
   actionRow: {
     flexDirection: "row",
-    gap: 8,
   },
   viewBtn: {
     flex: 1,
-    paddingVertical: 8,
+    paddingVertical: 10,
     borderRadius: 8,
-    borderWidth: 1,
-    borderColor: theme.outlineVariant,
+    backgroundColor: theme.surfaceContainerLow,
+    flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
+    gap: 4,
   },
   viewBtnText: {
     fontFamily: "Inter",
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: "600",
     color: theme.primary,
-  },
-  trackBtn: {
-    flex: 1,
-    paddingVertical: 8,
-    borderRadius: 8,
-    backgroundColor: theme.primaryContainer,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  trackBtnText: {
-    fontFamily: "Inter",
-    fontSize: 12,
-    fontWeight: "600",
-    color: theme.onPrimaryContainer,
-  },
-  closedBtn: {
-    flex: 1,
-    paddingVertical: 8,
-    borderRadius: 8,
-    backgroundColor: theme.surfaceContainer + "80",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  closedBtnText: {
-    fontFamily: "Inter",
-    fontSize: 12,
-    fontWeight: "600",
-    color: theme.onSurfaceVariant,
   },
   emptyState: {
     paddingVertical: 64,
