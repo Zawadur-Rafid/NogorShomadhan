@@ -36,7 +36,7 @@ export default function BottomNav({ activeRoute }: BottomNavProps) {
       {renderIcon('home', 'home', 'home', 'home-outline', 'Home', '/(resident)/dashboard')}
       {renderIcon('map', 'map', 'map', 'map-outline', 'Map', '/(resident)/map')}
       {renderIcon('complaints', 'complaints', 'document-text', 'document-text-outline', 'Complaints', '/(resident)/complaints')}
-      {renderIcon('data', 'data', 'bar-chart', 'bar-chart-outline', 'Data')}
+      {renderIcon('data', 'data', 'bar-chart', 'bar-chart-outline', 'Data', '/(resident)/analytics')}
       {renderIcon('profile', 'profile', 'person', 'person-outline', 'Profile', '/(resident)/profile')}
     </View>
   );
