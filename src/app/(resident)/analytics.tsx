@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { PieChart, BarChart } from 'react-native-chart-kit';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import TopNav from '../../components/TopNav';
 import BottomNav from '../../components/BottomNav';
 import { dummyComplaints } from '../../components/store/store_complaint';
@@ -127,18 +128,22 @@ export default function Analytics() {
         {/* Summary Cards */}
         <View style={styles.statsGrid}>
           <View style={[styles.statCard, { backgroundColor: '#F3F4F6' }]}>
+            <Ionicons name="document-text-outline" size={18} color="#3B82F6" />
             <Text style={styles.statLabel}>Total</Text>
             <Text style={[styles.statValue, { color: '#111827' }]}>{total}</Text>
           </View>
           <View style={[styles.statCard, { backgroundColor: '#FEF2F2' }]}>
+            <Ionicons name="sad-outline" size={18} color="#EF4444" />
             <Text style={styles.statLabel}>Pending</Text>
             <Text style={[styles.statValue, { color: '#EF4444' }]}>{pending}</Text>
           </View>
           <View style={[styles.statCard, { backgroundColor: '#FFFBEB' }]}>
+            <Ionicons name="people-outline" size={18} color="#C67B00" />
             <Text style={styles.statLabel}>In Progress</Text>
             <Text style={[styles.statValue, { color: '#D97706' }]}>{inProgress}</Text>
           </View>
           <View style={[styles.statCard, { backgroundColor: '#EFF6FF' }]}>
+            <Ionicons name="checkmark-circle-outline" size={18} color="#2563EB" />
             <Text style={styles.statLabel}>Resolved</Text>
             <Text style={[styles.statValue, { color: '#3B82F6' }]}>{resolved}</Text>
           </View>
@@ -183,7 +188,6 @@ export default function Analytics() {
                 showValuesOnTopOfBars={true}
                 segments={segments}
                 withInnerLines={true}
-                formatYLabel={(yValue) => Math.floor(Number(yValue)).toString()}
               />
             </ScrollView>
           ) : (
@@ -226,8 +230,8 @@ const styles = StyleSheet.create({
   },
   tabContainer: {
     flexDirection: 'row',
-    backgroundColor: '#E5E7EB',
-    borderRadius: 24,
+    backgroundColor: '#E8EDF4',
+    borderRadius: 12,
     marginHorizontal: 16,
     padding: 4,
     marginBottom: 24,
@@ -235,26 +239,21 @@ const styles = StyleSheet.create({
   tab: {
     flex: 1,
     paddingVertical: 10,
-    borderRadius: 20,
     alignItems: 'center',
-    justifyContent: 'center',
+    borderRadius: 8,
   },
   activeTab: {
-    backgroundColor: '#FFFFFF',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    backgroundColor: '#23435D',
   },
   tabText: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 11,
+    fontWeight: '700',
     color: '#6B7280',
     fontFamily: 'Inter',
+    textAlign: 'center',
   },
   activeTabText: {
-    color: '#111827',
+    color: '#FFFFFF',
   },
   statsGrid: {
     flexDirection: 'row',
@@ -275,6 +274,7 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   statLabel: {
+    marginTop: 6,
     fontSize: 12,
     fontWeight: '600',
     color: '#4B5563',
