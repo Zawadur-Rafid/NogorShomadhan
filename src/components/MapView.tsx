@@ -9,6 +9,7 @@ export interface ComplaintLocation {
   title: string;
   description: string;
   status: string;
+  urgencyCount?: number;
 }
 
 interface MapViewProps {
@@ -73,18 +74,16 @@ const htmlContent = `
                 });
 
                 var marker = L.marker([item.lat, item.lng], { icon: customIcon }).addTo(map);
-                marker.on('click', function() {
-                    if (window.ReactNativeWebView) {
-                        window.ReactNativeWebView.postMessage(JSON.stringify({
-                            type: 'complaint-marker',
-                            id: item.id
-                        }));
-                    }
-                });
 
-                var popupContent = '<div class="popup-title">' + item.title + '</div>' +
+                var onClickScript = "if(window.ReactNativeWebView) { window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'complaint-marker', id: '" + item.id + "' })); }";
+                
+                var popupContent = '<div onclick="' + onClickScript + '" style="cursor: pointer;">' +
+                                   '<div class="popup-title">' + item.title + '</div>' +
                                    '<div class="popup-status" style="color:' + statusColor + '; background:' + statusBg + ';">' + item.status + '</div>' +
-                                   '<div class="popup-desc">' + item.description + '</div>';
+                                   '<div class="popup-desc">' + item.description + '</div>' +
+                                   (item.urgencyCount !== undefined ? '<div style="color: #EF4444; font-size: 11px; font-weight: bold; margin-bottom: 4px;">🔥 ' + item.urgencyCount + ' Urgency</div>' : '') +
+                                   '<div style="color: #3B82F6; font-size: 10px; font-weight: bold; margin-top: 4px;">Tap for details &rarr;</div>' +
+                                   '</div>';
                 
                 marker.bindPopup(popupContent);
                 markers.push(marker);

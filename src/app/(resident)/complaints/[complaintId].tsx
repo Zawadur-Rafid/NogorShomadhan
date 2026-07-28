@@ -12,6 +12,7 @@ import {
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { dummyComplaints } from '@/components/store/store_complaint';
+import MapViewComponent from '@/components/MapView';
 
 const theme = {
   background: '#f8f9fc',
@@ -25,12 +26,12 @@ const theme = {
   outlineVariant: '#c0c8cd',
   surfaceContainerLow: '#f2f4f6',
   surfaceContainer: '#eceef0',
-  pendingBg: '#ffdcc3',
-  pendingText: '#713b00',
-  progressBg: '#c0e8ff',
-  progressText: '#004d66',
-  resolvedBg: '#d1fadf',
-  resolvedText: '#027a48',
+  pendingBg: '#FEF2F2',
+  pendingText: '#EF4444',
+  progressBg: '#FEF9C3',
+  progressText: '#C67B00',
+  resolvedBg: '#EFF6FF',
+  resolvedText: '#2563EB',
 };
 
 export default function ComplaintDetailScreen() {
@@ -187,6 +188,16 @@ export default function ComplaintDetailScreen() {
           <View style={styles.locationContainer}>
             <MaterialIcons name="location-on" size={20} color="#EF4444" />
             <Text style={styles.locationText}>{complaint.location}</Text>
+          </View>
+        </View>
+
+        {/* Map Card */}
+        <View style={[styles.card, { padding: 0, overflow: 'hidden' }]}>
+          <View style={{ padding: 16, paddingBottom: 12 }}>
+            <Text style={styles.sectionHeading}>LOCATION MAP</Text>
+          </View>
+          <View style={{ height: 200, width: '100%' }}>
+            <MapViewComponent locations={[complaint]} />
           </View>
         </View>
 

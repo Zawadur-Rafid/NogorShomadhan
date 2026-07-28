@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import React, { useState, useMemo } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
@@ -10,13 +10,40 @@ import { dummyComplaints } from '../../components/store/store_complaint';
 
 export default function ResidentMap() {
   const router = useRouter();
+  const [filter, setFilter] = useState('All');
+
+  const filteredComplaints = useMemo(() => {
+    if (filter === 'All') return dummyComplaints;
+    return dummyComplaints.filter(c => c.status === filter.toUpperCase());
+  }, [filter]);
+
+  const filters = ['All', 'Pending', 'In Progress', 'Resolved'];
 
   return (
     <SafeAreaView style={styles.container}>
       <TopNav />
       
+      <View style={styles.filterContainer}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterScroll}>
+          {filters.map((f) => (
+            <TouchableOpacity
+              key={f}
+              style={[styles.filterChip, filter === f && styles.filterChipActive]}
+              onPress={() => setFilter(f)}
+            >
+              <Text style={[styles.filterText, filter === f && styles.filterTextActive]}>
+                {f}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </View>
+
       <View style={styles.mapContainer}>
-        <MapViewComponent locations={dummyComplaints} />
+        <MapViewComponent 
+          locations={filteredComplaints}
+          onLocationPress={(loc) => router.push(`/(resident)/complaints/${loc.id}`)}
+        />
       </View>
 
       {/* Bottom Navigation */}
@@ -41,6 +68,35 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#111827',
     textAlign: 'center',
+  },
+  filterContainer: {
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#ECECEC',
+  },
+  filterScroll: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    gap: 8,
+  },
+  filterChip: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: '#F3F4F6',
+    marginRight: 8,
+  },
+  filterChipActive: {
+    backgroundColor: '#23435D',
+  },
+  filterText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#6B7280',
+    fontFamily: 'Inter',
+  },
+  filterTextActive: {
+    color: '#fff',
   },
   mapContainer: {
     flex: 1,
