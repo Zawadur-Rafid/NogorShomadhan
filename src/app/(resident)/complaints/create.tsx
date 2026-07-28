@@ -4,34 +4,15 @@ import { MaterialIcons } from '@expo/vector-icons';
 import LocationPickerMap from '../../../components/LocationPickerMap';
 import * as ImagePicker from 'expo-image-picker';
 
-const CATEGORIES = [
-  { id: 'ROADS', label: 'Roads & Potholes', icon: 'add-road' },
-  { id: 'DRAINAGE', label: 'Drainage System', icon: 'water-damage' },
-  { id: 'WASTE', label: 'Waste & Garbage', icon: 'delete-outline' },
-  { id: 'STREETLIGHTS', label: 'Streetlights', icon: 'lightbulb-outline' },
-  { id: 'WATER', label: 'Water Supply', icon: 'invert-colors' },
-  { id: 'ELECTRICITY', label: 'Electricity', icon: 'power' },
-  { id: 'OTHER', label: 'Other Issue', icon: 'more-horiz' },
-];
-
-const URGENCY_LEVELS = [
-  { id: 'LOW', label: 'Low', color: '#10B981' },
-  { id: 'MEDIUM', label: 'Medium', color: '#F59E0B' },
-  { id: 'HIGH', label: 'High', color: '#EF4444' },
-  { id: 'CRITICAL', label: 'Critical', color: '#B91C1C' },
-];
 
 export default function NewComplaintForm() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [category, setCategory] = useState('');
-  const [urgency, setUrgency] = useState('MEDIUM');
   const [selectedLocation, setSelectedLocation] = useState<{lat: number, lng: number} | null>(null);
   const [photos, setPhotos] = useState<string[]>([]);
   const [errors, setErrors] = useState({
     title: false,
     description: false,
-    category: false,
     location: false,
     photos: false,
   });
@@ -94,13 +75,12 @@ export default function NewComplaintForm() {
     const newErrors = {
       title: title.trim() === '',
       description: description.trim() === '',
-      category: category === '',
       location: selectedLocation === null,
       photos: photos.length === 0,
     };
     setErrors(newErrors);
 
-    if (!newErrors.title && !newErrors.description && !newErrors.category && !newErrors.location && !newErrors.photos) {
+    if (!newErrors.title && !newErrors.description && !newErrors.location && !newErrors.photos) {
       Alert.alert(
         'Submission Successful', 
         'Your complaint has been logged and queued for review.',
@@ -110,11 +90,9 @@ export default function NewComplaintForm() {
             onPress: () => {
               setTitle('');
               setDescription('');
-              setCategory('');
-              setUrgency('MEDIUM');
               setSelectedLocation(null);
               setPhotos([]);
-              setErrors({ title: false, description: false, category: false, location: false, photos: false });
+              setErrors({ title: false, description: false, location: false, photos: false });
             }
           }
         ]
@@ -141,53 +119,6 @@ export default function NewComplaintForm() {
         {errors.title && <Text style={styles.errorText}>This field is required</Text>}
       </View>
 
-      {/* Category Selection */}
-      <View style={styles.card}>
-        <Text style={styles.label}>CATEGORY</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipContainer}>
-          {CATEGORIES.map((cat) => {
-            const isSelected = category === cat.id;
-            return (
-              <TouchableOpacity
-                key={cat.id}
-                style={[styles.chip, isSelected && styles.chipSelected]}
-                onPress={() => {
-                  setCategory(cat.id);
-                  if (errors.category) setErrors(prev => ({ ...prev, category: false }));
-                }}
-              >
-                <MaterialIcons name={cat.icon as any} size={18} color={isSelected ? '#FFF' : '#40484D'} />
-                <Text style={[styles.chipText, isSelected && styles.chipTextSelected]}>{cat.label}</Text>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
-        {errors.category && <Text style={styles.errorText}>Please select a category</Text>}
-      </View>
-
-      {/* Urgency Level */}
-      <View style={styles.card}>
-        <Text style={styles.label}>URGENCY LEVEL</Text>
-        <View style={styles.urgencyContainer}>
-          {URGENCY_LEVELS.map((u) => {
-            const isSelected = urgency === u.id;
-            return (
-              <TouchableOpacity
-                key={u.id}
-                style={[
-                  styles.urgencyButton,
-                  isSelected && { backgroundColor: u.color, borderColor: u.color }
-                ]}
-                onPress={() => setUrgency(u.id)}
-              >
-                <Text style={[styles.urgencyText, isSelected && styles.urgencyTextSelected]}>
-                  {u.label}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-      </View>
 
       {/* Description Field */}
       <View style={styles.card}>

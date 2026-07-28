@@ -188,6 +188,29 @@ export default function Dashboard() {
       backgroundColor: "#E8EDF4",
       overflow: "hidden",
     },
+    legendContainer: {
+      flexDirection: "row",
+      justifyContent: "space-evenly",
+      marginHorizontal: 16,
+      marginTop: 12,
+      paddingHorizontal: 8,
+    },
+    legendItem: {
+      flexDirection: "row",
+      alignItems: "center",
+    },
+    legendColor: {
+      width: 12,
+      height: 12,
+      borderRadius: 6,
+      marginRight: 6,
+    },
+    legendText: {
+      fontSize: 12,
+      color: "#6B7280",
+      fontFamily: "Inter",
+      fontWeight: "500",
+    },
     mapTitle: {
       marginTop: 8,
       fontSize: 16,
@@ -278,47 +301,55 @@ export default function Dashboard() {
   });
 
   const renderComplaint = ({ item }: any) => (
-    <View style={styles.complaintCard}>
-      <View style={styles.complaintHeader}>
-        <View style={styles.iconCircle}>
-          <Ionicons name={item.icon} size={18} color="#3B82F6" />
-        </View>
-        <View style={{ flex: 1, marginLeft: 8 }}>
-          <View
-            style={{
-              flexDirection: "row",
-              justifyContent: "space-between",
-              alignItems: "center",
-            }}
-          >
-            <Text style={styles.complaintTitle}>{item.title}</Text>
-            <View
-              style={[
-                styles.statusBadge,
-                { backgroundColor: item.color + "33" },
-              ]}
-            >
-              <Text style={[styles.statusText, { color: item.color }]}>
-                {item.status}
-              </Text>
-            </View>
+    <TouchableOpacity 
+      activeOpacity={0.8}
+      onPress={() => router.push(`/(resident)/complaints/${item.id}`)}
+    >
+      <View style={styles.complaintCard}>
+        <View style={styles.complaintHeader}>
+          <View style={styles.iconCircle}>
+            <Ionicons name={item.icon} size={18} color="#3B82F6" />
           </View>
-          <Text style={styles.complaintDesc} numberOfLines={1}>
-            {item.description}
-          </Text>
-          <View style={styles.bottomRow}>
-            <View style={styles.infoRow}>
-              <Ionicons name="calendar-outline" size={10} color="#777" />
-              <Text style={styles.infoText}>{item.date}</Text>
+          <View style={{ flex: 1, marginLeft: 8 }}>
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
+            >
+              <Text style={styles.complaintTitle}>{item.title}</Text>
+              <View
+                style={[
+                  styles.statusBadge,
+                  { backgroundColor: item.color + "33" },
+                ]}
+              >
+                <Text style={[styles.statusText, { color: item.color }]}>
+                  {item.status}
+                </Text>
+              </View>
             </View>
-            <View style={styles.infoRow}>
-              <Ionicons name="location-outline" size={10} color="#777" />
-              <Text style={styles.infoText}>{item.location}</Text>
+            <Text style={styles.complaintDesc} numberOfLines={1}>
+              {item.description}
+            </Text>
+            <View style={styles.bottomRow}>
+              <View style={styles.infoRow}>
+                <Ionicons name="calendar-outline" size={10} color="#777" />
+                <Text style={styles.infoText}>{item.date}</Text>
+              </View>
+              <View style={styles.infoRow}>
+                <Ionicons name="location-outline" size={10} color="#777" />
+                <Text style={styles.infoText}>{item.location}</Text>
+              </View>
+              <View style={styles.infoRow}>
+                <Text style={[styles.infoText, { color: '#EF4444', fontWeight: 'bold' }]}>🔥 {item.urgencyCount}</Text>
+              </View>
             </View>
           </View>
         </View>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 
   return (
@@ -395,7 +426,26 @@ export default function Dashboard() {
 
         {/* Map */}
         <View style={styles.mapCard}>
-          <MapViewComponent locations={complaints} />
+          <MapViewComponent 
+            locations={complaints}
+            onLocationPress={(loc) => router.push(`/(resident)/complaints/${loc.id}`)}
+          />
+        </View>
+
+        {/* Map Legend */}
+        <View style={styles.legendContainer}>
+          <View style={styles.legendItem}>
+            <View style={[styles.legendColor, { backgroundColor: '#EF4444' }]} />
+            <Text style={styles.legendText}>Pending</Text>
+          </View>
+          <View style={styles.legendItem}>
+            <View style={[styles.legendColor, { backgroundColor: '#B45309' }]} />
+            <Text style={styles.legendText}>In Progress</Text>
+          </View>
+          <View style={styles.legendItem}>
+            <View style={[styles.legendColor, { backgroundColor: '#3B82F6' }]} />
+            <Text style={styles.legendText}>Resolved</Text>
+          </View>
         </View>
 
         {/* Help Center */}
