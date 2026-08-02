@@ -2,6 +2,15 @@ import type { AuthorityComplaint } from './store-authority-dashboard';
 
 export type AuthorityEvidenceImage = number | { uri: string };
 
+export type AuthorityContractorAssignment = {
+  id: string;
+  name: string;
+  phone: string;
+  assignedFrom: string;
+  assignedUntil?: string;
+  changeReason?: string;
+};
+
 export type AuthorityWorkUpdate = {
   id: string;
   title: string;
@@ -10,6 +19,7 @@ export type AuthorityWorkUpdate = {
   complete: boolean;
   budget: string;
   images: AuthorityEvidenceImage[];
+  contractorAssignmentId?: string;
 };
 
 export type AuthorityResidentFeedback = {
@@ -35,6 +45,7 @@ export type AuthorityComplaintDetail = AuthorityComplaint & {
   completedAt?: string;
   resolutionNote?: string;
   finalEvidence?: AuthorityEvidenceImage;
+  contractorAssignments: AuthorityContractorAssignment[];
   updates: AuthorityWorkUpdate[];
   feedback: AuthorityResidentFeedback[];
 };
@@ -63,6 +74,7 @@ const initialAuthorityComplaintDetails: AuthorityComplaintDetail[] = [
     budget: `${taka} 18,000`,
     workNote: 'Inspect the drain line, remove the blockage, and clear the pedestrian path.',
     progress: 0,
+    contractorAssignments: [],
     feedback: [],
     updates: [
       {
@@ -106,10 +118,28 @@ const initialAuthorityComplaintDetails: AuthorityComplaintDetail[] = [
     budget: `${taka} 26,500`,
     workNote: 'Replace the damaged control unit and test both entrance lights after sunset.',
     progress: 65,
+    contractorAssignments: [
+      {
+        id: 'CTR-1042-1',
+        name: 'Bright Spark Electricals',
+        phone: '+880 1711-440820',
+        assignedFrom: '18 Jul 2026, 10:15 AM',
+        assignedUntil: '19 Jul 2026, 11:30 AM',
+        changeReason:
+          'The original team could not provide the required replacement equipment.',
+      },
+      {
+        id: 'CTR-1042-2',
+        name: 'Dhaka Light Services',
+        phone: '+880 1815-772940',
+        assignedFrom: '19 Jul 2026, 11:30 AM',
+      },
+    ],
     feedback: [],
     updates: [
       {
         id: 'UPD-1042-1',
+        contractorAssignmentId: 'CTR-1042-1',
         title: 'Work started',
         note: 'Electrical team inspected both poles and isolated the faulty control unit.',
         timestamp: '18 Jul, 10:15 AM',
@@ -121,6 +151,7 @@ const initialAuthorityComplaintDetails: AuthorityComplaintDetail[] = [
       },
       {
         id: 'UPD-1042-2',
+        contractorAssignmentId: 'CTR-1042-2',
         title: 'Repair underway',
         note: 'Replacement equipment arrived and installation is in progress.',
         timestamp: '19 Jul, 3:30 PM',
@@ -132,6 +163,7 @@ const initialAuthorityComplaintDetails: AuthorityComplaintDetail[] = [
       },
       {
         id: 'UPD-1042-3',
+        contractorAssignmentId: 'CTR-1042-2',
         title: 'Final testing',
         note: 'Night-time lighting test remains before resolution.',
         timestamp: 'Next step',
@@ -162,6 +194,7 @@ const initialAuthorityComplaintDetails: AuthorityComplaintDetail[] = [
     budget: `${taka} 32,000`,
     workNote: 'Shut off the damaged line, replace the cracked pipe section, and clean the footpath.',
     progress: 0,
+    contractorAssignments: [],
     feedback: [],
     updates: [
       {
@@ -205,10 +238,19 @@ const initialAuthorityComplaintDetails: AuthorityComplaintDetail[] = [
     budget: `${taka} 74,000`,
     workNote: 'Remove loose asphalt, rebuild the base, and compact a durable surface patch.',
     progress: 45,
+    contractorAssignments: [
+      {
+        id: 'CTR-1034-1',
+        name: 'RoadCare Engineering',
+        phone: '+880 1912-660145',
+        assignedFrom: '17 Jul 2026, 8:45 AM',
+      },
+    ],
     feedback: [],
     updates: [
       {
         id: 'UPD-1034-1',
+        contractorAssignmentId: 'CTR-1034-1',
         title: 'Work started',
         note: 'The repair area was secured and loose road material was removed.',
         timestamp: '17 Jul, 8:45 AM',
@@ -218,6 +260,7 @@ const initialAuthorityComplaintDetails: AuthorityComplaintDetail[] = [
       },
       {
         id: 'UPD-1034-2',
+        contractorAssignmentId: 'CTR-1034-1',
         title: 'Base layer prepared',
         note: 'Aggregate base was placed; asphalt compaction is underway.',
         timestamp: '18 Jul, 1:20 PM',
@@ -229,6 +272,7 @@ const initialAuthorityComplaintDetails: AuthorityComplaintDetail[] = [
       },
       {
         id: 'UPD-1034-3',
+        contractorAssignmentId: 'CTR-1034-1',
         title: 'Surface inspection',
         note: 'Final compaction and edge inspection remain.',
         timestamp: 'Next step',
@@ -259,6 +303,15 @@ const initialAuthorityComplaintDetails: AuthorityComplaintDetail[] = [
     budget: `${taka} 12,500`,
     workNote: 'Remove accumulated waste, sanitize the collection point, and restore the pickup schedule.',
     progress: 100,
+    contractorAssignments: [
+      {
+        id: 'CTR-1027-1',
+        name: 'Clean City Services',
+        phone: '+880 1678-225510',
+        assignedFrom: '15 Jul 2026, 10:20 AM',
+        assignedUntil: '16 Jul 2026, 5:40 PM',
+      },
+    ],
     completedAt: '16 Jul 2026, 5:40 PM',
     resolutionNote:
       'All accumulated waste was removed, the collection point was swept and sanitized, and the normal pickup schedule was restored.',
@@ -292,6 +345,7 @@ const initialAuthorityComplaintDetails: AuthorityComplaintDetail[] = [
     updates: [
       {
         id: 'UPD-1027-1',
+        contractorAssignmentId: 'CTR-1027-1',
         title: 'Work started',
         note: 'A collection vehicle and sanitation team were assigned.',
         timestamp: '15 Jul, 10:20 AM',
@@ -301,6 +355,7 @@ const initialAuthorityComplaintDetails: AuthorityComplaintDetail[] = [
       },
       {
         id: 'UPD-1027-2',
+        contractorAssignmentId: 'CTR-1027-1',
         title: 'Waste removed',
         note: 'The roadside pile was collected and the area was washed.',
         timestamp: '16 Jul, 4:55 PM',
@@ -312,6 +367,7 @@ const initialAuthorityComplaintDetails: AuthorityComplaintDetail[] = [
       },
       {
         id: 'UPD-1027-3',
+        contractorAssignmentId: 'CTR-1027-1',
         title: 'Complaint resolved',
         note: 'Final inspection confirmed the area was clean and accessible.',
         timestamp: '16 Jul, 5:40 PM',
@@ -328,6 +384,9 @@ const initialAuthorityComplaintDetails: AuthorityComplaintDetail[] = [
 export function createInitialAuthorityComplaintDetails(): AuthorityComplaintDetail[] {
   return initialAuthorityComplaintDetails.map((complaint) => ({
     ...complaint,
+    contractorAssignments: complaint.contractorAssignments.map((assignment) => ({
+      ...assignment,
+    })),
     updates: complaint.updates.map((update) => ({
       ...update,
       images: [...update.images],

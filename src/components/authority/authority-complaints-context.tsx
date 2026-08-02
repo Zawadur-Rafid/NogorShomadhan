@@ -15,6 +15,8 @@ import {
 
 type StartComplaintInput = {
   deadline: string;
+  contractorName: string;
+  contractorPhone: string;
   budget: string;
   note: string;
 };
@@ -32,10 +34,20 @@ type ResolveComplaintInput = {
   finalImage: AuthorityEvidenceImage;
 };
 
+type ChangeContractorInput = {
+  name: string;
+  phone: string;
+  reason: string;
+};
+
 type AuthorityComplaintsContextValue = {
   complaints: AuthorityComplaintDetail[];
   startComplaint: (complaintId: string, input: StartComplaintInput) => void;
   addWorkUpdate: (complaintId: string, input: AddWorkUpdateInput) => void;
+  changeContractor: (
+    complaintId: string,
+    input: ChangeContractorInput,
+  ) => void;
   resolveComplaint: (complaintId: string, input: ResolveComplaintInput) => void;
 };
 
@@ -52,6 +64,19 @@ function nowLabel() {
   }).format(new Date());
 }
 
+function getCurrentContractor(complaint: AuthorityComplaintDetail) {
+  for (
+    let index = complaint.contractorAssignments.length - 1;
+    index >= 0;
+    index -= 1
+  ) {
+    const assignment = complaint.contractorAssignments[index];
+    if (!assignment.assignedUntil) return assignment;
+  }
+
+  return complaint.contractorAssignments.at(-1);
+}
+
 export function AuthorityComplaintsProvider({ children }: PropsWithChildren) {
   const [complaints, setComplaints] = useState<AuthorityComplaintDetail[]>(
     createInitialAuthorityComplaintDetails,
@@ -63,6 +88,9 @@ export function AuthorityComplaintsProvider({ children }: PropsWithChildren) {
         current.map((complaint) => {
           if (complaint.id !== complaintId) return complaint;
 
+          const timestamp = nowLabel();
+          const contractorAssignmentId = `CTR-${complaint.id}-${Date.now()}`;
+
           return {
             ...complaint,
             status: 'IN PROGRESS',
@@ -70,13 +98,22 @@ export function AuthorityComplaintsProvider({ children }: PropsWithChildren) {
             budget: input.budget,
             workNote: input.note,
             progress: 10,
+            contractorAssignments: [
+              {
+                id: contractorAssignmentId,
+                name: input.contractorName,
+                phone: input.contractorPhone,
+                assignedFrom: timestamp,
+              },
+            ],
             updates: [
               ...complaint.updates.filter((update) => update.complete),
               {
                 id: `UPD-${complaint.id}-${Date.now()}`,
                 title: 'Work started',
                 note: input.note,
-                timestamp: nowLabel(),
+                timestamp,
+                contractorAssignmentId,
                 complete: true,
                 budget: input.budget,
                 images: [],
@@ -100,6 +137,7 @@ export function AuthorityComplaintsProvider({ children }: PropsWithChildren) {
             update.title.startsWith('Work update'),
           ).length + 1;
 
+          const currentContractor = getCurrentContractor(complaint);
           return {
             ...complaint,
             deadline: input.deadline,
@@ -112,9 +150,61 @@ export function AuthorityComplaintsProvider({ children }: PropsWithChildren) {
                 title: `Work update ${workUpdateNumber}`,
                 note: input.note,
                 timestamp: nowLabel(),
+                contractorAssignmentId: currentContractor?.id,
                 complete: true,
                 budget: input.budget,
                 images: [...input.images],
+              },
+            ],
+          };
+        }),
+      );
+    },
+    [],
+  );
+
+  const changeContractor = useCallback(
+    (complaintId: string, input: ChangeContractorInput) => {
+      setComplaints((current) =>
+        current.map((complaint) => {
+          if (complaint.id !== complaintId) return complaint;
+
+          const timestamp = nowLabel();
+          const previousContractor = getCurrentContractor(complaint);
+          const contractorAssignmentId = `CTR-${complaint.id}-${Date.now()}`;
+
+          return {
+            ...complaint,
+            contractorAssignments: [
+              ...complaint.contractorAssignments.map((assignment) =>
+                assignment.id === previousContractor?.id
+                  ? {
+                      ...assignment,
+                      assignedUntil: timestamp,
+                      changeReason: input.reason,
+                    }
+                  : assignment,
+              ),
+              {
+                id: contractorAssignmentId,
+                name: input.name,
+                phone: input.phone,
+                assignedFrom: timestamp,
+              },
+            ],
+            updates: [
+              ...complaint.updates.filter((update) => update.complete),
+              {
+                id: `UPD-${complaint.id}-${Date.now()}`,
+                title: 'Contractor changed',
+                note: previousContractor
+                  ? `${previousContractor.name} was replaced by ${input.name}. Reason: ${input.reason}`
+                  : `${input.name} was assigned. Reason: ${input.reason}`,
+                timestamp,
+                complete: true,
+                budget: complaint.budget,
+                images: [],
+                contractorAssignmentId,
               },
             ],
           };
@@ -131,6 +221,7 @@ export function AuthorityComplaintsProvider({ children }: PropsWithChildren) {
           if (complaint.id !== complaintId) return complaint;
 
           const timestamp = nowLabel();
+          const currentContractor = getCurrentContractor(complaint);
           return {
             ...complaint,
             status: 'RESOLVED',
@@ -139,6 +230,14 @@ export function AuthorityComplaintsProvider({ children }: PropsWithChildren) {
             completedAt: timestamp,
             resolutionNote: input.note,
             finalEvidence: input.finalImage,
+            contractorAssignments: complaint.contractorAssignments.map((assignment) =>
+              assignment.id === currentContractor?.id
+                ? {
+                    ...assignment,
+                    assignedUntil: timestamp,
+                  }
+                : assignment,
+            ),
             updates: [
               ...complaint.updates.filter((update) => update.complete),
               {
@@ -146,6 +245,7 @@ export function AuthorityComplaintsProvider({ children }: PropsWithChildren) {
                 title: 'Complaint resolved',
                 note: input.note,
                 timestamp,
+                contractorAssignmentId: currentContractor?.id,
                 complete: true,
                 budget: input.budget,
                 images: [input.finalImage],
@@ -159,8 +259,20 @@ export function AuthorityComplaintsProvider({ children }: PropsWithChildren) {
   );
 
   const value = useMemo(
-    () => ({ complaints, startComplaint, addWorkUpdate, resolveComplaint }),
-    [addWorkUpdate, complaints, resolveComplaint, startComplaint],
+    () => ({
+      complaints,
+      startComplaint,
+      addWorkUpdate,
+      changeContractor,
+      resolveComplaint,
+    }),
+    [
+      addWorkUpdate,
+      changeContractor,
+      complaints,
+      resolveComplaint,
+      startComplaint,
+    ],
   );
 
   return (

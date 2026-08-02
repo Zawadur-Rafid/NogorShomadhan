@@ -21,9 +21,11 @@ import { useAuthorityComplaints } from './authority-complaints-context';
 import AuthorityMap from './authority-map';
 import AuthorityPageHeader from './authority-page-header';
 import type {
+  AuthorityContractorAssignment,
   AuthorityComplaintDetail,
   AuthorityEvidenceImage,
   AuthorityResidentFeedback,
+  AuthorityWorkUpdate,
 } from './store-authority-complaint-details';
 
 export type AuthorityComplaintDetailMode =
@@ -31,7 +33,7 @@ export type AuthorityComplaintDetailMode =
   | 'in-progress'
   | 'resolved';
 
-type ProgressAction = 'update' | 'completed';
+type ProgressAction = 'update' | 'contractor' | 'completed';
 
 const modeTheme = {
   pending: {
@@ -115,66 +117,162 @@ function EvidenceGrid({
   );
 }
 
+function WorkActivityTimeline({ updates }: { updates: AuthorityWorkUpdate[] }) {
+  if (updates.length === 0) {
+    return (
+      <View style={styles.emptyPhaseActivity}>
+        <Ionicons name="document-text-outline" size={17} color="#98A2B3" />
+        <Text style={styles.emptyPhaseActivityText}>
+          No work activity was recorded during this assignment.
+        </Text>
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.timeline}>
+      {updates.map((update, index) => (
+        <View key={update.id} style={styles.timelineRow}>
+          <View style={styles.timelineTrack}>
+            <View
+              style={[
+                styles.timelineDot,
+                update.complete
+                  ? styles.timelineDotComplete
+                  : styles.timelineDotPending,
+              ]}
+            >
+              <Ionicons
+                name={update.complete ? 'checkmark' : 'ellipsis-horizontal'}
+                size={12}
+                color="#FFFFFF"
+              />
+            </View>
+            {index < updates.length - 1 && (
+              <View
+                style={[
+                  styles.timelineLine,
+                  update.complete && styles.timelineLineComplete,
+                ]}
+              />
+            )}
+          </View>
+          <View style={styles.timelineContent}>
+            <View style={styles.timelineHeading}>
+              <Text style={styles.timelineTitle}>{update.title}</Text>
+              <Text style={styles.timelineTime}>{update.timestamp}</Text>
+            </View>
+            <Text style={styles.timelineNote}>{update.note}</Text>
+            <View style={styles.budgetChange}>
+              <Ionicons name="cash-outline" size={13} color="#607A9A" />
+              <Text style={styles.budgetChangeText}>
+                Budget at this update: {update.budget}
+              </Text>
+            </View>
+            <EvidenceGrid images={update.images} />
+          </View>
+        </View>
+      ))}
+    </View>
+  );
+}
+
 function ComplaintTimeline({
   complaint,
 }: {
   complaint: AuthorityComplaintDetail;
 }) {
+  const unassignedUpdates = complaint.updates.filter(
+    (update) => !update.contractorAssignmentId,
+  );
+
   return (
     <View style={styles.panel}>
       <View style={styles.panelHeading}>
-        <View>
+        <View style={styles.panelHeadingCopy}>
           <Text style={styles.panelTitle}>Work History</Text>
           <Text style={styles.panelSubtitle}>
-            Notes, evidence, and budget changes in chronological order
+            A chronological view of responsibility and work progress
           </Text>
         </View>
         <Ionicons name="git-branch-outline" size={21} color="#23435D" />
       </View>
 
-      <View style={styles.timeline}>
-        {complaint.updates.map((update, index) => (
-          <View key={update.id} style={styles.timelineRow}>
-            <View style={styles.timelineTrack}>
-              <View
-                style={[
-                  styles.timelineDot,
-                  update.complete
-                    ? styles.timelineDotComplete
-                    : styles.timelineDotPending,
-                ]}
-              >
-                <Ionicons
-                  name={update.complete ? 'checkmark' : 'ellipsis-horizontal'}
-                  size={12}
-                  color="#FFFFFF"
-                />
+      <View style={styles.workHistoryPhases}>
+        {unassignedUpdates.length > 0 && (
+          <View style={styles.intakePhase}>
+            <View style={styles.intakePhaseHeading}>
+              <View style={styles.intakePhaseIcon}>
+                <Ionicons name="clipboard-outline" size={16} color="#607A9A" />
               </View>
-              {index < complaint.updates.length - 1 && (
-                <View
-                  style={[
-                    styles.timelineLine,
-                    update.complete && styles.timelineLineComplete,
-                  ]}
-                />
+              <View style={styles.intakePhaseCopy}>
+                <Text style={styles.intakePhaseTitle}>Complaint Intake</Text>
+                <Text style={styles.intakePhaseText}>Before contractor assignment</Text>
+              </View>
+            </View>
+            <WorkActivityTimeline updates={unassignedUpdates} />
+          </View>
+        )}
+
+        {complaint.contractorAssignments.map((assignment, index) => {
+          const nextAssignment = complaint.contractorAssignments[index + 1];
+          const assignmentUpdates = complaint.updates.filter(
+            (update) =>
+              update.contractorAssignmentId === assignment.id &&
+              update.title !== 'Contractor changed',
+          );
+
+          return (
+            <View key={assignment.id} style={styles.contractorWorkPhase}>
+              <ContractorAssignmentRow
+                assignment={assignment}
+                index={index}
+                isCurrent={
+                  !assignment.assignedUntil && complaint.status === 'IN PROGRESS'
+                }
+              />
+
+              <View style={styles.phaseActivity}>
+                <View style={styles.phaseActivityHeading}>
+                  <Ionicons name="list-outline" size={14} color="#607A9A" />
+                  <Text style={styles.phaseActivityLabel}>
+                    WORK DURING THIS ASSIGNMENT
+                  </Text>
+                </View>
+                <WorkActivityTimeline updates={assignmentUpdates} />
+              </View>
+
+              {nextAssignment && (
+                <View style={styles.contractorTransition}>
+                  <View style={styles.contractorTransitionIcon}>
+                    <Ionicons name="swap-horizontal" size={18} color="#A86617" />
+                  </View>
+                  <View style={styles.contractorTransitionCopy}>
+                    <View style={styles.contractorTransitionHeading}>
+                      <Text style={styles.contractorTransitionTitle}>
+                        Contractor changed
+                      </Text>
+                      <Text style={styles.contractorTransitionTime}>
+                        {assignment.assignedUntil ?? nextAssignment.assignedFrom}
+                      </Text>
+                    </View>
+                    <Text selectable style={styles.contractorTransitionText}>
+                      {assignment.name} {'\u2192'} {nextAssignment.name}
+                    </Text>
+                    <View style={styles.contractorTransitionReason}>
+                      <Text style={styles.contractorTransitionReasonLabel}>
+                        REASON FOR CHANGE
+                      </Text>
+                      <Text selectable style={styles.contractorTransitionReasonText}>
+                        {assignment.changeReason ?? 'No reason was recorded.'}
+                      </Text>
+                    </View>
+                  </View>
+                </View>
               )}
             </View>
-            <View style={styles.timelineContent}>
-              <View style={styles.timelineHeading}>
-                <Text style={styles.timelineTitle}>{update.title}</Text>
-                <Text style={styles.timelineTime}>{update.timestamp}</Text>
-              </View>
-              <Text style={styles.timelineNote}>{update.note}</Text>
-              <View style={styles.budgetChange}>
-                <Ionicons name="cash-outline" size={13} color="#607A9A" />
-                <Text style={styles.budgetChangeText}>
-                  Budget at this update: {update.budget}
-                </Text>
-              </View>
-              <EvidenceGrid images={update.images} />
-            </View>
-          </View>
-        ))}
+          );
+        })}
       </View>
     </View>
   );
@@ -275,6 +373,7 @@ export default function AuthorityComplaintDetailScreen() {
     startComplaint,
     addWorkUpdate,
     resolveComplaint,
+    changeContractor,
   } = useAuthorityComplaints();
   const complaintId = Array.isArray(params.complaintId)
     ? params.complaintId[0]
@@ -283,6 +382,8 @@ export default function AuthorityComplaintDetailScreen() {
   const [deadline, setDeadline] = useState(complaint?.deadline ?? '');
   const [workBudget, setWorkBudget] = useState(complaint?.budget ?? '');
   const [initialNote, setInitialNote] = useState(complaint?.workNote ?? '');
+  const [contractorName, setContractorName] = useState('');
+  const [contractorPhone, setContractorPhone] = useState('');
   const [updateNote, setUpdateNote] = useState('');
   const [updateImages, setUpdateImages] = useState<AuthorityEvidenceImage[]>([]);
   const [resolutionNote, setResolutionNote] = useState('');
@@ -291,6 +392,9 @@ export default function AuthorityComplaintDetailScreen() {
   const [progressAction, setProgressAction] =
     useState<ProgressAction>('update');
   const [formMessage, setFormMessage] = useState('');
+  const [newContractorName, setNewContractorName] = useState('');
+  const [newContractorPhone, setNewContractorPhone] = useState('');
+  const [contractorChangeReason, setContractorChangeReason] = useState('');
   const wide = width >= 900;
   const mode = getDetailMode(complaint?.status);
   const theme = modeTheme[mode];
@@ -358,13 +462,23 @@ export default function AuthorityComplaintDetailScreen() {
   };
 
   const handleStartWork = () => {
-    if (!deadline.trim() || !workBudget.trim() || !initialNote.trim()) {
-      setFormMessage('Deadline, budget, and initial work note are required.');
+    if (
+      !contractorName.trim() ||
+      !contractorPhone.trim() ||
+      !deadline.trim() ||
+      !workBudget.trim() ||
+      !initialNote.trim()
+    ) {
+      setFormMessage(
+        'Contractor name, phone, deadline, amount, and initial work note are required.',
+      );
       return;
     }
 
     startComplaint(complaint.id, {
       deadline: deadline.trim(),
+      contractorName: contractorName.trim(),
+      contractorPhone: contractorPhone.trim(),
       budget: workBudget.trim(),
       note: initialNote.trim(),
     });
@@ -372,14 +486,9 @@ export default function AuthorityComplaintDetailScreen() {
   };
 
   const handleAddUpdate = () => {
-    if (
-      !updateNote.trim() ||
-      !deadline.trim() ||
-      !workBudget.trim() ||
-      updateImages.length === 0
-    ) {
+    if (!updateNote.trim() || !deadline.trim() || !workBudget.trim()) {
       setFormMessage(
-        'Add progress photos, a deadline, the current amount, and update notes.',
+        'Deadline, current amount, and update notes are required. Photos are optional.',
       );
       return;
     }
@@ -393,6 +502,29 @@ export default function AuthorityComplaintDetailScreen() {
     setUpdateNote('');
     setUpdateImages([]);
     setFormMessage('Work update added to the complaint history.');
+  };
+
+  const handleChangeContractor = () => {
+    if (
+      !newContractorName.trim() ||
+      !newContractorPhone.trim() ||
+      !contractorChangeReason.trim()
+    ) {
+      setFormMessage(
+        'New contractor name, phone number, and reason for the change are required.',
+      );
+      return;
+    }
+
+    changeContractor(complaint.id, {
+      name: newContractorName.trim(),
+      phone: newContractorPhone.trim(),
+      reason: contractorChangeReason.trim(),
+    });
+    setNewContractorName('');
+    setNewContractorPhone('');
+    setContractorChangeReason('');
+    setFormMessage('Contractor assignment updated and added to the history.');
   };
 
   const handleResolve = () => {
@@ -411,11 +543,20 @@ export default function AuthorityComplaintDetailScreen() {
     setFormMessage('');
   };
 
+  const canStartWork =
+    contractorName.trim().length > 0 &&
+    contractorPhone.trim().length > 0 &&
+    deadline.trim().length > 0 &&
+    workBudget.trim().length > 0 &&
+    initialNote.trim().length > 0;
   const canAddUpdate =
     updateNote.trim().length > 0 &&
     deadline.trim().length > 0 &&
-    workBudget.trim().length > 0 &&
-    updateImages.length > 0;
+    workBudget.trim().length > 0;
+  const canChangeContractor =
+    newContractorName.trim().length > 0 &&
+    newContractorPhone.trim().length > 0 &&
+    contractorChangeReason.trim().length > 0;
   const canResolve =
     resolutionNote.trim().length > 0 &&
     finalEvidence !== null;
@@ -542,6 +683,10 @@ export default function AuthorityComplaintDetailScreen() {
                 <Ionicons name="shield-checkmark-outline" size={21} color="#16845B" />
               </View>
 
+              {mode !== 'pending' && (
+                <ContractorAssignments complaint={complaint} mode={mode} />
+              )}
+
               {mode === 'pending' && (
                 <View style={[styles.panel, styles.actionPanel]}>
                   <View style={styles.actionIcon}>
@@ -549,8 +694,43 @@ export default function AuthorityComplaintDetailScreen() {
                   </View>
                   <Text style={styles.actionTitle}>Start Work</Text>
                   <Text style={styles.actionDescription}>
-                    Add the initial plan before moving this complaint to In Progress.
+                    Assign a contractor and add the initial plan before starting work.
                   </Text>
+
+                  <View style={styles.formSectionHeading}>
+                    <Ionicons name="hammer-outline" size={17} color="#23435D" />
+                    <View style={styles.formSectionCopy}>
+                      <Text style={styles.formSectionTitle}>Assigned Contractor</Text>
+                      <Text style={styles.formSectionDescription}>
+                        Private details visible only to authority users
+                      </Text>
+                    </View>
+                  </View>
+
+                  <Text style={styles.inputLabel}>Contractor Name</Text>
+                  <View style={styles.inputBox}>
+                    <Ionicons name="business-outline" size={17} color="#7A8493" />
+                    <TextInput
+                      value={contractorName}
+                      onChangeText={setContractorName}
+                      placeholder="Enter contractor or company name"
+                      placeholderTextColor="#98A2B3"
+                      style={styles.input}
+                    />
+                  </View>
+
+                  <Text style={styles.inputLabel}>Contractor Phone Number</Text>
+                  <View style={styles.inputBox}>
+                    <Ionicons name="call-outline" size={17} color="#7A8493" />
+                    <TextInput
+                      value={contractorPhone}
+                      onChangeText={setContractorPhone}
+                      placeholder="Enter mobile number"
+                      placeholderTextColor="#98A2B3"
+                      keyboardType="phone-pad"
+                      style={styles.input}
+                    />
+                  </View>
 
                   <Text style={styles.inputLabel}>Deadline</Text>
                   <View style={styles.inputBox}>
@@ -593,7 +773,14 @@ export default function AuthorityComplaintDetailScreen() {
                     </View>
                   )}
 
-                  <TouchableOpacity style={styles.primaryButton} onPress={handleStartWork}>
+                  <TouchableOpacity
+                    disabled={!canStartWork}
+                    style={[
+                      styles.primaryButton,
+                      !canStartWork && styles.buttonDisabled,
+                    ]}
+                    onPress={handleStartWork}
+                  >
                     <Ionicons name="construct-outline" size={18} color="#FFFFFF" />
                     <Text style={styles.primaryButtonText}>Start Work</Text>
                   </TouchableOpacity>
@@ -606,7 +793,7 @@ export default function AuthorityComplaintDetailScreen() {
                       <View style={styles.progressCopy}>
                         <Text style={styles.actionTitle}>Record Progress</Text>
                         <Text style={styles.actionDescription}>
-                          Choose whether to add an update or complete this complaint.
+                          Add work progress, change the contractor, or complete the complaint.
                         </Text>
                       </View>
                       <Text style={styles.progressValue}>{complaint.progress}%</Text>
@@ -618,13 +805,21 @@ export default function AuthorityComplaintDetailScreen() {
                     </View>
 
                     <ProgressSegmentedControl
-                      values={['Update', 'Completed']}
-                      selectedIndex={progressAction === 'update' ? 0 : 1}
+                      values={['Update', 'Contractor', 'Completed']}
+                      selectedIndex={
+                        progressAction === 'update'
+                          ? 0
+                          : progressAction === 'contractor'
+                            ? 1
+                            : 2
+                      }
                       onChange={({ nativeEvent }) => {
                         setProgressAction(
                           nativeEvent.selectedSegmentIndex === 0
                             ? 'update'
-                            : 'completed',
+                            : nativeEvent.selectedSegmentIndex === 1
+                              ? 'contractor'
+                              : 'completed',
                         );
                         setFormMessage('');
                       }}
@@ -676,7 +871,7 @@ export default function AuthorityComplaintDetailScreen() {
                     <TouchableOpacity style={styles.photoPicker} onPress={chooseUpdatePhotos}>
                       <Ionicons name="images-outline" size={20} color="#23435D" />
                       <View style={styles.photoPickerCopy}>
-                        <Text style={styles.photoPickerTitle}>Add progress photos</Text>
+                        <Text style={styles.photoPickerTitle}>Add progress photos (optional)</Text>
                         <Text style={styles.photoPickerText}>
                           {updateImages.length}/5 selected
                         </Text>
@@ -711,6 +906,87 @@ export default function AuthorityComplaintDetailScreen() {
                       <Ionicons name="add-circle-outline" size={18} color="#23435D" />
                       <Text style={styles.secondaryButtonText}>Add Update</Text>
                     </TouchableOpacity>
+                      </Animated.View>
+                    )}
+
+                    {progressAction === 'contractor' && (
+                      <Animated.View
+                        entering={FadeIn.duration(180)}
+                        exiting={FadeOut.duration(120)}
+                        style={styles.actionForm}
+                      >
+                        <View style={styles.resolveHeading}>
+                          <View style={styles.contractorActionIcon}>
+                            <Ionicons name="swap-horizontal" size={21} color="#FFFFFF" />
+                          </View>
+                          <View style={styles.progressCopy}>
+                            <Text style={styles.actionTitle}>Change Contractor</Text>
+                            <Text style={styles.actionDescription}>
+                              Close the current assignment and start a new dated assignment.
+                            </Text>
+                          </View>
+                        </View>
+
+                        <Text style={styles.inputLabel}>New Contractor Name</Text>
+                        <View style={styles.inputBox}>
+                          <Ionicons name="business-outline" size={17} color="#7A8493" />
+                          <TextInput
+                            value={newContractorName}
+                            onChangeText={setNewContractorName}
+                            placeholder="Enter contractor or company name"
+                            placeholderTextColor="#98A2B3"
+                            style={styles.input}
+                          />
+                        </View>
+
+                        <Text style={styles.inputLabel}>New Phone Number</Text>
+                        <View style={styles.inputBox}>
+                          <Ionicons name="call-outline" size={17} color="#7A8493" />
+                          <TextInput
+                            value={newContractorPhone}
+                            onChangeText={setNewContractorPhone}
+                            placeholder="Enter mobile number"
+                            placeholderTextColor="#98A2B3"
+                            keyboardType="phone-pad"
+                            style={styles.input}
+                          />
+                        </View>
+
+                        <Text style={styles.inputLabel}>Reason for Contractor Change</Text>
+                        <TextInput
+                          value={contractorChangeReason}
+                          onChangeText={setContractorChangeReason}
+                          placeholder="Explain why the current contractor is being replaced..."
+                          placeholderTextColor="#98A2B3"
+                          multiline
+                          style={[styles.inputBox, styles.noteInput]}
+                        />
+
+                        <View style={styles.contractorPrivacyNotice}>
+                          <Ionicons name="eye-off-outline" size={16} color="#607A9A" />
+                          <Text style={styles.contractorPrivacyText}>
+                            Contractor details and change reasons are visible only to authority users.
+                          </Text>
+                        </View>
+
+                        {formMessage.length > 0 && (
+                          <View style={styles.formMessage}>
+                            <Ionicons name="information-circle-outline" size={17} color="#607A9A" />
+                            <Text style={styles.formMessageText}>{formMessage}</Text>
+                          </View>
+                        )}
+
+                        <TouchableOpacity
+                          disabled={!canChangeContractor}
+                          style={[
+                            styles.secondaryButton,
+                            !canChangeContractor && styles.buttonDisabled,
+                          ]}
+                          onPress={handleChangeContractor}
+                        >
+                          <Ionicons name="person-add-outline" size={18} color="#23435D" />
+                          <Text style={styles.secondaryButtonText}>Assign New Contractor</Text>
+                        </TouchableOpacity>
                       </Animated.View>
                     )}
 
@@ -891,6 +1167,7 @@ const styles = StyleSheet.create({
     gap: 12,
     marginBottom: 14,
   },
+  panelHeadingCopy: { flex: 1, minWidth: 0 },
   panelTitle: { color: '#1F2937', fontSize: 16, fontWeight: '800' },
   panelSubtitle: { color: '#8A93A1', fontSize: 9, marginTop: 3 },
   detailsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
@@ -988,9 +1265,208 @@ const styles = StyleSheet.create({
   reporterLabel: { color: '#B9854B', fontSize: 7, fontWeight: '900', letterSpacing: 0.5 },
   reporterName: { color: '#1F2937', fontSize: 12, fontWeight: '800', marginTop: 3 },
   reporterPhone: { color: '#7A8493', fontSize: 9, marginTop: 3 },
+  contractorPanel: { gap: 0 },
+  currentContractorCard: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 11,
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#CFE0F5',
+    backgroundColor: '#F4F8FE',
+  },
+  currentContractorIcon: {
+    width: 43,
+    height: 43,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#2563EB',
+  },
+  currentContractorCopy: { flex: 1, minWidth: 0 },
+  currentContractorLabel: {
+    color: '#2563EB',
+    fontSize: 7,
+    fontWeight: '900',
+    letterSpacing: 0.5,
+  },
+  currentContractorName: {
+    color: '#1F2937',
+    fontSize: 12,
+    fontWeight: '800',
+    marginTop: 3,
+  },
+  currentContractorPhone: { color: '#52677F', fontSize: 9, marginTop: 3 },
+  currentContractorDates: { color: '#7890AB', fontSize: 8, lineHeight: 12, marginTop: 5 },
+  workHistoryPhases: { gap: 14 },
+  intakePhase: {
+    gap: 12,
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E3E8EF',
+    backgroundColor: '#F9FAFB',
+  },
+  intakePhaseHeading: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 9,
+  },
+  intakePhaseIcon: {
+    width: 31,
+    height: 31,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#E8EEF2',
+  },
+  intakePhaseCopy: { flex: 1, minWidth: 0 },
+  intakePhaseTitle: { color: '#344054', fontSize: 11, fontWeight: '800' },
+  intakePhaseText: { color: '#8A93A1', fontSize: 8, marginTop: 2 },
+  contractorWorkPhase: { gap: 10 },
+  phaseActivity: {
+    marginLeft: 12,
+    paddingLeft: 15,
+    borderLeftWidth: 2,
+    borderLeftColor: '#DCE8F7',
+  },
+  phaseActivityHeading: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 11,
+  },
+  phaseActivityLabel: {
+    color: '#607A9A',
+    fontSize: 8,
+    fontWeight: '900',
+    letterSpacing: 0.45,
+  },
+  emptyPhaseActivity: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+    paddingBottom: 5,
+  },
+  emptyPhaseActivityText: {
+    flex: 1,
+    color: '#98A2B3',
+    fontSize: 8,
+    lineHeight: 13,
+  },
+  contractorTransition: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 9,
+    marginLeft: 12,
+    padding: 11,
+    borderRadius: 11,
+    borderWidth: 1,
+    borderColor: '#F2E2C9',
+    backgroundColor: '#FFF9EF',
+  },
+  contractorTransitionIcon: {
+    width: 31,
+    height: 31,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FBEACF',
+  },
+  contractorTransitionCopy: { flex: 1, minWidth: 0 },
+  contractorTransitionHeading: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  contractorTransitionTitle: {
+    flex: 1,
+    color: '#8C5715',
+    fontSize: 10,
+    fontWeight: '900',
+  },
+  contractorTransitionTime: {
+    maxWidth: '48%',
+    color: '#A18057',
+    fontSize: 7,
+    lineHeight: 11,
+    textAlign: 'right',
+  },
+  contractorTransitionText: {
+    color: '#5F482C',
+    fontSize: 9,
+    fontWeight: '800',
+    lineHeight: 14,
+    marginTop: 5,
+  },
+  contractorTransitionReason: {
+    gap: 3,
+    marginTop: 8,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#F2E2C9',
+  },
+  contractorTransitionReasonLabel: {
+    color: '#A86617',
+    fontSize: 7,
+    fontWeight: '900',
+    letterSpacing: 0.35,
+  },
+  contractorTransitionReasonText: {
+    color: '#7A5A30',
+    fontSize: 8,
+    lineHeight: 13,
+  },
+  contractorHistoryItem: {
+    gap: 8,
+    padding: 11,
+    borderRadius: 11,
+    borderWidth: 1,
+    borderColor: '#E3E8EF',
+    backgroundColor: '#F9FAFB',
+  },
+  contractorHistoryHeading: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 9,
+  },
+  contractorHistoryNumber: {
+    width: 25,
+    height: 25,
+    borderRadius: 13,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#E8EEF2',
+  },
+  contractorHistoryNumberText: { color: '#23435D', fontSize: 8, fontWeight: '900' },
+  contractorHistoryCopy: { flex: 1, minWidth: 0 },
+  contractorHistoryName: { color: '#344054', fontSize: 10, fontWeight: '800' },
+  contractorHistoryPhone: { color: '#7A8493', fontSize: 8, marginTop: 2 },
+  currentContractorBadge: {
+    paddingHorizontal: 7,
+    paddingVertical: 4,
+    borderRadius: 10,
+    backgroundColor: '#EAF8EF',
+  },
+  currentContractorBadgeText: { color: '#16845B', fontSize: 6, fontWeight: '900' },
+  contractorDateRange: { flexDirection: 'row', alignItems: 'flex-start', gap: 6 },
+  contractorDateRangeText: { flex: 1, color: '#607A9A', fontSize: 8, lineHeight: 12 },
   actionPanel: { gap: 10 },
   actionModeControl: { width: '100%', height: 38 },
   actionForm: { gap: 10 },
+  formSectionHeading: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 9,
+    padding: 10,
+    borderRadius: 10,
+    backgroundColor: '#F0F5F7',
+  },
+  formSectionCopy: { flex: 1 },
+  formSectionTitle: { color: '#344054', fontSize: 10, fontWeight: '800' },
+  formSectionDescription: { color: '#7A8493', fontSize: 8, marginTop: 2 },
   actionIcon: {
     width: 43,
     height: 43,
@@ -1084,7 +1560,26 @@ const styles = StyleSheet.create({
     backgroundColor: '#EFF4F7',
   },
   formMessageText: { flex: 1, color: '#52677F', fontSize: 9, lineHeight: 14 },
+  contractorPrivacyNotice: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 7,
+    padding: 10,
+    borderRadius: 10,
+    backgroundColor: '#F8FAFB',
+    borderWidth: 1,
+    borderColor: '#E3E8EF',
+  },
+  contractorPrivacyText: { flex: 1, color: '#607A9A', fontSize: 8, lineHeight: 13 },
   resolveHeading: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  contractorActionIcon: {
+    width: 43,
+    height: 43,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#16845B',
+  },
   resolveActionIcon: {
     width: 43,
     height: 43,
@@ -1227,3 +1722,90 @@ const styles = StyleSheet.create({
   notFoundTitle: { color: '#344054', fontSize: 17, fontWeight: '800', marginTop: 10 },
   notFoundText: { color: '#8A93A1', fontSize: 10, textAlign: 'center', marginTop: 5 },
 });
+
+function ContractorAssignmentRow({
+  assignment,
+  index,
+  isCurrent,
+}: {
+  assignment: AuthorityContractorAssignment;
+  index: number;
+  isCurrent: boolean;
+}) {
+  return (
+    <View style={styles.contractorHistoryItem}>
+      <View style={styles.contractorHistoryHeading}>
+        <View style={styles.contractorHistoryNumber}>
+          <Text style={styles.contractorHistoryNumberText}>{index + 1}</Text>
+        </View>
+        <View style={styles.contractorHistoryCopy}>
+          <Text selectable style={styles.contractorHistoryName}>
+            {assignment.name}
+          </Text>
+          <Text selectable style={styles.contractorHistoryPhone}>
+            {assignment.phone}
+          </Text>
+        </View>
+        {isCurrent && (
+          <View style={styles.currentContractorBadge}>
+            <Text style={styles.currentContractorBadgeText}>CURRENT</Text>
+          </View>
+        )}
+      </View>
+
+      <View style={styles.contractorDateRange}>
+        <Ionicons name="calendar-outline" size={13} color="#607A9A" />
+        <Text selectable style={styles.contractorDateRangeText}>
+          {assignment.assignedFrom} to {assignment.assignedUntil ?? 'Present'}
+        </Text>
+      </View>
+    </View>
+  );
+}
+
+function ContractorAssignments({
+  complaint,
+  mode,
+}: {
+  complaint: AuthorityComplaintDetail;
+  mode: AuthorityComplaintDetailMode;
+}) {
+  const assignments = complaint.contractorAssignments;
+  const currentContractor =
+    assignments.find((assignment) => !assignment.assignedUntil) ?? assignments.at(-1);
+
+  if (!currentContractor) return null;
+
+  return (
+    <View style={[styles.panel, styles.contractorPanel]}>
+      <View style={styles.panelHeading}>
+        <View>
+          <Text style={styles.panelTitle}>Assigned Contractor</Text>
+          <Text style={styles.panelSubtitle}>Authority-only assignment information</Text>
+        </View>
+        <Ionicons name="shield-outline" size={21} color="#23435D" />
+      </View>
+
+      <View style={styles.currentContractorCard}>
+        <View style={styles.currentContractorIcon}>
+          <Ionicons name="hammer-outline" size={20} color="#FFFFFF" />
+        </View>
+        <View style={styles.currentContractorCopy}>
+          <Text style={styles.currentContractorLabel}>
+            {mode === 'resolved' ? 'FINAL CONTRACTOR' : 'CURRENT CONTRACTOR'}
+          </Text>
+          <Text selectable style={styles.currentContractorName}>
+            {currentContractor.name}
+          </Text>
+          <Text selectable style={styles.currentContractorPhone}>
+            {currentContractor.phone}
+          </Text>
+          <Text selectable style={styles.currentContractorDates}>
+            {currentContractor.assignedFrom} to{' '}
+            {currentContractor.assignedUntil ?? 'Present'}
+          </Text>
+        </View>
+      </View>
+    </View>
+  );
+}
