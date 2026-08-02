@@ -20,6 +20,7 @@ type StartComplaintInput = {
 };
 
 type AddWorkUpdateInput = {
+  deadline: string;
   budget: string;
   note: string;
   images: AuthorityEvidenceImage[];
@@ -101,6 +102,7 @@ export function AuthorityComplaintsProvider({ children }: PropsWithChildren) {
 
           return {
             ...complaint,
+            deadline: input.deadline,
             budget: input.budget,
             progress: Math.min(95, complaint.progress + 15),
             updates: [

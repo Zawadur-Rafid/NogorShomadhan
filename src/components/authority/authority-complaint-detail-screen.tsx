@@ -1,8 +1,10 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
+import ProgressSegmentedControl from '@expo/ui/community/segmented-control';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { useLocalSearchParams } from 'expo-router';
 import { useMemo, useState } from 'react';
+import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 import {
   Pressable,
   ScrollView,
@@ -28,6 +30,8 @@ export type AuthorityComplaintDetailMode =
   | 'pending'
   | 'in-progress'
   | 'resolved';
+
+type ProgressAction = 'update' | 'completed';
 
 const modeTheme = {
   pending: {
@@ -284,6 +288,8 @@ export default function AuthorityComplaintDetailScreen() {
   const [resolutionNote, setResolutionNote] = useState('');
   const [finalEvidence, setFinalEvidence] =
     useState<AuthorityEvidenceImage | null>(null);
+  const [progressAction, setProgressAction] =
+    useState<ProgressAction>('update');
   const [formMessage, setFormMessage] = useState('');
   const wide = width >= 900;
   const mode = getDetailMode(complaint?.status);
@@ -366,14 +372,20 @@ export default function AuthorityComplaintDetailScreen() {
   };
 
   const handleAddUpdate = () => {
-    if (!updateNote.trim() || !workBudget.trim() || updateImages.length === 0) {
+    if (
+      !updateNote.trim() ||
+      !deadline.trim() ||
+      !workBudget.trim() ||
+      updateImages.length === 0
+    ) {
       setFormMessage(
-        'Add an update note, current budget, and at least one evidence photo.',
+        'Add progress photos, a deadline, the current amount, and update notes.',
       );
       return;
     }
 
     addWorkUpdate(complaint.id, {
+      deadline: deadline.trim(),
       note: updateNote.trim(),
       budget: workBudget.trim(),
       images: updateImages,
@@ -386,14 +398,14 @@ export default function AuthorityComplaintDetailScreen() {
   const handleResolve = () => {
     if (!resolutionNote.trim() || !finalEvidence) {
       setFormMessage(
-        'A final completion photo and resolution note are required before closing.',
+        'A final completion photo and completion notes are required before closing.',
       );
       return;
     }
 
     resolveComplaint(complaint.id, {
       note: resolutionNote.trim(),
-      budget: workBudget.trim() || complaint.budget,
+      budget: complaint.budget,
       finalImage: finalEvidence,
     });
     setFormMessage('');
@@ -401,11 +413,11 @@ export default function AuthorityComplaintDetailScreen() {
 
   const canAddUpdate =
     updateNote.trim().length > 0 &&
+    deadline.trim().length > 0 &&
     workBudget.trim().length > 0 &&
     updateImages.length > 0;
   const canResolve =
     resolutionNote.trim().length > 0 &&
-    workBudget.trim().length > 0 &&
     finalEvidence !== null;
 
   return (
@@ -589,13 +601,12 @@ export default function AuthorityComplaintDetailScreen() {
               )}
 
               {mode === 'in-progress' && (
-                <>
-                  <View style={[styles.panel, styles.actionPanel]}>
+                <View style={[styles.panel, styles.actionPanel]}>
                     <View style={styles.progressHeading}>
                       <View style={styles.progressCopy}>
-                        <Text style={styles.actionTitle}>Add Work Update</Text>
+                        <Text style={styles.actionTitle}>Record Progress</Text>
                         <Text style={styles.actionDescription}>
-                          Each update records notes, photos, time, and budget.
+                          Choose whether to add an update or complete this complaint.
                         </Text>
                       </View>
                       <Text style={styles.progressValue}>{complaint.progress}%</Text>
@@ -606,19 +617,52 @@ export default function AuthorityComplaintDetailScreen() {
                       />
                     </View>
 
-                    <Text style={styles.inputLabel}>Current Budget</Text>
+                    <ProgressSegmentedControl
+                      values={['Update', 'Completed']}
+                      selectedIndex={progressAction === 'update' ? 0 : 1}
+                      onChange={({ nativeEvent }) => {
+                        setProgressAction(
+                          nativeEvent.selectedSegmentIndex === 0
+                            ? 'update'
+                            : 'completed',
+                        );
+                        setFormMessage('');
+                      }}
+                      style={styles.actionModeControl}
+                    />
+
+                    {progressAction === 'update' && (
+                      <Animated.View
+                        entering={FadeIn.duration(180)}
+                        exiting={FadeOut.duration(120)}
+                        style={styles.actionForm}
+                      >
+
+                    <Text style={styles.inputLabel}>Current Amount</Text>
                     <View style={styles.inputBox}>
                       <Ionicons name="cash-outline" size={17} color="#7A8493" />
                       <TextInput
                         value={workBudget}
                         onChangeText={setWorkBudget}
-                        placeholder="Enter updated budget"
+                        placeholder="Enter updated amount"
                         placeholderTextColor="#98A2B3"
                         style={styles.input}
                       />
                     </View>
 
-                    <Text style={styles.inputLabel}>Update Note</Text>
+                    <Text style={styles.inputLabel}>Deadline</Text>
+                    <View style={styles.inputBox}>
+                      <Ionicons name="calendar-outline" size={17} color="#7A8493" />
+                      <TextInput
+                        value={deadline}
+                        onChangeText={setDeadline}
+                        placeholder="DD MMM YYYY"
+                        placeholderTextColor="#98A2B3"
+                        style={styles.input}
+                      />
+                    </View>
+
+                    <Text style={styles.inputLabel}>Update Notes</Text>
                     <TextInput
                       value={updateNote}
                       onChangeText={setUpdateNote}
@@ -667,30 +711,26 @@ export default function AuthorityComplaintDetailScreen() {
                       <Ionicons name="add-circle-outline" size={18} color="#23435D" />
                       <Text style={styles.secondaryButtonText}>Add Update</Text>
                     </TouchableOpacity>
-                  </View>
+                      </Animated.View>
+                    )}
 
-                  <View style={[styles.panel, styles.resolveActionPanel]}>
+                    {progressAction === 'completed' && (
+                      <Animated.View
+                        entering={FadeIn.duration(180)}
+                        exiting={FadeOut.duration(120)}
+                        style={styles.actionForm}
+                      >
                     <View style={styles.resolveHeading}>
                       <View style={styles.resolveActionIcon}>
                         <Ionicons name="checkmark-done-outline" size={21} color="#FFFFFF" />
                       </View>
                       <View style={styles.progressCopy}>
-                        <Text style={styles.actionTitle}>Complete & Resolve</Text>
+                        <Text style={styles.actionTitle}>Complete Complaint</Text>
                         <Text style={styles.actionDescription}>
-                          Final evidence and a resolution note are mandatory.
+                          Upload final proof and notes to close this complaint.
                         </Text>
                       </View>
                     </View>
-
-                    <Text style={styles.inputLabel}>Resolution Note</Text>
-                    <TextInput
-                      value={resolutionNote}
-                      onChangeText={setResolutionNote}
-                      placeholder="Describe the completed work and final inspection..."
-                      placeholderTextColor="#98A2B3"
-                      multiline
-                      style={[styles.inputBox, styles.noteInput]}
-                    />
 
                     <Text style={styles.inputLabel}>Final Completion Photo</Text>
                     <TouchableOpacity style={styles.finalPhotoPicker} onPress={chooseFinalEvidence}>
@@ -701,11 +741,28 @@ export default function AuthorityComplaintDetailScreen() {
                           <Ionicons name="camera-outline" size={27} color="#2563EB" />
                           <Text style={styles.finalPhotoTitle}>Add completion proof</Text>
                           <Text style={styles.finalPhotoText}>
-                            Required before this complaint can be resolved
+                            Required before this complaint can be completed
                           </Text>
                         </View>
                       )}
                     </TouchableOpacity>
+
+                    <Text style={styles.inputLabel}>Completion Notes</Text>
+                    <TextInput
+                      value={resolutionNote}
+                      onChangeText={setResolutionNote}
+                      placeholder="Describe the completed work and final inspection..."
+                      placeholderTextColor="#98A2B3"
+                      multiline
+                      style={[styles.inputBox, styles.noteInput]}
+                    />
+
+                    {formMessage.length > 0 && (
+                      <View style={styles.formMessage}>
+                        <Ionicons name="information-circle-outline" size={17} color="#607A9A" />
+                        <Text style={styles.formMessageText}>{formMessage}</Text>
+                      </View>
+                    )}
 
                     <TouchableOpacity
                       disabled={!canResolve}
@@ -716,10 +773,11 @@ export default function AuthorityComplaintDetailScreen() {
                       onPress={handleResolve}
                     >
                       <Ionicons name="checkmark-done-outline" size={18} color="#FFFFFF" />
-                      <Text style={styles.primaryButtonText}>Mark as Resolved</Text>
+                      <Text style={styles.primaryButtonText}>Mark as Completed</Text>
                     </TouchableOpacity>
-                  </View>
-                </>
+                      </Animated.View>
+                    )}
+                </View>
               )}
 
               {mode === 'resolved' && (
@@ -931,6 +989,8 @@ const styles = StyleSheet.create({
   reporterName: { color: '#1F2937', fontSize: 12, fontWeight: '800', marginTop: 3 },
   reporterPhone: { color: '#7A8493', fontSize: 9, marginTop: 3 },
   actionPanel: { gap: 10 },
+  actionModeControl: { width: '100%', height: 38 },
+  actionForm: { gap: 10 },
   actionIcon: {
     width: 43,
     height: 43,
@@ -1024,7 +1084,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#EFF4F7',
   },
   formMessageText: { flex: 1, color: '#52677F', fontSize: 9, lineHeight: 14 },
-  resolveActionPanel: { gap: 10, borderColor: '#DCE8F7', backgroundColor: '#FBFDFF' },
   resolveHeading: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   resolveActionIcon: {
     width: 43,
