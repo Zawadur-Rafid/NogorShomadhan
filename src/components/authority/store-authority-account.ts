@@ -66,6 +66,7 @@ export const authorityNotifications: AuthorityNotification[] = [
 
 export const authorityProfileDetails = {
   name: 'Abdul Rahman',
+  initials: 'AR',
   email: 'rahman@nogorshomadhan.gov',
   phone: '+880 1712-345678',
   employeeId: 'AUTH-0074',

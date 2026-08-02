@@ -2,6 +2,20 @@ import type { AuthorityComplaint } from './store-authority-dashboard';
 
 export type AuthorityEvidenceImage = number | { uri: string };
 
+export type AuthorityMergedReporter = {
+  id: string;
+  name: string;
+  initials: string;
+  submittedAt: string;
+};
+
+export type AuthorityApproval = {
+  name: string;
+  initials: string;
+  role: string;
+  approvedAt: string;
+};
+
 export type AuthorityContractorAssignment = {
   id: string;
   name: string;
@@ -35,6 +49,8 @@ export type AuthorityComplaintDetail = AuthorityComplaint & {
   reporter: string;
   reporterInitials: string;
   reporterPhone: string;
+  otherReporters: AuthorityMergedReporter[];
+  approvedBy?: AuthorityApproval;
   submittedAt: string;
   zone: string;
   evidence: AuthorityEvidenceImage;
@@ -67,6 +83,26 @@ const initialAuthorityComplaintDetails: AuthorityComplaintDetail[] = [
     reporter: 'Nusrat Jahan',
     reporterInitials: 'NJ',
     reporterPhone: '+880 1712-345678',
+    otherReporters: [
+      {
+        id: 'RPT-1048-2',
+        name: 'Rafiul Karim',
+        initials: 'RK',
+        submittedAt: '18 Jul 2026, 9:42 AM',
+      },
+      {
+        id: 'RPT-1048-3',
+        name: 'Tanjila Akter',
+        initials: 'TA',
+        submittedAt: '18 Jul 2026, 10:05 AM',
+      },
+      {
+        id: 'RPT-1048-4',
+        name: 'Omar Faruk',
+        initials: 'OF',
+        submittedAt: '18 Jul 2026, 10:18 AM',
+      },
+    ],
     submittedAt: '18 Jul 2026, 9:25 AM',
     zone: 'Zone 3 · Block C',
     evidence: require('../../../assets/images/authority/evidence/pending-drain.png'),
@@ -111,6 +147,26 @@ const initialAuthorityComplaintDetails: AuthorityComplaintDetail[] = [
     reporter: 'Mahmud Hasan',
     reporterInitials: 'MH',
     reporterPhone: '+880 1811-902411',
+    otherReporters: [
+      {
+        id: 'RPT-1042-2',
+        name: 'Ayesha Rahman',
+        initials: 'AR',
+        submittedAt: '17 Jul 2026, 9:05 PM',
+      },
+      {
+        id: 'RPT-1042-3',
+        name: 'Kamrul Islam',
+        initials: 'KI',
+        submittedAt: '18 Jul 2026, 7:35 AM',
+      },
+    ],
+    approvedBy: {
+      name: 'Abdul Rahman',
+      initials: 'AR',
+      role: 'Community Authority',
+      approvedAt: '18 Jul 2026, 10:15 AM',
+    },
     submittedAt: '17 Jul 2026, 8:40 PM',
     zone: 'Zone 1 · Block A',
     evidence: require('../../../assets/images/authority/evidence/in-progress-streetlight.png'),
@@ -187,6 +243,26 @@ const initialAuthorityComplaintDetails: AuthorityComplaintDetail[] = [
     reporter: 'Sadia Islam',
     reporterInitials: 'SI',
     reporterPhone: '+880 1914-223890',
+    otherReporters: [
+      {
+        id: 'RPT-1039-2',
+        name: 'Jannatul Ferdous',
+        initials: 'JF',
+        submittedAt: '17 Jul 2026, 2:28 PM',
+      },
+      {
+        id: 'RPT-1039-3',
+        name: 'Mehedi Hasan',
+        initials: 'MH',
+        submittedAt: '17 Jul 2026, 3:02 PM',
+      },
+      {
+        id: 'RPT-1039-4',
+        name: 'Shaila Ahmed',
+        initials: 'SA',
+        submittedAt: '17 Jul 2026, 3:46 PM',
+      },
+    ],
     submittedAt: '17 Jul 2026, 2:10 PM',
     zone: 'Zone 2 · Block B',
     evidence: require('../../../assets/images/authority/evidence/pending-water-leak.png'),
@@ -231,6 +307,26 @@ const initialAuthorityComplaintDetails: AuthorityComplaintDetail[] = [
     reporter: 'Imran Kabir',
     reporterInitials: 'IK',
     reporterPhone: '+880 1610-778214',
+    otherReporters: [
+      {
+        id: 'RPT-1034-2',
+        name: 'Arif Hossain',
+        initials: 'AH',
+        submittedAt: '16 Jul 2026, 11:38 AM',
+      },
+      {
+        id: 'RPT-1034-3',
+        name: 'Tasnim Rahman',
+        initials: 'TR',
+        submittedAt: '16 Jul 2026, 12:20 PM',
+      },
+    ],
+    approvedBy: {
+      name: 'Abdul Rahman',
+      initials: 'AR',
+      role: 'Community Authority',
+      approvedAt: '17 Jul 2026, 8:45 AM',
+    },
     submittedAt: '16 Jul 2026, 11:15 AM',
     zone: 'Zone 4 · Block D',
     evidence: require('../../../assets/images/authority/evidence/in-progress-road.png'),
@@ -296,6 +392,26 @@ const initialAuthorityComplaintDetails: AuthorityComplaintDetail[] = [
     reporter: 'Farzana Ahmed',
     reporterInitials: 'FA',
     reporterPhone: '+880 1718-669032',
+    otherReporters: [
+      {
+        id: 'RPT-1027-2',
+        name: 'Rafiul Karim',
+        initials: 'RK',
+        submittedAt: '15 Jul 2026, 7:48 AM',
+      },
+      {
+        id: 'RPT-1027-3',
+        name: 'Maliha Noor',
+        initials: 'MN',
+        submittedAt: '15 Jul 2026, 8:12 AM',
+      },
+    ],
+    approvedBy: {
+      name: 'Abdul Rahman',
+      initials: 'AR',
+      role: 'Community Authority',
+      approvedAt: '15 Jul 2026, 10:20 AM',
+    },
     submittedAt: '15 Jul 2026, 7:30 AM',
     zone: 'Zone 5 · Block E',
     evidence: require('../../../assets/images/authority/evidence/resolved-waste.png'),
@@ -384,6 +500,10 @@ const initialAuthorityComplaintDetails: AuthorityComplaintDetail[] = [
 export function createInitialAuthorityComplaintDetails(): AuthorityComplaintDetail[] {
   return initialAuthorityComplaintDetails.map((complaint) => ({
     ...complaint,
+    approvedBy: complaint.approvedBy
+      ? { ...complaint.approvedBy }
+      : undefined,
+    otherReporters: complaint.otherReporters.map((reporter) => ({ ...reporter })),
     contractorAssignments: complaint.contractorAssignments.map((assignment) => ({
       ...assignment,
     })),

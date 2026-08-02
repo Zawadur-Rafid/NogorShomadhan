@@ -4,7 +4,7 @@ import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { useLocalSearchParams } from 'expo-router';
 import { useMemo, useState } from 'react';
-import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
+import Animated, { FadeIn, FadeInDown, FadeOut } from 'react-native-reanimated';
 import {
   Pressable,
   ScrollView,
@@ -21,6 +21,7 @@ import { useAuthorityComplaints } from './authority-complaints-context';
 import AuthorityMap from './authority-map';
 import AuthorityPageHeader from './authority-page-header';
 import type {
+  AuthorityApproval,
   AuthorityContractorAssignment,
   AuthorityComplaintDetail,
   AuthorityEvidenceImage,
@@ -365,6 +366,123 @@ function ResidentFeedback({ complaint }: { complaint: AuthorityComplaintDetail }
   );
 }
 
+function ApprovalCard({ approval }: { approval: AuthorityApproval }) {
+
+  return (
+    <View style={styles.approvalCard}>
+      <View style={styles.approvalIcon}>
+        <Ionicons name="shield-checkmark" size={22} color="#FFFFFF" />
+      </View>
+      <View style={styles.approvalCopy}>
+        <Text style={styles.approvalLabel}>WORK APPROVED BY</Text>
+        <Text selectable style={styles.approvalName}>
+          {approval.name}
+        </Text>
+        <Text selectable style={styles.approvalRole}>
+          {approval.role}
+        </Text>
+        <View style={styles.approvalDateRow}>
+          <Ionicons name="calendar-outline" size={12} color="#4A7C69" />
+          <Text selectable style={styles.approvalDate}>
+            {approval.approvedAt}
+          </Text>
+        </View>
+      </View>
+      <View style={styles.approvedBadge}>
+        <Text style={styles.approvedBadgeText}>WORK APPROVED</Text>
+      </View>
+    </View>
+  );
+}
+
+function ReporterProfile({ complaint }: { complaint: AuthorityComplaintDetail }) {
+  const [expanded, setExpanded] = useState(false);
+  const reporterCount = complaint.otherReporters.length;
+
+  return (
+    <View style={styles.reporterPanel}>
+      <View style={styles.reporterCard}>
+        <View style={styles.avatar}>
+          <Text style={styles.avatarText}>{complaint.reporterInitials}</Text>
+        </View>
+        <View style={styles.reporterCopy}>
+          <Text style={styles.reporterLabel}>PRIMARY REPORTER</Text>
+          <Text selectable style={styles.reporterName}>
+            {complaint.reporter}
+          </Text>
+          <Text selectable style={styles.reporterPhone}>
+            {complaint.reporterPhone}
+          </Text>
+          <Text style={styles.primaryReporterHint}>
+            First person who reported this issue
+          </Text>
+        </View>
+        <Ionicons name="person-circle-outline" size={23} color="#B9854B" />
+      </View>
+
+      {reporterCount > 0 && (
+        <>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityState={{ expanded }}
+            accessibilityLabel={`${expanded ? 'Hide' : 'Show'} ${reporterCount} other reporters`}
+            onPress={() => setExpanded((current) => !current)}
+            style={({ pressed }) => [
+              styles.otherReportersToggle,
+              pressed && styles.otherReportersTogglePressed,
+            ]}
+          >
+            <View style={styles.otherReportersIcon}>
+              <Ionicons name="people-outline" size={17} color="#2563EB" />
+            </View>
+            <View style={styles.otherReportersCopy}>
+              <View style={styles.otherReportersTitleRow}>
+                <Text style={styles.otherReportersTitle}>Other Reporters</Text>
+                <View style={styles.otherReportersCount}>
+                  <Text style={styles.otherReportersCountText}>{reporterCount}</Text>
+                </View>
+              </View>
+              <Text style={styles.otherReportersDescription}>
+                AI-matched duplicate {reporterCount === 1 ? 'report' : 'reports'}
+              </Text>
+            </View>
+            <Ionicons
+              name={expanded ? 'chevron-up' : 'chevron-down'}
+              size={18}
+              color="#607A9A"
+            />
+          </Pressable>
+
+          {expanded && (
+            <Animated.View
+              entering={FadeInDown.duration(180)}
+              exiting={FadeOut.duration(120)}
+              style={styles.otherReportersList}
+            >
+              {complaint.otherReporters.map((reporter) => (
+                <View key={reporter.id} style={styles.otherReporterRow}>
+                  <View style={styles.otherReporterAvatar}>
+                    <Text style={styles.otherReporterAvatarText}>{reporter.initials}</Text>
+                  </View>
+                  <View style={styles.otherReporterCopy}>
+                    <Text selectable style={styles.otherReporterName}>
+                      {reporter.name}
+                    </Text>
+                    <Text selectable style={styles.otherReporterDate}>
+                      Reported {reporter.submittedAt}
+                    </Text>
+                  </View>
+                  <Ionicons name="git-merge-outline" size={15} color="#7890AB" />
+                </View>
+              ))}
+            </Animated.View>
+          )}
+        </>
+      )}
+    </View>
+  );
+}
+
 export default function AuthorityComplaintDetailScreen() {
   const params = useLocalSearchParams<{ complaintId?: string | string[] }>();
   const { width } = useWindowDimensions();
@@ -591,6 +709,10 @@ export default function AuthorityComplaintDetailScreen() {
             </Text>
           </View>
 
+          {mode !== 'pending' && complaint.approvedBy && (
+            <ApprovalCard approval={complaint.approvedBy} />
+          )}
+
           <View style={[styles.pageGrid, wide && styles.pageGridWide]}>
             <View style={styles.mainColumn}>
               <View style={styles.panel}>
@@ -667,21 +789,7 @@ export default function AuthorityComplaintDetailScreen() {
             </View>
 
             <View style={styles.sideColumn}>
-              <View style={styles.reporterCard}>
-                <View style={styles.avatar}>
-                  <Text style={styles.avatarText}>{complaint.reporterInitials}</Text>
-                </View>
-                <View style={styles.reporterCopy}>
-                  <Text style={styles.reporterLabel}>RESIDENT REPORTER</Text>
-                  <Text selectable style={styles.reporterName}>
-                    {complaint.reporter}
-                  </Text>
-                  <Text selectable style={styles.reporterPhone}>
-                    {complaint.reporterPhone}
-                  </Text>
-                </View>
-                <Ionicons name="shield-checkmark-outline" size={21} color="#16845B" />
-              </View>
+              <ReporterProfile complaint={complaint} />
 
               {mode !== 'pending' && (
                 <ContractorAssignments complaint={complaint} mode={mode} />
@@ -1241,16 +1349,68 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     backgroundColor: '#E8EDF4',
   },
+  approvalCard: {
+    minHeight: 92,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 11,
+    padding: 14,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#CDE8DB',
+    backgroundColor: '#F1FBF6',
+  },
+  approvalIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#16845B',
+  },
+  approvalCopy: { flex: 1, minWidth: 0 },
+  approvalLabel: {
+    color: '#16845B',
+    fontSize: 7,
+    fontWeight: '900',
+    letterSpacing: 0.5,
+  },
+  approvalName: { color: '#1F2937', fontSize: 12, fontWeight: '800', marginTop: 3 },
+  approvalRole: { color: '#4A7C69', fontSize: 8, marginTop: 2 },
+  approvalDateRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    marginTop: 7,
+  },
+  approvalDate: { flex: 1, color: '#607A72', fontSize: 7, lineHeight: 11 },
+  approvedBadge: {
+    maxWidth: 72,
+    paddingHorizontal: 7,
+    paddingVertical: 4,
+    borderRadius: 10,
+    backgroundColor: '#DDF4E8',
+  },
+  approvedBadgeText: {
+    color: '#16845B',
+    fontSize: 6,
+    fontWeight: '900',
+    lineHeight: 9,
+    textAlign: 'center',
+  },
+  reporterPanel: {
+    overflow: 'hidden',
+    borderRadius: 14,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#EAEDF1',
+  },
   reporterCard: {
     minHeight: 82,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 11,
     padding: 14,
-    borderRadius: 14,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#EAEDF1',
   },
   avatar: {
     width: 46,
@@ -1261,10 +1421,85 @@ const styles = StyleSheet.create({
     backgroundColor: '#E8EEF2',
   },
   avatarText: { color: '#23435D', fontSize: 12, fontWeight: '900' },
-  reporterCopy: { flex: 1 },
+  reporterCopy: { flex: 1, minWidth: 0 },
   reporterLabel: { color: '#B9854B', fontSize: 7, fontWeight: '900', letterSpacing: 0.5 },
   reporterName: { color: '#1F2937', fontSize: 12, fontWeight: '800', marginTop: 3 },
   reporterPhone: { color: '#7A8493', fontSize: 9, marginTop: 3 },
+  primaryReporterHint: { color: '#98A2B3', fontSize: 7, lineHeight: 11, marginTop: 4 },
+  otherReportersToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 9,
+    padding: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#EAEDF1',
+    backgroundColor: '#FBFCFE',
+  },
+  otherReportersTogglePressed: { opacity: 0.72 },
+  otherReportersIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#EAF2FD',
+  },
+  otherReportersCopy: { flex: 1, minWidth: 0 },
+  otherReportersTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  otherReportersTitle: { color: '#344054', fontSize: 10, fontWeight: '800' },
+  otherReportersCount: {
+    minWidth: 20,
+    height: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 6,
+    borderRadius: 10,
+    backgroundColor: '#2563EB',
+  },
+  otherReportersCountText: {
+    color: '#FFFFFF',
+    fontSize: 7,
+    fontWeight: '900',
+    fontVariant: ['tabular-nums'],
+  },
+  otherReportersDescription: { color: '#7890AB', fontSize: 7, marginTop: 2 },
+  otherReportersList: {
+    gap: 8,
+    padding: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#EAEDF1',
+    backgroundColor: '#F8FAFC',
+  },
+  otherReporterRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 9,
+    padding: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#E3E8EF',
+    backgroundColor: '#FFFFFF',
+  },
+  otherReporterAvatar: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#E8EEF2',
+  },
+  otherReporterAvatarText: {
+    color: '#23435D',
+    fontSize: 8,
+    fontWeight: '900',
+  },
+  otherReporterCopy: { flex: 1, minWidth: 0 },
+  otherReporterName: { color: '#344054', fontSize: 9, fontWeight: '800' },
+  otherReporterDate: { color: '#8A93A1', fontSize: 7, lineHeight: 11, marginTop: 2 },
   contractorPanel: { gap: 0 },
   currentContractorCard: {
     flexDirection: 'row',

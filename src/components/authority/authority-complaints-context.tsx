@@ -7,6 +7,7 @@ import {
   useState,
 } from 'react';
 
+import { authorityProfileDetails } from './store-authority-account';
 import {
   createInitialAuthorityComplaintDetails,
   type AuthorityComplaintDetail,
@@ -98,6 +99,12 @@ export function AuthorityComplaintsProvider({ children }: PropsWithChildren) {
             budget: input.budget,
             workNote: input.note,
             progress: 10,
+            approvedBy: {
+              name: authorityProfileDetails.name,
+              initials: authorityProfileDetails.initials,
+              role: authorityProfileDetails.role,
+              approvedAt: timestamp,
+            },
             contractorAssignments: [
               {
                 id: contractorAssignmentId,
