@@ -226,6 +226,50 @@ export default function Dashboard() {
       paddingHorizontal: 20,
       fontFamily: "Inter",
     },
+    forumCard: {
+      marginHorizontal: 16,
+      marginTop: 12,
+      marginBottom: 4,
+      backgroundColor: "#fff",
+      borderRadius: 14,
+      padding: 16,
+      flexDirection: "row",
+      alignItems: "center",
+      shadowColor: "#000",
+      shadowOpacity: 0.05,
+      shadowRadius: 6,
+      shadowOffset: {
+        width: 0,
+        height: 2,
+      },
+      elevation: 2,
+    },
+    forumIcon: {
+      width: 46,
+      height: 46,
+      borderRadius: 23,
+      backgroundColor: "#EAF3FF",
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    forumCopy: {
+      flex: 1,
+      marginLeft: 12,
+      marginRight: 10,
+    },
+    forumTitle: {
+      color: "#1B1B1B",
+      fontSize: 16,
+      fontWeight: "700",
+      fontFamily: "Inter",
+    },
+    forumText: {
+      marginTop: 4,
+      color: "#6B7280",
+      fontSize: 12,
+      lineHeight: 18,
+      fontFamily: "Inter",
+    },
     helpCard: {
       marginHorizontal: 16,
       marginVertical: 20,
@@ -447,6 +491,32 @@ export default function Dashboard() {
             <Text style={styles.legendText}>Resolved</Text>
           </View>
         </View>
+
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Community Forum</Text>
+          <TouchableOpacity onPress={() => router.push('/(resident)/forum')}>
+            <Text style={styles.viewAll}>Open</Text>
+          </TouchableOpacity>
+        </View>
+
+        <TouchableOpacity
+          activeOpacity={0.85}
+          style={styles.forumCard}
+          onPress={() => router.push('/(resident)/forum')}
+        >
+          <View style={styles.forumIcon}>
+            <Ionicons name="chatbubbles-outline" size={22} color="#2D6CDF" />
+          </View>
+
+          <View style={styles.forumCopy}>
+            <Text style={styles.forumTitle}>Join the resident forum</Text>
+            <Text style={styles.forumText}>
+              Share updates, ask questions, and discuss neighborhood issues with other residents.
+            </Text>
+          </View>
+
+          <Ionicons name="chevron-forward" size={22} color="#888" />
+        </TouchableOpacity>
 
         {/* Help Center */}
         <View style={styles.helpCard}>
