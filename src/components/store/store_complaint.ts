@@ -16,6 +16,15 @@ export interface DummyComplaint {
   icon: string;
   lat: number;
   lng: number;
+  contractorAssignments?: any[];
+  updates?: any[];
+  completedAt?: string;
+  deadline?: string;
+  budget?: string;
+  resolutionNote?: string;
+  finalEvidence?: string;
+  approvedBy?: any;
+  feedback?: any[];
 }
 
 export const dummyComplaints: DummyComplaint[] = [
@@ -63,6 +72,58 @@ export const dummyComplaints: DummyComplaint[] = [
     icon: "construct-outline",
     lat: 23.8360,
     lng: 90.3705,
+    completedAt: 'Oct 23, 2023, 4:00 PM',
+    deadline: 'Oct 25, 2023',
+    budget: '৳ 35,000',
+    resolutionNote: 'The pothole was completely filled with asphalt and compacted correctly. The road is safe again.',
+    finalEvidence: 'https://ichef.bbci.co.uk/news/1024/cpsprodpb/a54e/live/3c4327e0-2855-11ef-a07f-09e6d1fd4403.jpg.webp',
+    approvedBy: {
+      name: 'Rezaul Karim',
+      initials: 'RK',
+      role: 'Community Authority',
+      approvedAt: 'Oct 23, 2023, 5:30 PM',
+    },
+    feedback: [
+      {
+        id: 'f-1',
+        resident: 'Aminul Islam',
+        residentInitials: 'AI',
+        rating: 5,
+        comment: 'Great job fixing this quickly! The road is smooth now.',
+        receivedAt: 'Oct 24, 2023',
+      }
+    ],
+    contractorAssignments: [
+      {
+        id: 'ca-5',
+        name: 'Road Builders Inc.',
+        phone: '+880 1912-333444',
+        assignedFrom: 'Oct 22, 2023, 8:00 AM',
+        assignedUntil: 'Oct 23, 2023, 4:00 PM'
+      }
+    ],
+    updates: [
+      {
+        id: 'u-2-1',
+        contractorAssignmentId: 'ca-5',
+        title: 'Work started',
+        note: 'Excavation around pothole completed.',
+        timestamp: 'Oct 22, 2023, 10:00 AM',
+        complete: true,
+        budget: '৳ 10,000',
+        images: ["https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?auto=format&fit=crop&q=80&w=800"],
+      },
+      {
+        id: 'u-2-2',
+        contractorAssignmentId: 'ca-5',
+        title: 'Filling & Compaction',
+        note: 'Poured hot asphalt and compacted.',
+        timestamp: 'Oct 23, 2023, 2:00 PM',
+        complete: true,
+        budget: '৳ 35,000',
+        images: [],
+      }
+    ],
   },
   {
     id: "3",
@@ -85,6 +146,46 @@ export const dummyComplaints: DummyComplaint[] = [
     icon: "bulb-outline",
     lat: 23.8375,
     lng: 90.3690,
+    contractorAssignments: [
+      {
+        id: 'ca-1',
+        name: 'Dhaka Light Services',
+        phone: '+880 1711-000000',
+        assignedFrom: 'Oct 20, 2023, 10:15 AM',
+      }
+    ],
+    updates: [
+      {
+        id: 'u-1',
+        contractorAssignmentId: 'ca-1',
+        title: 'Work started',
+        note: 'Electrical team inspected both poles and isolated the faulty control unit.',
+        timestamp: 'Oct 20, 2023, 10:15 AM',
+        complete: true,
+        budget: '৳ 15,000',
+        images: ["https://images.unsplash.com/photo-1513222588078-d5e6ebac17f3?auto=format&fit=crop&q=80&w=800"],
+      },
+      {
+        id: 'u-2',
+        contractorAssignmentId: 'ca-1',
+        title: 'Repair underway',
+        note: 'Replacement equipment arrived and installation is in progress.',
+        timestamp: 'Oct 21, 2023, 3:30 PM',
+        complete: true,
+        budget: '৳ 22,000',
+        images: ["https://images.unsplash.com/photo-1509114397022-ed747cca3f65?auto=format&fit=crop&q=80&w=800"],
+      },
+      {
+        id: 'u-3',
+        contractorAssignmentId: 'ca-1',
+        title: 'Final testing',
+        note: 'Night-time lighting test remains before resolution.',
+        timestamp: 'Pending',
+        complete: false,
+        budget: '৳ 22,000',
+        images: [],
+      }
+    ],
   },
   {
     id: "4",
@@ -128,6 +229,36 @@ export const dummyComplaints: DummyComplaint[] = [
     icon: "bicycle-outline",
     lat: 23.8365,
     lng: 90.3710,
+    contractorAssignments: [
+      {
+        id: 'ca-2',
+        name: 'Safe Playgrounds Ltd.',
+        phone: '+880 1711-222333',
+        assignedFrom: 'Oct 28, 2023, 9:00 AM',
+      }
+    ],
+    updates: [
+      {
+        id: 'u-5-1',
+        contractorAssignmentId: 'ca-2',
+        title: 'Area secured',
+        note: 'Swings were barricaded to prevent injuries while waiting for parts.',
+        timestamp: 'Oct 28, 2023, 9:30 AM',
+        complete: true,
+        budget: '৳ 2,000',
+        images: ["https://images.unsplash.com/photo-1596464716127-f2a82984de30?auto=format&fit=crop&q=80&w=800"],
+      },
+      {
+        id: 'u-5-2',
+        contractorAssignmentId: 'ca-2',
+        title: 'Replacement pending',
+        note: 'New chain sets ordered from supplier. Estimated delivery in 2 days.',
+        timestamp: 'Pending',
+        complete: false,
+        budget: '৳ 8,500',
+        images: [],
+      }
+    ],
   },
   {
     id: "6",
@@ -149,6 +280,48 @@ export const dummyComplaints: DummyComplaint[] = [
     icon: "car-outline",
     lat: 23.8380,
     lng: 90.3660,
+    completedAt: 'Oct 29, 2023, 11:00 AM',
+    deadline: 'Oct 30, 2023',
+    budget: '৳ 0',
+    resolutionNote: 'Vehicles were towed and owners were fined. Walkway is now completely clear.',
+    finalEvidence: 'https://images.unsplash.com/photo-1533227260828-531422ab88a8?auto=format&fit=crop&q=80&w=800',
+    approvedBy: {
+      name: 'Rezaul Karim',
+      initials: 'RK',
+      role: 'Community Authority',
+      approvedAt: 'Oct 29, 2023, 11:30 AM',
+    },
+    feedback: [
+      {
+        id: 'f-2',
+        resident: 'Farzana Rahman',
+        residentInitials: 'FR',
+        rating: 4,
+        comment: 'Thanks for clearing the walkway. Hopefully they don\'t park here again.',
+        receivedAt: 'Oct 30, 2023',
+      }
+    ],
+    contractorAssignments: [
+      {
+        id: 'ca-6',
+        name: 'City Towing Services',
+        phone: '+880 1711-555666',
+        assignedFrom: 'Oct 29, 2023, 9:00 AM',
+        assignedUntil: 'Oct 29, 2023, 11:00 AM'
+      }
+    ],
+    updates: [
+      {
+        id: 'u-6-1',
+        contractorAssignmentId: 'ca-6',
+        title: 'Towing started',
+        note: 'Towing trucks arrived and started removing the commercial vehicles.',
+        timestamp: 'Oct 29, 2023, 9:30 AM',
+        complete: true,
+        budget: '৳ 0',
+        images: ["https://images.unsplash.com/photo-1510442650500-93217e634e4c?auto=format&fit=crop&q=80&w=800"],
+      }
+    ],
   },
   {
     id: "7",
@@ -193,6 +366,36 @@ export const dummyComplaints: DummyComplaint[] = [
     icon: "paw-outline",
     lat: 23.8370,
     lng: 90.3680,
+    contractorAssignments: [
+      {
+        id: 'ca-3',
+        name: 'Animal Rescue Services',
+        phone: '+880 1819-444555',
+        assignedFrom: 'Oct 31, 2023, 7:00 AM',
+      }
+    ],
+    updates: [
+      {
+        id: 'u-8-1',
+        contractorAssignmentId: 'ca-3',
+        title: 'Evaluation',
+        note: 'Rescue team arrived and evaluated the pack behavior.',
+        timestamp: 'Oct 31, 2023, 7:30 AM',
+        complete: true,
+        budget: '৳ 5,000',
+        images: ["https://images.unsplash.com/photo-1548681528-6a5c45b66b42?auto=format&fit=crop&q=80&w=800"],
+      },
+      {
+        id: 'u-8-2',
+        contractorAssignmentId: 'ca-3',
+        title: 'Relocation ongoing',
+        note: 'Currently working on safe capture and relocation.',
+        timestamp: 'Pending',
+        complete: false,
+        budget: '৳ 10,000',
+        images: [],
+      }
+    ],
   },
   {
     id: "9",
@@ -261,6 +464,36 @@ export const dummyComplaints: DummyComplaint[] = [
     icon: "water-outline",
     lat: 23.8388,
     lng: 90.3712,
+    contractorAssignments: [
+      {
+        id: 'ca-4',
+        name: 'City Drain Cleaners',
+        phone: '+880 1677-888999',
+        assignedFrom: 'Nov 04, 2023, 2:00 PM',
+      }
+    ],
+    updates: [
+      {
+        id: 'u-11-1',
+        contractorAssignmentId: 'ca-4',
+        title: 'Initial clearing',
+        note: 'Surface plastic waste removed to allow slow drainage.',
+        timestamp: 'Nov 04, 2023, 3:30 PM',
+        complete: true,
+        budget: '৳ 3,000',
+        images: ["https://images.unsplash.com/photo-1518837695005-2083093ee35b?auto=format&fit=crop&q=80&w=800"],
+      },
+      {
+        id: 'u-11-2',
+        contractorAssignmentId: 'ca-4',
+        title: 'Deep cleaning',
+        note: 'Vacuum truck ordered to remove deep silt blockage.',
+        timestamp: 'Pending',
+        complete: false,
+        budget: '৳ 15,000',
+        images: [],
+      }
+    ],
   },
   {
     id: "12",
@@ -283,5 +516,47 @@ export const dummyComplaints: DummyComplaint[] = [
     icon: "construct-outline",
     lat: 23.8378,
     lng: 90.3682,
+    completedAt: 'Nov 06, 2023, 5:00 PM',
+    deadline: 'Nov 07, 2023',
+    budget: '৳ 5,000',
+    resolutionNote: 'All construction waste was cleared and the sidewalk is clean.',
+    finalEvidence: 'https://images.unsplash.com/photo-1503596476-1c12a8ba09a9?auto=format&fit=crop&q=80&w=800',
+    approvedBy: {
+      name: 'Rezaul Karim',
+      initials: 'RK',
+      role: 'Community Authority',
+      approvedAt: 'Nov 06, 2023, 5:30 PM',
+    },
+    feedback: [
+      {
+        id: 'f-3',
+        resident: 'Kazi Tariq',
+        residentInitials: 'KT',
+        rating: 5,
+        comment: 'Very clean work, the sidewalk is perfectly walkable now.',
+        receivedAt: 'Nov 07, 2023',
+      }
+    ],
+    contractorAssignments: [
+      {
+        id: 'ca-7',
+        name: 'Clean Dhaka Crew',
+        phone: '+880 1819-777888',
+        assignedFrom: 'Nov 06, 2023, 10:00 AM',
+        assignedUntil: 'Nov 06, 2023, 5:00 PM'
+      }
+    ],
+    updates: [
+      {
+        id: 'u-12-1',
+        contractorAssignmentId: 'ca-7',
+        title: 'Waste removal',
+        note: 'Loaded all bricks and debris into the dump truck.',
+        timestamp: 'Nov 06, 2023, 2:00 PM',
+        complete: true,
+        budget: '৳ 5,000',
+        images: ["https://images.unsplash.com/photo-1532996122724-e3c354a0b15b?auto=format&fit=crop&q=80&w=800"],
+      }
+    ],
   },
 ];

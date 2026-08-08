@@ -1,559 +1,1504 @@
-import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  Image,
-  TouchableOpacity,
-  SafeAreaView,
-  Alert,
-} from 'react-native';
+import Ionicons from '@expo/vector-icons/Ionicons';
+import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { MaterialIcons } from '@expo/vector-icons';
+import { useState } from 'react';
+import Animated, { FadeInDown, FadeOut } from 'react-native-reanimated';
+import {
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  useWindowDimensions,
+  View,
+  TextInput,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { dummyComplaints } from '@/components/store/store_complaint';
 import MapViewComponent from '@/components/MapView';
 
-const theme = {
-  background: '#f8f9fc',
-  surface: '#ffffff',
-  primary: '#00475e',
-  primaryContainer: '#1a5f7a',
-  onPrimaryContainer: '#9bd7f7',
-  onSurface: '#191c1e',
-  onSurfaceVariant: '#40484d',
-  outline: '#70787d',
-  outlineVariant: '#c0c8cd',
-  surfaceContainerLow: '#f2f4f6',
-  surfaceContainer: '#eceef0',
-  pendingBg: '#FEF2F2',
-  pendingText: '#EF4444',
-  progressBg: '#FEF9C3',
-  progressText: '#C67B00',
-  resolvedBg: '#EFF6FF',
-  resolvedText: '#2563EB',
+export type ComplaintDetailMode = 'pending' | 'in-progress' | 'resolved';
+
+const modeTheme = {
+  pending: {
+    label: 'PENDING',
+    color: '#EF4444',
+    background: '#FEF2F2',
+    icon: 'time-outline' as const,
+  },
+  'in-progress': {
+    label: 'IN PROGRESS',
+    color: '#C67B00',
+    background: '#FFF7E8',
+    icon: 'construct-outline' as const,
+  },
+  resolved: {
+    label: 'RESOLVED',
+    color: '#2563EB',
+    background: '#EFF6FF',
+    icon: 'checkmark-circle-outline' as const,
+  },
 };
+
+function getDetailMode(status?: string): ComplaintDetailMode {
+  if (status === 'IN PROGRESS') return 'in-progress';
+  if (status === 'RESOLVED') return 'resolved';
+  return 'pending';
+}
+
+function DetailItem({
+  icon,
+  label,
+  value,
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  label: string;
+  value: string;
+}) {
+  return (
+    <View style={styles.detailItem}>
+      <View style={styles.detailIcon}>
+        <Ionicons name={icon} size={17} color="#23435D" />
+      </View>
+      <View style={styles.detailCopy}>
+        <Text style={styles.detailLabel}>{label}</Text>
+        <Text selectable style={styles.detailValue}>
+          {value}
+        </Text>
+      </View>
+    </View>
+  );
+}
+
+function EvidenceGrid({
+  images,
+  removable = false,
+  onRemove,
+}: {
+  images: any[];
+  removable?: boolean;
+  onRemove?: (index: number) => void;
+}) {
+  if (!images || images.length === 0) return null;
+
+  return (
+    <View style={styles.evidenceGrid}>
+      {images.map((image, index) => (
+        <View key={`${index}`} style={styles.evidenceThumbWrap}>
+          <Image source={{uri: image}} style={styles.evidenceThumb} contentFit="cover" />
+          {removable && onRemove && (
+            <Pressable
+              accessibilityLabel={`Remove photo ${index + 1}`}
+              onPress={() => onRemove(index)}
+              style={styles.removePhoto}
+            >
+              <Ionicons name="close" size={14} color="#FFFFFF" />
+            </Pressable>
+          )}
+        </View>
+      ))}
+    </View>
+  );
+}
+
+function WorkActivityTimeline({ updates }: { updates: any[] }) {
+  if (!updates || updates.length === 0) {
+    return (
+      <View style={styles.emptyPhaseActivity}>
+        <Ionicons name="document-text-outline" size={17} color="#98A2B3" />
+        <Text style={styles.emptyPhaseActivityText}>
+          No work activity was recorded during this assignment.
+        </Text>
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.timeline}>
+      {updates.map((update, index) => (
+        <View key={update.id} style={styles.timelineRow}>
+          <View style={styles.timelineTrack}>
+            <View
+              style={[
+                styles.timelineDot,
+                update.complete
+                  ? styles.timelineDotComplete
+                  : styles.timelineDotPending,
+              ]}
+            >
+              <Ionicons
+                name={update.complete ? 'checkmark' : 'ellipsis-horizontal'}
+                size={12}
+                color="#FFFFFF"
+              />
+            </View>
+            {index < updates.length - 1 && (
+              <View
+                style={[
+                  styles.timelineLine,
+                  update.complete && styles.timelineLineComplete,
+                ]}
+              />
+            )}
+          </View>
+          <View style={styles.timelineContent}>
+            <View style={styles.timelineHeading}>
+              <Text style={styles.timelineTitle}>{update.title}</Text>
+              <Text style={styles.timelineTime}>{update.timestamp}</Text>
+            </View>
+            <Text style={styles.timelineNote}>{update.note}</Text>
+            <View style={styles.budgetChange}>
+              <Ionicons name="cash-outline" size={13} color="#607A9A" />
+              <Text style={styles.budgetChangeText}>
+                Budget at this update: {update.budget}
+              </Text>
+            </View>
+            <EvidenceGrid images={update.images} />
+          </View>
+        </View>
+      ))}
+    </View>
+  );
+}
+
+function ContractorAssignmentRow({
+  assignment,
+  index,
+  isCurrent,
+}: {
+  assignment: any;
+  index: number;
+  isCurrent: boolean;
+}) {
+  return (
+    <View style={styles.contractorHistoryItem}>
+      <View style={styles.contractorHistoryHeading}>
+        <View style={styles.contractorHistoryNumber}>
+          <Text style={styles.contractorHistoryNumberText}>{index + 1}</Text>
+        </View>
+        <View style={styles.contractorHistoryCopy}>
+          <Text selectable style={styles.contractorHistoryName}>
+            {assignment.name}
+          </Text>
+          <Text selectable style={styles.contractorHistoryPhone}>
+            {assignment.phone}
+          </Text>
+        </View>
+        {isCurrent && (
+          <View style={styles.currentContractorBadge}>
+            <Text style={styles.currentContractorBadgeText}>CURRENT</Text>
+          </View>
+        )}
+      </View>
+
+      <View style={styles.contractorDateRange}>
+        <Ionicons name="calendar-outline" size={13} color="#607A9A" />
+        <Text selectable style={styles.contractorDateRangeText}>
+          {assignment.assignedFrom} to {assignment.assignedUntil ?? 'Present'}
+        </Text>
+      </View>
+    </View>
+  );
+}
+
+function ComplaintTimeline({
+  complaint,
+}: {
+  complaint: any;
+}) {
+  const updates = complaint.updates || [];
+  const assignments = complaint.contractorAssignments || [];
+  
+  const unassignedUpdates = updates.filter(
+    (update: any) => !update.contractorAssignmentId,
+  );
+
+  return (
+    <View style={styles.panel}>
+      <View style={styles.panelHeading}>
+        <View style={styles.panelHeadingCopy}>
+          <Text style={styles.panelTitle}>Work History</Text>
+          <Text style={styles.panelSubtitle}>
+            A chronological view of responsibility and work progress
+          </Text>
+        </View>
+        <Ionicons name="git-branch-outline" size={21} color="#23435D" />
+      </View>
+
+      <View style={styles.workHistoryPhases}>
+        {(unassignedUpdates.length > 0 || assignments.length === 0) && (
+          <View style={styles.intakePhase}>
+            <View style={styles.intakePhaseHeading}>
+              <View style={styles.intakePhaseIcon}>
+                <Ionicons name="clipboard-outline" size={16} color="#607A9A" />
+              </View>
+              <View style={styles.intakePhaseCopy}>
+                <Text style={styles.intakePhaseTitle}>Complaint Intake</Text>
+                <Text style={styles.intakePhaseText}>Before contractor assignment</Text>
+              </View>
+            </View>
+            {unassignedUpdates.length > 0 ? (
+              <WorkActivityTimeline updates={unassignedUpdates} />
+            ) : (
+              <View style={styles.emptyPhaseActivity}>
+                <Ionicons name="document-text-outline" size={17} color="#98A2B3" />
+                <Text style={styles.emptyPhaseActivityText}>
+                  Awaiting authority to begin work.
+                </Text>
+              </View>
+            )}
+          </View>
+        )}
+
+        {assignments.map((assignment: any, index: number) => {
+          const nextAssignment = assignments[index + 1];
+          const assignmentUpdates = updates.filter(
+            (update: any) =>
+              update.contractorAssignmentId === assignment.id &&
+              update.title !== 'Contractor changed',
+          );
+
+          return (
+            <View key={assignment.id} style={styles.contractorWorkPhase}>
+              <ContractorAssignmentRow
+                assignment={assignment}
+                index={index}
+                isCurrent={
+                  !assignment.assignedUntil && complaint.status === 'IN PROGRESS'
+                }
+              />
+
+              <View style={styles.phaseActivity}>
+                <View style={styles.phaseActivityHeading}>
+                  <Ionicons name="list-outline" size={14} color="#607A9A" />
+                  <Text style={styles.phaseActivityLabel}>
+                    WORK DURING THIS ASSIGNMENT
+                  </Text>
+                </View>
+                <WorkActivityTimeline updates={assignmentUpdates} />
+              </View>
+
+              {nextAssignment && (
+                <View style={styles.contractorTransition}>
+                  <View style={styles.contractorTransitionIcon}>
+                    <Ionicons name="swap-horizontal" size={18} color="#A86617" />
+                  </View>
+                  <View style={styles.contractorTransitionCopy}>
+                    <View style={styles.contractorTransitionHeading}>
+                      <Text style={styles.contractorTransitionTitle}>
+                        Contractor changed
+                      </Text>
+                      <Text style={styles.contractorTransitionTime}>
+                        {assignment.assignedUntil ?? nextAssignment.assignedFrom}
+                      </Text>
+                    </View>
+                    <Text selectable style={styles.contractorTransitionText}>
+                      {assignment.name} {'\u2192'} {nextAssignment.name}
+                    </Text>
+                    <View style={styles.contractorTransitionReason}>
+                      <Text style={styles.contractorTransitionReasonLabel}>
+                        REASON FOR CHANGE
+                      </Text>
+                      <Text selectable style={styles.contractorTransitionReasonText}>
+                        {assignment.changeReason ?? 'No reason was recorded.'}
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+              )}
+            </View>
+          );
+        })}
+      </View>
+    </View>
+  );
+}
+
+function ContractorAssignments({
+  complaint,
+  mode,
+}: {
+  complaint: any;
+  mode: ComplaintDetailMode;
+}) {
+  const assignments = complaint.contractorAssignments || [];
+  const currentContractor =
+    assignments.find((assignment: any) => !assignment.assignedUntil) ?? assignments.at(-1);
+
+  if (!currentContractor) return null;
+
+  return (
+    <View style={[styles.panel, styles.contractorPanel]}>
+      <View style={styles.panelHeading}>
+        <View>
+          <Text style={styles.panelTitle}>Assigned Contractor</Text>
+          <Text style={styles.panelSubtitle}>Authority-only assignment information</Text>
+        </View>
+        <Ionicons name="shield-outline" size={21} color="#23435D" />
+      </View>
+
+      <View style={styles.currentContractorCard}>
+        <View style={styles.currentContractorIcon}>
+          <Ionicons name="hammer-outline" size={20} color="#FFFFFF" />
+        </View>
+        <View style={styles.currentContractorCopy}>
+          <Text style={styles.currentContractorLabel}>
+            {mode === 'resolved' ? 'FINAL CONTRACTOR' : 'CURRENT CONTRACTOR'}
+          </Text>
+          <Text selectable style={styles.currentContractorName}>
+            {currentContractor.name}
+          </Text>
+          <Text selectable style={styles.currentContractorPhone}>
+            {currentContractor.phone}
+          </Text>
+          <Text selectable style={styles.currentContractorDates}>
+            {currentContractor.assignedFrom} to{' '}
+            {currentContractor.assignedUntil ?? 'Present'}
+          </Text>
+        </View>
+      </View>
+    </View>
+  );
+}
+
+function ApprovalCard({ approval }: { approval: any }) {
+  return (
+    <View style={styles.approvalCard}>
+      <View style={styles.approvalIcon}>
+        <Ionicons name="shield-checkmark" size={22} color="#FFFFFF" />
+      </View>
+      <View style={styles.approvalCopy}>
+        <Text style={styles.approvalLabel}>WORK APPROVED BY</Text>
+        <Text selectable style={styles.approvalName}>
+          {approval.name}
+        </Text>
+        <Text selectable style={styles.approvalRole}>
+          {approval.role}
+        </Text>
+        <View style={styles.approvalDateRow}>
+          <Ionicons name="calendar-outline" size={12} color="#4A7C69" />
+          <Text selectable style={styles.approvalDate}>
+            {approval.approvedAt}
+          </Text>
+        </View>
+      </View>
+      <View style={styles.approvedBadge}>
+        <Text style={styles.approvedBadgeText}>WORK APPROVED</Text>
+      </View>
+    </View>
+  );
+}
+
+function StarRating({ rating, size = 15 }: { rating: number; size?: number }) {
+  return (
+    <View style={styles.starRow}>
+      {[1, 2, 3, 4, 5].map((star) => (
+        <Ionicons
+          key={star}
+          name={star <= Math.round(rating) ? 'star' : 'star-outline'}
+          size={size}
+          color="#F2A93B"
+        />
+      ))}
+    </View>
+  );
+}
+
+function InteractiveStarRating({ rating, setRating, size = 28 }: { rating: number; setRating: (val: number) => void; size?: number }) {
+  return (
+    <View style={styles.interactiveStarRow}>
+      {[1, 2, 3, 4, 5].map((star) => (
+        <TouchableOpacity key={star} onPress={() => setRating(star)}>
+          <Ionicons
+            name={star <= rating ? 'star' : 'star-outline'}
+            size={size}
+            color={star <= rating ? '#F2A93B' : '#C4D1DF'}
+          />
+        </TouchableOpacity>
+      ))}
+    </View>
+  );
+}
+
+function FeedbackCard({ feedback }: { feedback: any }) {
+  return (
+    <View style={styles.feedbackCard}>
+      <View style={styles.feedbackAvatar}>
+        <Text style={styles.feedbackAvatarText}>{feedback.residentInitials}</Text>
+      </View>
+      <View style={styles.feedbackCopy}>
+        <View style={styles.feedbackHeading}>
+          <View>
+            <Text style={styles.feedbackName}>{feedback.resident}</Text>
+            <Text style={styles.feedbackDate}>{feedback.receivedAt}</Text>
+          </View>
+          <StarRating rating={feedback.rating} size={13} />
+        </View>
+        <Text selectable style={styles.feedbackComment}>
+          “{feedback.comment}”
+        </Text>
+      </View>
+    </View>
+  );
+}
+
+function ResidentFeedback({
+  feedback,
+  rating,
+  setRating,
+  comment,
+  setComment,
+  hasSubmitted,
+  onSubmit,
+}: {
+  feedback: any[];
+  rating: number;
+  setRating: (r: number) => void;
+  comment: string;
+  setComment: (c: string) => void;
+  hasSubmitted: boolean;
+  onSubmit: () => void;
+}) {
+  const average =
+    feedback.length === 0
+      ? 0
+      : feedback.reduce((total, item) => total + item.rating, 0) / feedback.length;
+
+  return (
+    <View style={styles.panel}>
+      <View style={styles.panelHeading}>
+        <View>
+          <Text style={styles.panelTitle}>Resident Feedback</Text>
+          <Text style={styles.panelSubtitle}>
+            Ratings and comments submitted after resolution
+          </Text>
+        </View>
+        <Ionicons name="chatbox-ellipses-outline" size={21} color="#23435D" />
+      </View>
+
+      {!hasSubmitted && (
+        <View style={styles.leaveFeedbackContainer}>
+          <Text style={styles.leaveFeedbackTitle}>Leave your feedback</Text>
+          <InteractiveStarRating rating={rating} setRating={setRating} />
+          <TextInput
+            value={comment}
+            onChangeText={setComment}
+            placeholder="Write your comments here..."
+            placeholderTextColor="#98A2B3"
+            multiline
+            style={styles.leaveFeedbackInput}
+          />
+          <TouchableOpacity
+            style={[styles.leaveFeedbackButton, (rating === 0 || comment.trim() === '') && styles.buttonDisabled]}
+            disabled={rating === 0 || comment.trim() === ''}
+            onPress={onSubmit}
+          >
+            <Text style={styles.leaveFeedbackButtonText}>Submit Feedback</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {feedback.length === 0 ? (
+        <View style={styles.emptyFeedback}>
+          <Ionicons name="hourglass-outline" size={23} color="#98A2B3" />
+          <Text style={styles.emptyFeedbackTitle}>No feedback received yet</Text>
+          <Text style={styles.emptyFeedbackText}>
+            Resident ratings and comments will appear here.
+          </Text>
+        </View>
+      ) : (
+        <>
+          <View style={styles.feedbackSummary}>
+            <Text style={styles.feedbackAverage}>{average.toFixed(1)}</Text>
+            <View>
+              <StarRating rating={average} size={17} />
+              <Text style={styles.feedbackCount}>
+                Based on {feedback.length} {feedback.length === 1 ? 'response' : 'responses'}
+              </Text>
+            </View>
+          </View>
+          <View style={styles.feedbackList}>
+            {feedback.map((item) => (
+              <FeedbackCard key={item.id} feedback={item} />
+            ))}
+          </View>
+        </>
+      )}
+    </View>
+  );
+}
+
+function ReporterProfile({ complaint }: { complaint: any }) {
+  const [expanded, setExpanded] = useState(false);
+  const maxReporters = Math.min(complaint.urgencyCount > 1 ? complaint.urgencyCount - 1 : 0, 3);
+  const bangladeshiNames = ['Rahim Uddin', 'Karim Hasan', 'Anisur Rahman'];
+  
+  const otherReporters = Array.from({ length: maxReporters }).map((_, i) => {
+    const name = bangladeshiNames[i];
+    const initials = name.split(' ').map(n => n[0]).join('');
+    return {
+      id: `r-${i}`,
+      initials,
+      name,
+      submittedAt: complaint.date,
+    };
+  });
+
+  const reporterCount = maxReporters;
+
+  return (
+    <View style={styles.reporterPanel}>
+      <View style={styles.reporterCard}>
+        <View style={styles.avatar}>
+          <Text style={styles.avatarText}>ME</Text>
+        </View>
+        <View style={styles.reporterCopy}>
+          <Text style={styles.reporterLabel}>PRIMARY REPORTER</Text>
+          <Text selectable style={styles.reporterName}>
+            You (Resident)
+          </Text>
+          <Text selectable style={styles.reporterPhone}>
+            017XXXXXXXX
+          </Text>
+          <Text style={styles.primaryReporterHint}>
+            First person who reported this issue
+          </Text>
+        </View>
+        <Ionicons name="person-circle-outline" size={23} color="#B9854B" />
+      </View>
+
+      {reporterCount > 0 && (
+        <>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityState={{ expanded }}
+            accessibilityLabel={`${expanded ? 'Hide' : 'Show'} ${reporterCount} other reporters`}
+            onPress={() => setExpanded((current) => !current)}
+            style={({ pressed }) => [
+              styles.otherReportersToggle,
+              pressed && styles.otherReportersTogglePressed,
+            ]}
+          >
+            <View style={styles.otherReportersIcon}>
+              <Ionicons name="people-outline" size={17} color="#2563EB" />
+            </View>
+            <View style={styles.otherReportersCopy}>
+              <View style={styles.otherReportersTitleRow}>
+                <Text style={styles.otherReportersTitle}>Other Reporters</Text>
+                <View style={styles.otherReportersCount}>
+                  <Text style={styles.otherReportersCountText}>{reporterCount}</Text>
+                </View>
+              </View>
+              <Text style={styles.otherReportersDescription}>
+                AI-matched duplicate {reporterCount === 1 ? 'report' : 'reports'}
+              </Text>
+            </View>
+            <Ionicons
+              name={expanded ? 'chevron-up' : 'chevron-down'}
+              size={18}
+              color="#607A9A"
+            />
+          </Pressable>
+
+          {expanded && (
+            <Animated.View
+              entering={FadeInDown.duration(180)}
+              exiting={FadeOut.duration(120)}
+              style={styles.otherReportersList}
+            >
+              {otherReporters.map((reporter) => (
+                <View key={reporter.id} style={styles.otherReporterRow}>
+                  <View style={styles.otherReporterAvatar}>
+                    <Text style={styles.otherReporterAvatarText}>{reporter.initials}</Text>
+                  </View>
+                  <View style={styles.otherReporterCopy}>
+                    <Text selectable style={styles.otherReporterName}>
+                      {reporter.name}
+                    </Text>
+                    <Text selectable style={styles.otherReporterDate}>
+                      Reported {reporter.submittedAt}
+                    </Text>
+                  </View>
+                  <Ionicons name="git-merge-outline" size={15} color="#7890AB" />
+                </View>
+              ))}
+            </Animated.View>
+          )}
+        </>
+      )}
+    </View>
+  );
+}
 
 export default function ComplaintDetailScreen() {
   const router = useRouter();
   const { complaintId } = useLocalSearchParams<{ complaintId: string }>();
+  const { width } = useWindowDimensions();
 
-  // Find complaint by ID or default to first
   const complaint = dummyComplaints.find((item) => item.id === complaintId) || dummyComplaints[0];
+  const wide = width >= 900;
+  const mode = getDetailMode(complaint?.status);
+  const theme = modeTheme[mode];
 
-  // Images list handling
-  const imageList = complaint.images && complaint.images.length > 0 
-    ? complaint.images 
-    : (complaint.image ? [complaint.image] : []);
+  const [feedbackRating, setFeedbackRating] = useState(0);
+  const [feedbackComment, setFeedbackComment] = useState('');
+  const [hasSubmittedFeedback, setHasSubmittedFeedback] = useState(false);
+  const [localFeedback, setLocalFeedback] = useState(complaint.feedback || []);
 
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [urgencyCount, setUrgencyCount] = useState(complaint.urgencyCount);
-  const [hasVotedUrgency, setHasVotedUrgency] = useState(false);
-
-  const handlePrevImage = () => {
-    setCurrentImageIndex((prev) => (prev > 0 ? prev - 1 : imageList.length - 1));
-  };
-
-  const handleNextImage = () => {
-    setCurrentImageIndex((prev) => (prev < imageList.length - 1 ? prev + 1 : 0));
-  };
-
-  const handleUrgencyUpvote = () => {
-    if (hasVotedUrgency) {
-      setUrgencyCount((prev) => prev - 1);
-      setHasVotedUrgency(false);
-    } else {
-      setUrgencyCount((prev) => prev + 1);
-      setHasVotedUrgency(true);
-      Alert.alert('Urgency Reported', 'Thank you. Your vote increases this issue priority for local authorities.');
-    }
-  };
-
-  // Status Badge formatting
-  let badgeBg = theme.pendingBg;
-  let badgeText = theme.pendingText;
-  let statusLabel = 'Pending Review';
-  if (complaint.status === 'IN PROGRESS') {
-    badgeBg = theme.progressBg;
-    badgeText = theme.progressText;
-    statusLabel = 'In Progress';
-  } else if (complaint.status === 'RESOLVED') {
-    badgeBg = theme.resolvedBg;
-    badgeText = theme.resolvedText;
-    statusLabel = 'Resolved';
+  if (!complaint) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.notFound}>
+          <Ionicons name="document-text-outline" size={38} color="#98A2B3" />
+          <Text style={styles.notFoundTitle}>Complaint not found</Text>
+          <Text style={styles.notFoundText}>
+            This complaint record is not available.
+          </Text>
+        </View>
+      </SafeAreaView>
+    );
   }
 
-  // Category Icon
-  let categoryIcon: keyof typeof MaterialIcons.glyphMap = 'report-problem';
-  if (complaint.category === 'Water Supply') categoryIcon = 'water-drop';
-  if (complaint.category === 'Roads & Traffic') categoryIcon = 'construction';
-  if (complaint.category === 'Streetlights') categoryIcon = 'lightbulb';
-  if (complaint.category === 'Waste Management') categoryIcon = 'delete';
-  if (complaint.category === 'Parks & Recreation') categoryIcon = 'park';
-  if (complaint.category === 'Public Safety') categoryIcon = 'shield';
-  if (complaint.category === 'Drainage System') categoryIcon = 'water-damage';
-  if (complaint.category === 'Electricity') categoryIcon = 'flash-on';
+  const displayEvidence = complaint.images && complaint.images.length > 0 
+    ? complaint.images[0] 
+    : complaint.image;
 
   return (
-    <SafeAreaView style={styles.container}>
-      {/* Top Header */}
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-          <MaterialIcons name="arrow-back" size={24} color={theme.primary} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Complaint Details</Text>
-        <View style={{ width: 40 }} />
-      </View>
-
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
-        
-        {/* Evidence Picture Gallery Header */}
-        <View style={styles.imageCard}>
-          {imageList.length > 0 ? (
-            <Image 
-              source={{ uri: imageList[currentImageIndex] }} 
-              style={styles.evidenceImage} 
-              resizeMode="cover" 
-            />
-          ) : (
-            <View style={styles.noImagePlaceholder}>
-              <MaterialIcons name="image-not-supported" size={48} color={theme.outline} />
-              <Text style={styles.noImageText}>No evidence photo uploaded</Text>
-            </View>
-          )}
-
-          {/* Navigation Controls Overlay for Multiple Images */}
-          {imageList.length > 1 && (
-            <>
-              <TouchableOpacity style={styles.prevButton} onPress={handlePrevImage} activeOpacity={0.8}>
-                <MaterialIcons name="chevron-left" size={32} color="#FFF" />
-              </TouchableOpacity>
-              
-              <TouchableOpacity style={styles.nextButton} onPress={handleNextImage} activeOpacity={0.8}>
-                <MaterialIcons name="chevron-right" size={32} color="#FFF" />
-              </TouchableOpacity>
-
-              {/* Image Counter Badge */}
-              <View style={styles.imageCounterBadge}>
-                <MaterialIcons name="photo-library" size={14} color="#FFF" />
-                <Text style={styles.imageCounterText}>
-                  {currentImageIndex + 1} / {imageList.length}
+    <SafeAreaView style={styles.safeArea}>
+      <ScrollView
+        contentInsetAdjustmentBehavior="automatic"
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+      >
+        <View style={styles.container}>
+          <View style={styles.hero}>
+            <View style={styles.heroTopRow}>
+              <View style={[styles.statusBadge, { backgroundColor: theme.background }]}>
+                <Ionicons name={theme.icon} size={15} color={theme.color} />
+                <Text style={[styles.statusText, { color: theme.color }]}>
+                  {theme.label}
                 </Text>
               </View>
-            </>
-          )}
-
-          {/* Status Badge Overlay */}
-          <View style={styles.imageBadgeOverlay}>
-            <View style={[styles.statusBadge, { backgroundColor: badgeBg }]}>
-              <Text style={[styles.statusBadgeText, { color: badgeText }]}>{statusLabel}</Text>
+              <Text selectable style={styles.complaintId}>
+                #{complaint.id}
+              </Text>
             </View>
-          </View>
-        </View>
-
-        {/* Thumbnails Bar when multiple images exist */}
-        {imageList.length > 1 && (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.thumbnailScroll}>
-            {imageList.map((imgUri, index) => (
-              <TouchableOpacity
-                key={index}
-                style={[
-                  styles.thumbnailWrapper,
-                  currentImageIndex === index && styles.activeThumbnailWrapper,
-                ]}
-                onPress={() => setCurrentImageIndex(index)}
-              >
-                <Image source={{ uri: imgUri }} style={styles.thumbnailImage} />
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        )}
-
-        {/* Title & Metadata Card */}
-        <View style={styles.card}>
-          <View style={styles.categoryRow}>
-            <View style={styles.categoryChip}>
-              <MaterialIcons name={categoryIcon} size={16} color={theme.primary} />
-              <Text style={styles.categoryChipText}>{complaint.category}</Text>
-            </View>
-            <View style={styles.dateTag}>
-              <MaterialIcons name="event" size={14} color={theme.outline} />
-              <Text style={styles.dateTagText}>{complaint.date}</Text>
-            </View>
+            <Text selectable style={styles.title}>
+              {complaint.title}
+            </Text>
+            <Text selectable style={styles.description}>
+              {complaint.description}
+            </Text>
           </View>
 
-          <Text style={styles.title}>{complaint.title}</Text>
+          <View style={[styles.pageGrid, wide && styles.pageGridWide]}>
+            <View style={styles.mainColumn}>
+              <View style={styles.panel}>
+                <View style={styles.panelHeading}>
+                  <View>
+                    <Text style={styles.panelTitle}>Complaint Information</Text>
+                    <Text style={styles.panelSubtitle}>
+                      Verified resident report and assignment details
+                    </Text>
+                  </View>
+                  <Ionicons name="information-circle-outline" size={22} color="#23435D" />
+                </View>
 
-          {/* Location details */}
-          <View style={styles.locationContainer}>
-            <MaterialIcons name="location-on" size={20} color="#EF4444" />
-            <Text style={styles.locationText}>{complaint.location}</Text>
-          </View>
-        </View>
-
-        {/* Map Card */}
-        <View style={[styles.card, { padding: 0, overflow: 'hidden' }]}>
-          <View style={{ padding: 16, paddingBottom: 12 }}>
-            <Text style={styles.sectionHeading}>LOCATION MAP</Text>
-          </View>
-          <View style={{ height: 200, width: '100%' }}>
-            <MapViewComponent locations={[complaint]} />
-          </View>
-        </View>
-
-        {/* Urgency Count Card */}
-        <View style={styles.card}>
-          <Text style={styles.sectionHeading}>URGENCY ASSESSMENT</Text>
-          <View style={styles.urgencyRow}>
-            <View style={styles.urgencyInfo}>
-              <View style={styles.urgencyBadgeContainer}>
-                <Text style={styles.urgencyLevelLabel}>Priority:</Text>
-                <View style={[
-                  styles.urgencyPill,
-                  complaint.urgencyLevel === 'CRITICAL' && { backgroundColor: '#FEE2E2' },
-                  complaint.urgencyLevel === 'HIGH' && { backgroundColor: '#FFEDD5' },
-                  complaint.urgencyLevel === 'MEDIUM' && { backgroundColor: '#FEF3C7' },
-                  complaint.urgencyLevel === 'LOW' && { backgroundColor: '#D1FAE5' },
-                ]}>
-                  <Text style={[
-                    styles.urgencyPillText,
-                    complaint.urgencyLevel === 'CRITICAL' && { color: '#991B1B' },
-                    complaint.urgencyLevel === 'HIGH' && { color: '#C2410C' },
-                    complaint.urgencyLevel === 'MEDIUM' && { color: '#B45309' },
-                    complaint.urgencyLevel === 'LOW' && { color: '#065F46' },
-                  ]}>{complaint.urgencyLevel}</Text>
+                <View style={styles.detailsGrid}>
+                  <DetailItem icon="layers-outline" label="Category" value={complaint.category} />
+                  <DetailItem icon="location-outline" label="Location" value={complaint.location} />
+                  <DetailItem icon="calendar-outline" label="Submitted" value={complaint.date} />
+                  <DetailItem icon="map-outline" label="Assigned Zone" value="Unassigned" />
+                  <DetailItem
+                    icon="arrow-up-circle-outline"
+                    label="Urgency"
+                    value={`${complaint.urgencyCount} resident signals`}
+                  />
+                  <DetailItem icon="person-outline" label="Reported By" value="You" />
                 </View>
               </View>
 
-              <Text style={styles.urgencyCountText}>
-                🔥 <Text style={{ fontWeight: '700', color: theme.onSurface }}>{urgencyCount}</Text> residents marked this as urgent
-              </Text>
+              <View style={styles.panel}>
+                <View style={styles.panelHeading}>
+                  <View>
+                    <Text style={styles.panelTitle}>
+                      {mode === 'pending'
+                        ? 'Resident Evidence'
+                        : mode === 'in-progress'
+                          ? 'Latest Work Evidence'
+                          : 'Final Completion Evidence'}
+                    </Text>
+                    <Text style={styles.panelSubtitle}>
+                      {mode === 'resolved'
+                        ? 'Required proof submitted when the complaint was closed'
+                        : 'Most recent photo attached to this complaint record'}
+                    </Text>
+                  </View>
+                  <Ionicons name="image-outline" size={21} color="#23435D" />
+                </View>
+                <Image
+                  source={{ uri: displayEvidence }}
+                  style={styles.evidenceImage}
+                  contentFit="cover"
+                  transition={180}
+                />
+              </View>
+
+              <View style={styles.panel}>
+                <View style={styles.panelHeading}>
+                  <View>
+                    <Text style={styles.panelTitle}>Issue Location</Text>
+                    <Text style={styles.panelSubtitle}>{complaint.location}</Text>
+                  </View>
+                  <View style={styles.coordinateBadge}>
+                    <Ionicons name="navigate-outline" size={13} color="#2563EB" />
+                    <Text selectable style={styles.coordinateText}>
+                      {complaint.lat.toFixed(4)}, {complaint.lng.toFixed(4)}
+                    </Text>
+                  </View>
+                </View>
+                <View style={styles.mapCard}>
+                  <MapViewComponent locations={[complaint]} />
+                </View>
+              </View>
+
+              <ComplaintTimeline complaint={complaint} />
+
+              {mode === 'resolved' && (
+                <View style={[styles.panel, styles.resolutionPanel]}>
+                  <View style={styles.resolutionIcon}>
+                    <Ionicons name="checkmark-done" size={24} color="#FFFFFF" />
+                  </View>
+                  <Text style={styles.resolutionTitle}>Resolution Complete</Text>
+                  <Text style={styles.resolutionDescription}>
+                    This complaint is closed. Work details and evidence are read-only.
+                  </Text>
+
+                  <View style={styles.resolutionDetails}>
+                    <DetailItem
+                      icon="calendar-outline"
+                      label="Completed"
+                      value={complaint.completedAt ?? 'Completion date unavailable'}
+                    />
+                    <DetailItem
+                      icon="flag-outline"
+                      label="Final Deadline"
+                      value={complaint.deadline ?? 'N/A'}
+                    />
+                    <DetailItem
+                      icon="cash-outline"
+                      label="Final Budget"
+                      value={complaint.budget ?? 'N/A'}
+                    />
+                  </View>
+
+                  <View style={styles.resolutionNote}>
+                    <Text style={styles.resolutionNoteLabel}>RESOLUTION NOTE</Text>
+                    <Text selectable style={styles.resolutionNoteText}>
+                      {complaint.resolutionNote ?? 'No resolution note provided.'}
+                    </Text>
+                  </View>
+
+                  {complaint.finalEvidence && (
+                    <View style={styles.finalEvidenceCard}>
+                      <Text style={styles.resolutionNoteLabel}>FINAL COMPLETION PHOTO</Text>
+                      <Image
+                        source={{ uri: complaint.finalEvidence }}
+                        style={styles.finalEvidenceImage}
+                        contentFit="cover"
+                      />
+                    </View>
+                  )}
+                </View>
+              )}
             </View>
 
-            <TouchableOpacity
-              style={[styles.voteButton, hasVotedUrgency && styles.votedButton]}
-              onPress={handleUrgencyUpvote}
-            >
-              <MaterialIcons
-                name="local-fire-department"
-                size={20}
-                color={hasVotedUrgency ? '#FFF' : '#EF4444'}
-              />
-              <Text style={[styles.voteButtonText, hasVotedUrgency && styles.votedButtonText]}>
-                {hasVotedUrgency ? 'Urgent!' : '+1 Urgent'}
-              </Text>
-            </TouchableOpacity>
+            <View style={styles.sideColumn}>
+              <ReporterProfile complaint={complaint} />
+
+              {mode !== 'pending' && (
+                <ContractorAssignments complaint={complaint} mode={mode} />
+              )}
+
+              {mode === 'resolved' && complaint.approvedBy && (
+                <ApprovalCard approval={complaint.approvedBy} />
+              )}
+
+              {mode === 'resolved' && (
+                <ResidentFeedback
+                  feedback={localFeedback}
+                  rating={feedbackRating}
+                  setRating={setFeedbackRating}
+                  comment={feedbackComment}
+                  setComment={setFeedbackComment}
+                  hasSubmitted={hasSubmittedFeedback}
+                  onSubmit={() => {
+                    if (feedbackRating === 0 || feedbackComment.trim() === '') return;
+                    setLocalFeedback([{
+                      id: Date.now().toString(),
+                      resident: 'You',
+                      residentInitials: 'YO',
+                      rating: feedbackRating,
+                      comment: feedbackComment,
+                      receivedAt: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+                    }, ...localFeedback]);
+                    setHasSubmittedFeedback(true);
+                  }}
+                />
+              )}
+            </View>
           </View>
         </View>
-
-        {/* Issue Description */}
-        <View style={styles.card}>
-          <Text style={styles.sectionHeading}>DESCRIPTION</Text>
-          <Text style={styles.descriptionText}>{complaint.description}</Text>
-        </View>
-
-        {/* Evidence Details */}
-        <View style={styles.card}>
-          <Text style={styles.sectionHeading}>EVIDENCE ATTACHMENTS ({imageList.length} Photos)</Text>
-          <View style={styles.evidenceContainer}>
-            <MaterialIcons name="verified" size={20} color={theme.primary} />
-            <Text style={styles.evidenceText}>{complaint.evidence}</Text>
-          </View>
-        </View>
-
       </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: theme.background,
-  },
+  safeArea: { flex: 1, backgroundColor: '#F7F8FA' },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: theme.surface,
+    backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
-    borderBottomColor: theme.outlineVariant + '40',
+    borderBottomColor: '#EAEDF1',
   },
   backBtn: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: theme.surfaceContainerLow,
+    backgroundColor: '#F7F8FA',
     justifyContent: 'center',
     alignItems: 'center',
   },
   headerTitle: {
-    fontFamily: 'Inter',
     fontSize: 18,
     fontWeight: '700',
-    color: theme.primary,
+    color: '#23435D',
   },
-  content: {
+  scrollContent: { paddingBottom: 34 },
+  container: {
+    width: '100%',
+    maxWidth: 1180,
+    alignSelf: 'center',
     padding: 16,
-    gap: 16,
-    paddingBottom: 40,
+    gap: 17,
   },
-  imageCard: {
-    width: '100%',
-    height: 240,
-    borderRadius: 16,
-    overflow: 'hidden',
-    backgroundColor: theme.surfaceContainer,
-    position: 'relative',
+  hero: {
+    gap: 7,
+    padding: 17,
+    borderRadius: 15,
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: theme.outlineVariant + '4D',
-  },
-  evidenceImage: {
-    width: '100%',
-    height: '100%',
-  },
-  noImagePlaceholder: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  noImageText: {
-    fontFamily: 'Inter',
-    fontSize: 14,
-    color: theme.outline,
-    marginTop: 8,
-  },
-  prevButton: {
-    position: 'absolute',
-    left: 12,
-    top: '50%',
-    marginTop: -20,
-    backgroundColor: 'rgba(0, 0, 0, 0.55)',
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 10,
-  },
-  nextButton: {
-    position: 'absolute',
-    right: 12,
-    top: '50%',
-    marginTop: -20,
-    backgroundColor: 'rgba(0, 0, 0, 0.55)',
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 10,
-  },
-  imageCounterBadge: {
-    position: 'absolute',
-    bottom: 12,
-    left: 12,
-    backgroundColor: 'rgba(0, 0, 0, 0.75)',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  imageCounterText: {
-    color: '#FFF',
-    fontFamily: 'Inter',
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  imageBadgeOverlay: {
-    position: 'absolute',
-    top: 12,
-    right: 12,
-  },
-  statusBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-  },
-  statusBadgeText: {
-    fontFamily: 'Inter',
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  thumbnailScroll: {
-    flexDirection: 'row',
-    marginTop: -4,
-  },
-  thumbnailWrapper: {
-    width: 64,
-    height: 64,
-    borderRadius: 10,
-    overflow: 'hidden',
-    marginRight: 10,
-    borderWidth: 2,
-    borderColor: 'transparent',
-  },
-  activeThumbnailWrapper: {
-    borderColor: theme.primary,
-  },
-  thumbnailImage: {
-    width: '100%',
-    height: '100%',
-  },
-  card: {
-    backgroundColor: theme.surface,
-    borderRadius: 16,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: theme.outlineVariant + '4D',
+    borderColor: '#EAEDF1',
     shadowColor: '#000',
     shadowOpacity: 0.04,
-    shadowRadius: 6,
+    shadowRadius: 8,
     shadowOffset: { width: 0, height: 2 },
     elevation: 2,
   },
-  categoryRow: {
+  heroTopRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    justifyContent: 'space-between',
+    gap: 12,
   },
-  categoryChip: {
+  statusBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: theme.primary + '15',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 8,
+    paddingHorizontal: 9,
+    paddingVertical: 6,
+    borderRadius: 13,
   },
-  categoryChipText: {
-    fontFamily: 'Inter',
-    fontSize: 12,
-    fontWeight: '700',
-    color: theme.primary,
+  statusText: { fontSize: 9, fontWeight: '900', letterSpacing: 0.4 },
+  complaintId: { color: '#3B82F6', fontSize: 10, fontWeight: '800' },
+  title: { color: '#111827', fontSize: 24, fontWeight: '800' },
+  description: { color: '#667085', fontSize: 12, lineHeight: 18 },
+  pageGrid: { gap: 15 },
+  pageGridWide: { flexDirection: 'row', alignItems: 'flex-start' },
+  mainColumn: { flex: 1.5, gap: 15, minWidth: 0 },
+  sideColumn: { flex: 0.85, gap: 15, minWidth: 0 },
+  panel: {
+    padding: 16,
+    borderRadius: 14,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#EAEDF1',
+    shadowColor: '#000',
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
   },
-  dateTag: {
+  panelHeading: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+    marginBottom: 14,
+  },
+  panelHeadingCopy: { flex: 1, minWidth: 0 },
+  panelTitle: { color: '#1F2937', fontSize: 16, fontWeight: '800' },
+  panelSubtitle: { color: '#8A93A1', fontSize: 9, marginTop: 3 },
+  detailsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  detailItem: {
+    flex: 1,
+    minWidth: 190,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    padding: 11,
+    borderRadius: 11,
+    backgroundColor: '#F8FAFB',
+  },
+  detailIcon: {
+    width: 35,
+    height: 35,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#E8EEF2',
+  },
+  detailCopy: { flex: 1, minWidth: 0 },
+  detailLabel: { color: '#8A93A1', fontSize: 8, fontWeight: '700' },
+  detailValue: { color: '#344054', fontSize: 10, fontWeight: '700', marginTop: 3 },
+  evidenceImage: {
+    width: '100%',
+    aspectRatio: 1.5,
+    borderRadius: 12,
+    backgroundColor: '#E8EDF4',
+  },
+  evidenceGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 9 },
+  evidenceThumbWrap: {
+    width: 98,
+    height: 76,
+    borderRadius: 9,
+    overflow: 'visible',
+    position: 'relative',
+  },
+  evidenceThumb: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 9,
+    backgroundColor: '#E8EDF4',
+  },
+  removePhoto: {
+    position: 'absolute',
+    top: -6,
+    right: -6,
+    width: 23,
+    height: 23,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#DC4B42',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+  },
+  coordinateBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderRadius: 11,
+    backgroundColor: '#EFF6FF',
   },
-  dateTagText: {
-    fontFamily: 'Inter',
-    fontSize: 12,
-    color: theme.outline,
+  coordinateText: { color: '#2563EB', fontSize: 8, fontWeight: '700' },
+  mapCard: {
+    height: 270,
+    overflow: 'hidden',
+    borderRadius: 12,
+    backgroundColor: '#E8EDF4',
   },
-  title: {
-    fontFamily: 'Inter',
-    fontSize: 22,
-    fontWeight: '700',
-    color: theme.onSurface,
-    marginBottom: 12,
+  reporterPanel: {
+    overflow: 'hidden',
+    borderRadius: 14,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#EAEDF1',
+    shadowColor: '#000',
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
   },
-  locationContainer: {
+  reporterCard: {
+    minHeight: 82,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 11,
+    padding: 14,
+  },
+  avatar: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#E8EEF2',
+  },
+  avatarText: { color: '#23435D', fontSize: 12, fontWeight: '900' },
+  reporterCopy: { flex: 1, minWidth: 0 },
+  reporterLabel: { color: '#B9854B', fontSize: 7, fontWeight: '900', letterSpacing: 0.5 },
+  reporterName: { color: '#1F2937', fontSize: 12, fontWeight: '800', marginTop: 3 },
+  reporterPhone: { color: '#7A8493', fontSize: 9, marginTop: 3 },
+  primaryReporterHint: { color: '#98A2B3', fontSize: 7, lineHeight: 11, marginTop: 4 },
+  otherReportersToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 9,
+    padding: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#EAEDF1',
+    backgroundColor: '#FBFCFE',
+  },
+  otherReportersTogglePressed: { opacity: 0.72 },
+  otherReportersIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#EAF2FD',
+  },
+  otherReportersCopy: { flex: 1, minWidth: 0 },
+  otherReportersTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: theme.surfaceContainerLow,
+  },
+  otherReportersTitle: { color: '#344054', fontSize: 10, fontWeight: '800' },
+  otherReportersCount: {
+    minWidth: 20,
+    height: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 6,
+    borderRadius: 10,
+    backgroundColor: '#2563EB',
+  },
+  otherReportersCountText: {
+    color: '#FFFFFF',
+    fontSize: 7,
+    fontWeight: '900',
+    fontVariant: ['tabular-nums'],
+  },
+  otherReportersDescription: { color: '#7890AB', fontSize: 7, marginTop: 2 },
+  otherReportersList: {
+    gap: 8,
+    padding: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#EAEDF1',
+    backgroundColor: '#F8FAFC',
+  },
+  otherReporterRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 9,
     padding: 10,
     borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#E3E8EF',
+    backgroundColor: '#FFFFFF',
   },
-  locationText: {
-    fontFamily: 'Inter',
-    fontSize: 14,
-    fontWeight: '600',
-    color: theme.onSurfaceVariant,
-    flex: 1,
+  otherReporterAvatar: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#E8EEF2',
   },
-  sectionHeading: {
-    fontFamily: 'Inter',
-    fontSize: 11,
-    fontWeight: '700',
-    color: theme.outline,
+  otherReporterAvatarText: {
+    color: '#23435D',
+    fontSize: 8,
+    fontWeight: '900',
+  },
+  otherReporterCopy: { flex: 1, minWidth: 0 },
+  otherReporterName: { color: '#344054', fontSize: 9, fontWeight: '800' },
+  otherReporterDate: { color: '#8A93A1', fontSize: 7, lineHeight: 11, marginTop: 2 },
+  contractorPanel: { gap: 0 },
+  currentContractorCard: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 11,
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#CFE0F5',
+    backgroundColor: '#F4F8FE',
+  },
+  currentContractorIcon: {
+    width: 43,
+    height: 43,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#2563EB',
+  },
+  currentContractorCopy: { flex: 1, minWidth: 0 },
+  currentContractorLabel: {
+    color: '#2563EB',
+    fontSize: 7,
+    fontWeight: '900',
     letterSpacing: 0.5,
-    marginBottom: 12,
   },
-  urgencyRow: {
+  currentContractorName: {
+    color: '#1F2937',
+    fontSize: 12,
+    fontWeight: '800',
+    marginTop: 3,
+  },
+  currentContractorPhone: { color: '#52677F', fontSize: 9, marginTop: 3 },
+  currentContractorDates: { color: '#7890AB', fontSize: 8, lineHeight: 12, marginTop: 5 },
+  workHistoryPhases: { gap: 14 },
+  intakePhase: {
+    gap: 12,
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E3E8EF',
+    backgroundColor: '#F9FAFB',
+  },
+  intakePhaseHeading: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 9,
+  },
+  intakePhaseIcon: {
+    width: 31,
+    height: 31,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#E8EEF2',
+  },
+  intakePhaseCopy: { flex: 1, minWidth: 0 },
+  intakePhaseTitle: { color: '#344054', fontSize: 11, fontWeight: '800' },
+  intakePhaseText: { color: '#8A93A1', fontSize: 8, marginTop: 2 },
+  contractorWorkPhase: { gap: 10 },
+  phaseActivity: {
+    marginLeft: 12,
+    paddingLeft: 15,
+    borderLeftWidth: 2,
+    borderLeftColor: '#DCE8F7',
+  },
+  phaseActivityHeading: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 11,
+  },
+  phaseActivityLabel: {
+    color: '#607A9A',
+    fontSize: 8,
+    fontWeight: '900',
+    letterSpacing: 0.45,
+  },
+  emptyPhaseActivity: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+    paddingBottom: 5,
+  },
+  emptyPhaseActivityText: {
+    flex: 1,
+    color: '#98A2B3',
+    fontSize: 8,
+    lineHeight: 13,
+  },
+  contractorTransition: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 9,
+    marginLeft: 12,
+    padding: 11,
+    borderRadius: 11,
+    borderWidth: 1,
+    borderColor: '#F2E2C9',
+    backgroundColor: '#FFF9EF',
+  },
+  contractorTransitionIcon: {
+    width: 31,
+    height: 31,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FBEACF',
+  },
+  contractorTransitionCopy: { flex: 1, minWidth: 0 },
+  contractorTransitionHeading: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  contractorTransitionTitle: {
+    flex: 1,
+    color: '#8C5715',
+    fontSize: 10,
+    fontWeight: '900',
+  },
+  contractorTransitionTime: {
+    maxWidth: '48%',
+    color: '#A18057',
+    fontSize: 7,
+    lineHeight: 11,
+    textAlign: 'right',
+  },
+  contractorTransitionText: {
+    color: '#5F482C',
+    fontSize: 9,
+    fontWeight: '800',
+    lineHeight: 14,
+    marginTop: 5,
+  },
+  contractorTransitionReason: {
+    gap: 3,
+    marginTop: 8,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#F2E2C9',
+  },
+  contractorTransitionReasonLabel: {
+    color: '#A86617',
+    fontSize: 7,
+    fontWeight: '900',
+    letterSpacing: 0.35,
+  },
+  contractorTransitionReasonText: {
+    color: '#7A5A30',
+    fontSize: 8,
+    lineHeight: 13,
+  },
+  contractorHistoryItem: {
+    gap: 8,
+    padding: 11,
+    borderRadius: 11,
+    borderWidth: 1,
+    borderColor: '#E3E8EF',
+    backgroundColor: '#F9FAFB',
+  },
+  contractorHistoryHeading: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 9,
+  },
+  contractorHistoryNumber: {
+    width: 25,
+    height: 25,
+    borderRadius: 13,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#E8EEF2',
+  },
+  contractorHistoryNumberText: { color: '#23435D', fontSize: 8, fontWeight: '900' },
+  contractorHistoryCopy: { flex: 1, minWidth: 0 },
+  contractorHistoryName: { color: '#344054', fontSize: 10, fontWeight: '800' },
+  contractorHistoryPhone: { color: '#7A8493', fontSize: 8, marginTop: 2 },
+  currentContractorBadge: {
+    paddingHorizontal: 7,
+    paddingVertical: 4,
+    borderRadius: 10,
+    backgroundColor: '#EAF8EF',
+  },
+  currentContractorBadgeText: { color: '#16845B', fontSize: 6, fontWeight: '900' },
+  contractorDateRange: { flexDirection: 'row', alignItems: 'flex-start', gap: 6 },
+  contractorDateRangeText: { flex: 1, color: '#607A9A', fontSize: 8, lineHeight: 12 },
+  timeline: { gap: 0 },
+  timelineRow: { flexDirection: 'row', gap: 11 },
+  timelineTrack: { width: 28, alignItems: 'center' },
+  timelineDot: {
+    width: 27,
+    height: 27,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  timelineDotComplete: { backgroundColor: '#16845B' },
+  timelineDotPending: { backgroundColor: '#B9854B' },
+  timelineLine: { width: 2, flex: 1, minHeight: 45, backgroundColor: '#E1E5EA' },
+  timelineLineComplete: { backgroundColor: '#B8DFCF' },
+  timelineContent: { flex: 1, minWidth: 0, paddingBottom: 17 },
+  timelineHeading: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    gap: 9,
   },
-  urgencyInfo: {
-    flex: 1,
-    gap: 6,
-  },
-  urgencyBadgeContainer: {
+  timelineTitle: { flex: 1, color: '#344054', fontSize: 11, fontWeight: '800' },
+  timelineTime: { color: '#8A93A1', fontSize: 8 },
+  timelineNote: { color: '#667085', fontSize: 9, lineHeight: 14, marginTop: 4 },
+  budgetChange: {
+    alignSelf: 'flex-start',
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 5,
+    marginTop: 7,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderRadius: 10,
+    backgroundColor: '#F0F5F7',
   },
-  urgencyLevelLabel: {
-    fontFamily: 'Inter',
-    fontSize: 13,
-    color: theme.onSurfaceVariant,
-  },
-  urgencyPill: {
-    paddingHorizontal: 10,
-    paddingVertical: 2,
-    borderRadius: 12,
-  },
-  urgencyPillText: {
-    fontFamily: 'Inter',
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  urgencyCountText: {
-    fontFamily: 'Inter',
-    fontSize: 13,
-    color: theme.onSurfaceVariant,
-  },
-  voteButton: {
-    flexDirection: 'row',
+  budgetChangeText: { color: '#607A9A', fontSize: 8, fontWeight: '700' },
+  notFound: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
+  notFoundTitle: { fontSize: 18, fontWeight: '700', color: '#1F2937' },
+  notFoundText: { fontSize: 14, color: '#6B7280' },
+  resolutionPanel: { gap: 11, backgroundColor: '#F8FBFF', borderColor: '#DCE8F7' },
+  resolutionIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#2563EB',
+  },
+  resolutionTitle: { color: '#1D4F91', fontSize: 18, fontWeight: '900' },
+  resolutionDescription: { color: '#607A9A', fontSize: 10, lineHeight: 15 },
+  resolutionDetails: { gap: 8 },
+  resolutionNote: {
     gap: 6,
-    backgroundColor: '#FEE2E2',
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 20,
+    padding: 12,
+    borderRadius: 11,
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#FECACA',
+    borderColor: '#DCE8F7',
   },
-  votedButton: {
-    backgroundColor: '#EF4444',
-    borderColor: '#EF4444',
+  resolutionNoteLabel: { color: '#2563EB', fontSize: 8, fontWeight: '900', letterSpacing: 0.5 },
+  resolutionNoteText: { color: '#52677F', fontSize: 10, lineHeight: 16 },
+  finalEvidenceCard: {
+    gap: 8,
+    padding: 12,
+    borderRadius: 11,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#DCE8F7',
   },
-  voteButtonText: {
-    fontFamily: 'Inter',
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#EF4444',
-  },
-  votedButtonText: {
-    color: '#FFFFFF',
-  },
-  descriptionText: {
-    fontFamily: 'Inter',
-    fontSize: 15,
-    color: theme.onSurfaceVariant,
-    lineHeight: 22,
-  },
-  evidenceContainer: {
+  finalEvidenceImage: { width: '100%', aspectRatio: 1.4, borderRadius: 9 },
+  approvalCard: {
+    minHeight: 92,
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: 10,
-    backgroundColor: theme.surfaceContainerLow,
-    padding: 12,
+    gap: 11,
+    padding: 14,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#CDE8DB',
+    backgroundColor: '#F1FBF6',
+  },
+  approvalIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#16845B',
+  },
+  approvalCopy: { flex: 1, minWidth: 0 },
+  approvalLabel: {
+    color: '#16845B',
+    fontSize: 7,
+    fontWeight: '900',
+    letterSpacing: 0.5,
+  },
+  approvalName: { color: '#1F2937', fontSize: 12, fontWeight: '800', marginTop: 3 },
+  approvalRole: { color: '#4A7C69', fontSize: 8, marginTop: 2 },
+  approvalDateRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    marginTop: 7,
+  },
+  approvalDate: { flex: 1, color: '#607A72', fontSize: 7, lineHeight: 11 },
+  approvedBadge: {
+    maxWidth: 72,
+    paddingHorizontal: 7,
+    paddingVertical: 4,
     borderRadius: 10,
+    backgroundColor: '#DDF4E8',
   },
-  evidenceText: {
-    fontFamily: 'Inter',
-    fontSize: 14,
-    color: theme.onSurface,
-    flex: 1,
-    lineHeight: 20,
+  approvedBadgeText: {
+    color: '#16845B',
+    fontSize: 6,
+    fontWeight: '900',
+    lineHeight: 9,
+    textAlign: 'center',
   },
+  starRow: { flexDirection: 'row', gap: 2 },
+  interactiveStarRow: { flexDirection: 'row', gap: 6, paddingVertical: 8, justifyContent: 'center' },
+  feedbackSummary: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 13,
+    padding: 14,
+    borderRadius: 12,
+    backgroundColor: '#FFF9EF',
+    borderWidth: 1,
+    borderColor: '#F2E2C9',
+  },
+  feedbackAverage: { color: '#9A6118', fontSize: 31, fontWeight: '900' },
+  feedbackCount: { color: '#8A735A', fontSize: 8, marginTop: 4 },
+  feedbackList: { gap: 10, marginTop: 12 },
+  feedbackCard: {
+    flexDirection: 'row',
+    gap: 10,
+    padding: 12,
+    borderRadius: 11,
+    backgroundColor: '#F9FAFB',
+  },
+  feedbackAvatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#E8EEF2',
+  },
+  feedbackAvatarText: { color: '#23435D', fontSize: 9, fontWeight: '900' },
+  feedbackCopy: { flex: 1, minWidth: 0 },
+  feedbackHeading: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  feedbackName: { color: '#344054', fontSize: 10, fontWeight: '800' },
+  feedbackDate: { color: '#98A2B3', fontSize: 7, marginTop: 2 },
+  feedbackComment: { color: '#667085', fontSize: 9, lineHeight: 14, marginTop: 7 },
+  emptyFeedback: { alignItems: 'center', paddingVertical: 20 },
+  emptyFeedbackTitle: { color: '#475467', fontSize: 11, fontWeight: '800', marginTop: 7 },
+  emptyFeedbackText: { color: '#98A2B3', fontSize: 8, marginTop: 3 },
+  leaveFeedbackContainer: {
+    marginBottom: 16,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#EAEDF1',
+  },
+  leaveFeedbackTitle: { color: '#1F2937', fontSize: 12, fontWeight: '800', textAlign: 'center' },
+  leaveFeedbackInput: {
+    minHeight: 60,
+    borderRadius: 11,
+    borderWidth: 1,
+    borderColor: '#DDE2E8',
+    padding: 12,
+    color: '#344054',
+    fontSize: 10,
+    textAlignVertical: 'top',
+    marginTop: 8,
+    backgroundColor: '#FFFFFF',
+  },
+  leaveFeedbackButton: {
+    marginTop: 10,
+    backgroundColor: '#2563EB',
+    padding: 12,
+    borderRadius: 20,
+    alignItems: 'center',
+  },
+  leaveFeedbackButtonText: { color: '#FFFFFF', fontSize: 10, fontWeight: '900' },
+  buttonDisabled: { opacity: 0.5 },
 });
