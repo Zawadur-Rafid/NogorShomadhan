@@ -387,7 +387,8 @@ export default function Dashboard() {
                 <Text style={styles.infoText}>{item.location}</Text>
               </View>
               <View style={styles.infoRow}>
-                <Text style={[styles.infoText, { color: '#EF4444', fontWeight: 'bold' }]}>🔥 {item.urgencyCount}</Text>
+                <Ionicons name="arrow-up-circle" size={14} color="#C57C1B" />
+                <Text style={[styles.infoText, { color: '#C57C1B', fontWeight: 'bold' }]}>{item.urgencyCount}</Text>
               </View>
             </View>
           </View>

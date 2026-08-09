@@ -643,7 +643,9 @@ export default function ComplaintDetailScreen() {
   const [feedbackRating, setFeedbackRating] = useState(0);
   const [feedbackComment, setFeedbackComment] = useState('');
   const [hasSubmittedFeedback, setHasSubmittedFeedback] = useState(false);
-  const [localFeedback, setLocalFeedback] = useState(complaint.feedback || []);
+  const [localFeedback, setLocalFeedback] = useState(complaint?.feedback || []);
+  const [localUrgencyCount, setLocalUrgencyCount] = useState(complaint?.urgencyCount || 0);
+  const [hasUpvoted, setHasUpvoted] = useState(false);
 
   if (!complaint) {
     return (
@@ -712,10 +714,30 @@ export default function ComplaintDetailScreen() {
                   <DetailItem
                     icon="arrow-up-circle-outline"
                     label="Urgency"
-                    value={`${complaint.urgencyCount} resident signals`}
+                    value={`${localUrgencyCount} resident signals`}
                   />
                   <DetailItem icon="person-outline" label="Reported By" value="You" />
                 </View>
+
+                {mode === 'pending' && (
+                  <TouchableOpacity
+                    style={[styles.upvoteBtn, hasUpvoted && styles.upvoteBtnActive]}
+                    onPress={() => {
+                      if (hasUpvoted) {
+                        setLocalUrgencyCount((prev) => prev - 1);
+                        setHasUpvoted(false);
+                      } else {
+                        setLocalUrgencyCount((prev) => prev + 1);
+                        setHasUpvoted(true);
+                      }
+                    }}
+                  >
+                    <Ionicons name="arrow-up-circle" size={18} color={hasUpvoted ? "#FFFFFF" : "#C57C1B"} />
+                    <Text style={[styles.upvoteBtnText, hasUpvoted && styles.upvoteBtnTextActive]}>
+                      {hasUpvoted ? "Urgency Increased" : "I also face this issue"}
+                    </Text>
+                  </TouchableOpacity>
+                )}
               </View>
 
               <View style={styles.panel}>
@@ -966,6 +988,31 @@ const styles = StyleSheet.create({
   detailCopy: { flex: 1, minWidth: 0 },
   detailLabel: { color: '#8A93A1', fontSize: 8, fontWeight: '700' },
   detailValue: { color: '#344054', fontSize: 10, fontWeight: '700', marginTop: 3 },
+  upvoteBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginTop: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    backgroundColor: '#FFF7E8',
+    borderWidth: 1,
+    borderColor: '#F4DFC3',
+  },
+  upvoteBtnActive: {
+    backgroundColor: '#C57C1B',
+    borderColor: '#C57C1B',
+  },
+  upvoteBtnText: {
+    color: '#C57C1B',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  upvoteBtnTextActive: {
+    color: '#FFFFFF',
+  },
   evidenceImage: {
     width: '100%',
     aspectRatio: 1.5,

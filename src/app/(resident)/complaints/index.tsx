@@ -1,4 +1,4 @@
-import { MaterialIcons } from "@expo/vector-icons";
+import { MaterialIcons, Ionicons } from "@expo/vector-icons";
 import { useMemo, useState } from "react";
 import {
   ScrollView,
@@ -50,6 +50,7 @@ export default function ResidentAllComplaintsScreen() {
   const router = useRouter();
   const [activeStatusFilter, setActiveStatusFilter] = useState<StatusFilter>("All");
   const [activeCategoryFilter, setActiveCategoryFilter] = useState<string>("All Categories");
+  const [upvotedComplaints, setUpvotedComplaints] = useState<Set<string>>(new Set());
 
   const filteredComplaints = useMemo(() => {
     return dummyComplaints.filter((complaint) => {
@@ -195,10 +196,29 @@ export default function ResidentAllComplaintsScreen() {
                       <MaterialIcons name="place" size={16} color={theme.primary} />
                       <Text style={styles.locationText}>{item.location}</Text>
                     </View>
-                    <View style={styles.urgencyTag}>
-                      <MaterialIcons name="priority-high" size={16} color="#EF4444" />
-                      <Text style={styles.urgencyText}>{item.urgencyCount} Urgency Votes</Text>
-                    </View>
+                    <TouchableOpacity 
+                      style={[styles.urgencyTag, upvotedComplaints.has(item.id) && { backgroundColor: '#C57C1B' }]}
+                      disabled={item.status !== "PENDING"}
+                      onPress={(e) => {
+                        e.stopPropagation();
+                        if (item.status === "PENDING") {
+                          setUpvotedComplaints(prev => {
+                            const newSet = new Set(prev);
+                            if (newSet.has(item.id)) {
+                              newSet.delete(item.id);
+                            } else {
+                              newSet.add(item.id);
+                            }
+                            return newSet;
+                          });
+                        }
+                      }}
+                    >
+                      <Ionicons name="arrow-up-circle" size={16} color={upvotedComplaints.has(item.id) ? "#FFFFFF" : "#C57C1B"} />
+                      <Text style={[styles.urgencyText, upvotedComplaints.has(item.id) && { color: "#FFFFFF" }]}>
+                        {item.urgencyCount + (upvotedComplaints.has(item.id) ? 1 : 0)} Urgency Votes
+                      </Text>
+                    </TouchableOpacity>
                   </View>
 
                   <View style={styles.actionRow}>

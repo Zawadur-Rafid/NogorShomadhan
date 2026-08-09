@@ -8,7 +8,7 @@ import {
   Image,
   SafeAreaView,
 } from 'react-native';
-import { MaterialIcons } from '@expo/vector-icons';
+import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { dummyComplaints } from '@/components/store/store_complaint';
 
@@ -39,6 +39,7 @@ const theme = {
 export default function MyComplaintsScreen() {
   const router = useRouter();
   const [activeFilter, setActiveFilter] = useState<StatusFilter>('All');
+  const [upvotedComplaints, setUpvotedComplaints] = useState<Set<string>>(new Set());
 
   // Filter complaints filed by resident
   const myComplaints = useMemo(() => {
@@ -214,16 +215,33 @@ export default function MyComplaintsScreen() {
                       />
                       <Text style={styles.locationText}>{item.location}</Text>
                     </View>
-                    <View style={styles.urgencyTag}>
-                      <MaterialIcons
-                        name="priority-high"
+                    <TouchableOpacity
+                      style={[styles.urgencyTag, upvotedComplaints.has(item.id) && { backgroundColor: '#C57C1B' }]}
+                      disabled={item.status !== "PENDING"}
+                      onPress={(e) => {
+                        e.stopPropagation();
+                        if (item.status === "PENDING") {
+                          setUpvotedComplaints(prev => {
+                            const newSet = new Set(prev);
+                            if (newSet.has(item.id)) {
+                              newSet.delete(item.id);
+                            } else {
+                              newSet.add(item.id);
+                            }
+                            return newSet;
+                          });
+                        }
+                      }}
+                    >
+                      <Ionicons
+                        name="arrow-up-circle"
                         size={14}
-                        color="#EF4444"
+                        color={upvotedComplaints.has(item.id) ? "#FFFFFF" : "#C57C1B"}
                       />
-                      <Text style={styles.urgencyText}>
-                        {item.urgencyCount} Votes
+                      <Text style={[styles.urgencyText, upvotedComplaints.has(item.id) && { color: "#FFFFFF" }]}>
+                        {item.urgencyCount + (upvotedComplaints.has(item.id) ? 1 : 0)} Urgency Votes
                       </Text>
-                    </View>
+                    </TouchableOpacity>
                   </View>
 
                   <View style={styles.actionRow}>
