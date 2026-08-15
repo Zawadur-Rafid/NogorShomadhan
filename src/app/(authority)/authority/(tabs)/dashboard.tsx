@@ -310,7 +310,7 @@ export default function AuthorityDashboard() {
           <View style={styles.toolsSection}>
             <View style={styles.toolsHeading}>
               <Text style={styles.sectionTitle}>Authority Tools</Text>
-              <Text style={styles.sectionSubtitle}>Open complete reports and review resident feedback</Text>
+              <Text style={styles.sectionSubtitle}>Open reports, review feedback, and join community discussions</Text>
             </View>
             <View style={[styles.toolsGrid, wide && styles.toolsGridWide]}>
               <TouchableOpacity
@@ -347,6 +347,24 @@ export default function AuthorityDashboard() {
                   <View style={styles.toolLinkRow}>
                     <Text style={styles.feedbackToolLink}>View feedback</Text>
                     <Ionicons name="arrow-forward" size={15} color="#B9854B" />
+                  </View>
+                </View>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.toolCard, styles.forumToolCard]}
+                onPress={() => router.navigate('/authority/forum' as never)}
+              >
+                <View style={[styles.toolIcon, styles.forumToolIcon]}>
+                  <Ionicons name="chatbubbles-outline" size={24} color="#FFFFFF" />
+                </View>
+                <View style={styles.toolCopy}>
+                  <Text style={styles.toolTitle}>Community Forum</Text>
+                  <Text style={styles.toolDescription}>
+                    Publish official updates and respond to questions from community residents.
+                  </Text>
+                  <View style={styles.toolLinkRow}>
+                    <Text style={styles.forumToolLink}>Open forum</Text>
+                    <Ionicons name="arrow-forward" size={15} color="#2F6B5F" />
                   </View>
                 </View>
               </TouchableOpacity>
@@ -440,13 +458,16 @@ const styles = StyleSheet.create({
   toolCard: { flex: 1, minHeight: 132, flexDirection: 'row', alignItems: 'center', gap: 14, borderRadius: 14, padding: 17, borderWidth: 1, boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)' },
   analyticsToolCard: { backgroundColor: '#F2F6F8', borderColor: '#DCE5EA' },
   feedbackToolCard: { backgroundColor: '#FFF9F1', borderColor: '#F0DFC8' },
+  forumToolCard: { backgroundColor: '#F2F8F6', borderColor: '#D7E8E2' },
   toolIcon: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' },
   analyticsToolIcon: { backgroundColor: '#23435D' },
   feedbackToolIcon: { backgroundColor: '#B9854B' },
+  forumToolIcon: { backgroundColor: '#2F6B5F' },
   toolCopy: { flex: 1, minWidth: 0 },
   toolTitle: { color: '#1F2937', fontSize: 15, fontWeight: '700' },
   toolDescription: { color: '#6B7280', fontSize: 11, lineHeight: 17, marginTop: 5 },
   toolLinkRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 9 },
   analyticsToolLink: { color: '#23435D', fontSize: 11, fontWeight: '700' },
   feedbackToolLink: { color: '#B9854B', fontSize: 11, fontWeight: '700' },
+  forumToolLink: { color: '#2F6B5F', fontSize: 11, fontWeight: '700' },
 });
