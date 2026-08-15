@@ -16,6 +16,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import BackButton from '@/components/back-button';
+import { supabase } from '@/lib/supabase';
 
 const colors = {
   background: '#f8f9fc',
@@ -74,7 +75,7 @@ export default function Register() {
     }
   };
 
-  const handleRegister = () => {
+  const handleRegister = async () => {
     let isValid = true;
     let newErrors: Partial<Record<FieldName | 'terms', string>> = {};
 
@@ -118,10 +119,41 @@ export default function Register() {
     setErrors(newErrors);
 
     if (isValid) {
-      triggerToast();
-      setTimeout(() => {
-        router.replace('/');
-      }, 3000);
+      try {
+        const { error } = await supabase
+          .from('account')
+          .insert([
+            {
+              full_name: form.fullName,
+              nid: form.nid,
+              email: form.email,
+              phone_num: form.phone,
+              house_num: form.houseNo,
+              road_number: form.roadNo,
+              avenue_num: form.avenueNo,
+              username: form.username,
+              password: form.password,
+            },
+          ]);
+
+        if (error) {
+          console.error("Supabase insert error:", error);
+          if (error.message.toLowerCase().includes('unique')) {
+            setErrors({ terms: "An account with this email or username already exists." });
+          } else {
+            setErrors({ terms: "Failed to register. Please try again." });
+          }
+          return;
+        }
+
+        triggerToast();
+        setTimeout(() => {
+          router.replace('/');
+        }, 3000);
+      } catch (err) {
+        console.error(err);
+        setErrors({ terms: "An unexpected error occurred." });
+      }
     }
   };
 
