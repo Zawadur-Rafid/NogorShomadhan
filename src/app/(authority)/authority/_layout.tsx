@@ -13,6 +13,7 @@ export default function AuthorityLayout() {
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="complaints/[complaintId]" />
         <Stack.Screen name="notifications" />
+        <Stack.Screen name="forum" />
         <Stack.Screen name="profile" />
         <Stack.Screen name="change-password" />
         <Stack.Screen name="activity-log" />
