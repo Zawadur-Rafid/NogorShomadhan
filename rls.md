@@ -6,3 +6,4 @@
 - **RLS Enabled:** Yes
 - **Policies:**
   - `Enable insert for public`: Allows public (anonymous) users to `INSERT` records during registration.
+  - `Enable select for public`: Allows public users to `SELECT` (read) records from the account table (necessary for current frontend sign-in logic).

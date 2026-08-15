@@ -1,4 +1,4 @@
-﻿import Ionicons from "@expo/vector-icons/Ionicons";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import { useRouter } from "expo-router";
 import {
   ScrollView,
@@ -244,7 +244,7 @@ export default function AdminDashboard() {
         <TouchableOpacity
           activeOpacity={0.85}
           style={styles.actionCard}
-          onPress={() => router.push("/(admin)/settings")}
+          onPress={() => router.push("/(admin)/dashboard")} // TODO: update to settings when built
         >
           <View style={styles.actionIconGray}>
             <Ionicons name="settings-outline" size={28} color="#555" />
