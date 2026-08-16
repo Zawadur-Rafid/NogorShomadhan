@@ -7,3 +7,4 @@
 - **Policies:**
   - `Enable insert for public`: Allows public (anonymous) users to `INSERT` records during registration.
   - `Enable select for public`: Allows public users to `SELECT` (read) records from the account table (necessary for current frontend sign-in logic).
+  - `Enable update for public`: Allows public users to `UPDATE` their own records in the account table (necessary for profile editing).

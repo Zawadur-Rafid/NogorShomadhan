@@ -13,6 +13,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, Link } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import Logo from '@/components/logo';
 import BackButton from '@/components/back-button';
 import { supabase } from '@/lib/supabase';
@@ -105,6 +106,8 @@ export default function SignInScreen() {
         setIsLoading(false);
         return;
       }
+
+      await AsyncStorage.setItem('acc_id', data.acc_id);
 
       triggerToast();
       setTimeout(() => {

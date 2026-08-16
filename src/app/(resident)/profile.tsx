@@ -1,20 +1,14 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
-import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, useWindowDimensions, View } from 'react-native';
+import { useState, useEffect, useRef } from 'react';
+import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, useWindowDimensions, View, ActivityIndicator, Animated, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { MaterialIcons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { supabase } from '../../lib/supabase';
 
 import TopNav from '../../components/TopNav';
 import BottomNav from '../../components/BottomNav';
-
-const residentProfileDetails = {
-  name: 'Ashfia Tabassum',
-  email: 'ashfia@gmail.com',
-  phone: '+880 1711-123456',
-  address: 'Apt 4B, Building 12, Block C',
-  nid: '1234567890',
-  role: 'Resident',
-};
 
 function ProfileField({
   label,
@@ -50,26 +44,132 @@ export default function Profile() {
   const router = useRouter();
   const { width } = useWindowDimensions();
   const wide = width >= 820;
-  const [name, setName] = useState<string>(residentProfileDetails.name);
-  const [email, setEmail] = useState<string>(residentProfileDetails.email);
-  const [phone, setPhone] = useState<string>(residentProfileDetails.phone);
-  const [address, setAddress] = useState<string>(residentProfileDetails.address);
-  const [saved, setSaved] = useState(false);
+  
+  const [loading, setLoading] = useState(true);
+  const [accId, setAccId] = useState<string | null>(null);
+  
+  const [name, setName] = useState<string>('');
+  const [email, setEmail] = useState<string>('');
+  const [phone, setPhone] = useState<string>('');
+  const [address, setAddress] = useState<string>('');
+  const [nid, setNid] = useState<string>('');
+  const [role, setRole] = useState<string>('');
+  const [initials, setInitials] = useState<string>('');
+
   const [isEditing, setIsEditing] = useState(false);
 
-  const handleEditToggle = () => {
+  const [showToast, setShowToast] = useState(false);
+  const slideAnim = useRef(new Animated.Value(400)).current;
+
+  const triggerToast = () => {
+    setShowToast(true);
+    Animated.sequence([
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 400,
+        useNativeDriver: true,
+      }),
+      Animated.delay(2000),
+      Animated.timing(slideAnim, {
+        toValue: 400,
+        duration: 400,
+        useNativeDriver: true,
+      }),
+    ]).start(() => setShowToast(false));
+  };
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const id = await AsyncStorage.getItem('acc_id');
+        if (!id) {
+          router.replace('/sign-in');
+          return;
+        }
+        setAccId(id);
+
+        const { data, error } = await supabase
+          .from('account')
+          .select('*')
+          .eq('acc_id', id)
+          .single();
+
+        if (data && !error) {
+          setName(data.full_name || '');
+          setEmail(data.email || '');
+          setPhone(data.phone_num || '');
+          setNid(data.nid || '');
+          setRole(data.role ? data.role.charAt(0).toUpperCase() + data.role.slice(1) : '');
+          
+          const parts = [];
+          if (data.house_num) parts.push(`House ${data.house_num}`);
+          if (data.road_number) parts.push(`Road ${data.road_number}`);
+          if (data.avenue_num) parts.push(`Avenue ${data.avenue_num}`);
+          setAddress(parts.join(', '));
+          
+          if (data.full_name) {
+            const nameParts = data.full_name.split(' ');
+            if (nameParts.length > 1) {
+              setInitials(nameParts[0].charAt(0).toUpperCase() + nameParts[nameParts.length - 1].charAt(0).toUpperCase());
+            } else {
+              setInitials(data.full_name.substring(0, 2).toUpperCase());
+            }
+          }
+        }
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProfile();
+  }, []);
+
+  const handleEditToggle = async () => {
     if (isEditing) {
-      setSaved(true);
+      if (accId) {
+        // Just updating basic contact info as it's displayed as a single string for address. 
+        // We won't parse address back to house/road for this simple edit, we'll just update email and phone.
+        const { error } = await supabase
+          .from('account')
+          .update({ email: email, phone_num: phone })
+          .eq('acc_id', accId);
+          
+        if (!error) {
+          triggerToast();
+        }
+      }
       setIsEditing(false);
     } else {
       setIsEditing(true);
-      setSaved(false);
     }
   };
+
+  if (loading) {
+    return (
+      <SafeAreaView style={[styles.safeArea, { justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color="#23435D" />
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <TopNav />
+      {showToast && (
+        <Animated.View style={[styles.toastContainer, { transform: [{ translateX: slideAnim }] }]}>
+          <View style={styles.toastLeftBorder} />
+          <MaterialIcons name="check-circle" size={24} color="#1b7a43" style={styles.toastIcon} />
+          <View style={styles.toastContent}>
+            <Text style={styles.toastTitle}>Success</Text>
+            <Text style={styles.toastText}>Profile information successfully updated.</Text>
+          </View>
+          <TouchableOpacity onPress={() => setShowToast(false)} style={styles.toastCloseButton}>
+            <MaterialIcons name="close" size={18} color="#1a1a1a" />
+          </TouchableOpacity>
+        </Animated.View>
+      )}
       <ScrollView
         contentInsetAdjustmentBehavior="automatic"
         showsVerticalScrollIndicator={false}
@@ -78,28 +178,18 @@ export default function Profile() {
         <View style={styles.container}>
           <View style={styles.profileHero}>
             <View style={styles.avatar}>
-              <Text style={styles.avatarText}>AT</Text>
+              <Text style={styles.avatarText}>{initials}</Text>
             </View>
             <View style={styles.heroCopy}>
               <Text style={styles.eyebrow}>RESIDENT ACCOUNT</Text>
               <Text style={styles.title}>{name}</Text>
-              <Text style={styles.role}>{residentProfileDetails.role}</Text>
+              <Text style={styles.role}>{role}</Text>
               <View style={styles.verifiedBadge}>
                 <Ionicons name="shield-checkmark" size={13} color="#16845B" />
                 <Text style={styles.verifiedText}>Verified resident account</Text>
               </View>
             </View>
           </View>
-
-          {saved && (
-            <View style={styles.successBanner}>
-              <Ionicons name="checkmark-circle" size={19} color="#16845B" />
-              <Text style={styles.successText}>Profile information saved successfully.</Text>
-              <TouchableOpacity onPress={() => setSaved(false)}>
-                <Ionicons name="close" size={17} color="#16845B" />
-              </TouchableOpacity>
-            </View>
-          )}
 
           <View style={[styles.pageGrid, wide && styles.pageGridWide]}>
             <View style={styles.formPanel}>
@@ -115,8 +205,8 @@ export default function Profile() {
                 <ProfileField label="Full Name" value={name} onChangeText={setName} icon="person-outline" editable={false} />
                 <ProfileField label="Email Address" value={email} onChangeText={setEmail} icon="mail-outline" editable={isEditing} />
                 <ProfileField label="Phone Number" value={phone} onChangeText={setPhone} icon="call-outline" editable={isEditing} />
-                <ProfileField label="Address" value={address} onChangeText={setAddress} icon="home-outline" editable={isEditing} />
-                <ProfileField label="NID Number" value={residentProfileDetails.nid} icon="id-card-outline" editable={false} />
+                <ProfileField label="Address" value={address} icon="home-outline" editable={false} />
+                <ProfileField label="NID Number" value={nid} icon="id-card-outline" editable={false} />
               </View>
 
               <TouchableOpacity style={styles.saveButton} onPress={handleEditToggle}>
@@ -162,8 +252,6 @@ const styles = StyleSheet.create({
   role: { color: '#6B7280', fontSize: 10, marginTop: 3 },
   verifiedBadge: { alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 8, paddingVertical: 5, borderRadius: 11, backgroundColor: '#EAF8F1', marginTop: 8 },
   verifiedText: { color: '#16845B', fontSize: 8, fontWeight: '800' },
-  successBanner: { flexDirection: 'row', alignItems: 'center', gap: 8, padding: 12, borderRadius: 12, backgroundColor: '#EAF8F1', borderWidth: 1, borderColor: '#CDEBDE' },
-  successText: { flex: 1, color: '#16845B', fontSize: 10, fontWeight: '700' },
   pageGrid: { gap: 14 },
   pageGridWide: { flexDirection: 'row', alignItems: 'flex-start' },
   formPanel: { flex: 1.5, padding: 17, borderRadius: 14, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#EAEDF1' },
@@ -186,4 +274,57 @@ const styles = StyleSheet.create({
   securityText: { color: '#6B7280', fontSize: 10, lineHeight: 15 },
   secondaryButton: { minHeight: 40, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, borderRadius: 20, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#D7E2E7' },
   secondaryButtonText: { color: '#23435D', fontSize: 9, fontWeight: '900' },
+  toastContainer: {
+    position: 'absolute',
+    top: Platform.OS === 'ios' ? 60 : 40,
+    right: 16,
+    width: 320,
+    backgroundColor: '#ebf4ec',
+    borderRadius: 6,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    paddingVertical: 16,
+    paddingRight: 16,
+    zIndex: 1000,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 6,
+    overflow: 'hidden',
+  },
+  toastLeftBorder: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 4,
+    backgroundColor: '#1b7a43',
+  },
+  toastIcon: {
+    marginLeft: 16,
+    marginTop: 0,
+  },
+  toastContent: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  toastTitle: {
+    fontFamily: 'Inter',
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#1a1a1a',
+    marginBottom: 4,
+  },
+  toastText: {
+    fontFamily: 'Inter',
+    fontSize: 14,
+    fontWeight: '400',
+    color: '#2a2a2a',
+    lineHeight: 20,
+  },
+  toastCloseButton: {
+    padding: 2,
+    marginLeft: 8,
+  },
 });
