@@ -22,3 +22,26 @@
 - `password`: VARCHAR(255) (NOT NULL)
 - `status`: account_status (Default: 'unverified', NOT NULL)
 - `role`: account_role (Default: 'resident', NOT NULL)
+
+### `complaints`
+- `comp_id`: UUID (Primary Key, Default: gen_random_uuid())
+- `acc_id`: UUID (Foreign Key to account.acc_id)
+- `title`: TEXT (NOT NULL)
+- `description`: TEXT (NOT NULL)
+- `longitude`: DOUBLE PRECISION (NOT NULL)
+- `latitude`: DOUBLE PRECISION (NOT NULL)
+- `category`: TEXT (NOT NULL)
+- `status`: TEXT (Default: 'Pending', NOT NULL)
+- `timestamp`: TIMESTAMPTZ (Default: CURRENT_TIMESTAMP)
+- `urgency`: INTEGER (Default: 0, NOT NULL)
+
+### `evidence`
+- `ev_id`: UUID (Primary Key, Default: gen_random_uuid())
+- `comp_id`: UUID (Foreign Key to complaints.comp_id, ON DELETE CASCADE, NOT NULL)
+- `img_url`: TEXT (NOT NULL)
+
+### `duplicate`
+- `dup_id`: UUID (Primary Key, Default: gen_random_uuid())
+- `acc_id`: UUID (Foreign Key to account.acc_id)
+- `comp_id`: UUID (Foreign Key to complaints.comp_id)
+- `timestamp`: TIMESTAMPTZ (Default: CURRENT_TIMESTAMP)
