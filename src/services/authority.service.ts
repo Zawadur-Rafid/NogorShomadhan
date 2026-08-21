@@ -116,9 +116,9 @@ export type StartComplaintInput = {
 };
 
 export type AddWorkUpdateInput = {
-  deadline: string;
-  budget: string;
-  note: string;
+  deadline?: string;
+  budget?: string;
+  note?: string;
   images: AuthorityEvidenceImage[];
 };
 
@@ -836,39 +836,119 @@ export async function addAuthorityWorkUpdate(
   const accId = await getLoggedInAccountId();
   await ensureComplaintIsInProgress(complaintId);
 
-  if (!input.note.trim()) {
-    throw new Error('Update notes are required.');
-  }
-
-  const deadline = parseDeadline(input.deadline);
-  const budget = parseBudget(input.budget);
-
-  const { data: latestUpdateData, error: latestUpdateError } = await supabase
+  const { data: stateRows, error: stateError } = await supabase
     .from('complaint_work_updates')
-    .select('progress_percent')
+    .select('budget, deadline, progress_percent, created_at')
     .eq('comp_id', complaintId)
     .order('created_at', { ascending: false })
-    .limit(1)
-    .maybeSingle();
+    .limit(100);
 
-  if (latestUpdateError) {
+  if (stateError) {
     throw new Error(
-      `Failed to read current progress: ${latestUpdateError.message}`,
+      `Failed to read current work state: ${stateError.message}`,
     );
   }
 
-  const currentProgress = latestUpdateData?.progress_percent ?? 10;
-  const nextProgress = Math.min(95, currentProgress + 15);
+  const rows = stateRows ?? [];
+
+  const currentBudgetRaw =
+    rows.find(
+      (row) => row.budget !== null && row.budget !== undefined,
+    )?.budget ?? null;
+
+  const currentDeadlineRaw =
+    rows.find((row) => Boolean(row.deadline))?.deadline ?? null;
+
+  const currentProgress =
+    rows.find((row) => row.progress_percent !== null)?.progress_percent ?? 10;
+
+  const currentBudgetNumber =
+    currentBudgetRaw === null ? null : Number(currentBudgetRaw);
+
+  const currentDeadlineKey = formatDateKey(currentDeadlineRaw);
+
+  let nextBudget: number | string | null = currentBudgetRaw;
+  let nextDeadline: string | null = currentDeadlineRaw;
+
+  let budgetChanged = false;
+  let deadlineChanged = false;
+
+  if (input.budget !== undefined) {
+    const parsedBudget = parseBudget(input.budget);
+
+    budgetChanged =
+      currentBudgetNumber === null ||
+      !Number.isFinite(currentBudgetNumber) ||
+      parsedBudget !== currentBudgetNumber;
+
+    if (budgetChanged) {
+      nextBudget = parsedBudget;
+    }
+  }
+
+  if (input.deadline !== undefined) {
+    const requestedDeadline = input.deadline.trim();
+
+    if (!requestedDeadline) {
+      throw new Error('Select a valid deadline date.');
+    }
+
+    deadlineChanged = requestedDeadline !== currentDeadlineKey;
+
+    if (deadlineChanged) {
+      nextDeadline = parseDeadline(requestedDeadline);
+    }
+  }
+
+  const note = input.note?.trim() ?? '';
+  const hasNote = note.length > 0;
+  const hasPhotos = input.images.length > 0;
+
+  if (!budgetChanged && !deadlineChanged && !hasNote && !hasPhotos) {
+    throw new Error(
+      'Change the estimated budget or deadline, add notes, or attach at least one photo.',
+    );
+  }
+
+  const updateType: WorkUpdateType =
+    hasNote || hasPhotos
+      ? 'progress_update'
+      : 'budget_deadline_change';
+
+  const nextProgress =
+    updateType === 'progress_update'
+      ? Math.min(95, currentProgress + 15)
+      : currentProgress;
+
+  let storedNote = note;
+
+  if (!storedNote) {
+    const changeDescriptions: string[] = [];
+
+    if (budgetChanged) {
+      changeDescriptions.push('Estimated budget updated');
+    }
+
+    if (deadlineChanged) {
+      changeDescriptions.push('Deadline updated');
+    }
+
+    if (hasPhotos) {
+      changeDescriptions.push('Progress evidence added');
+    }
+
+    storedNote = `${changeDescriptions.join('. ')}.`;
+  }
 
   const { data: workUpdate, error: workUpdateError } = await supabase
     .from('complaint_work_updates')
     .insert({
       comp_id: complaintId,
       updated_by_acc_id: accId,
-      update_type: 'progress_update',
-      note: input.note.trim(),
-      budget,
-      deadline,
+      update_type: updateType,
+      note: storedNote,
+      budget: nextBudget,
+      deadline: nextDeadline,
       progress_percent: nextProgress,
     })
     .select('update_id')
@@ -876,7 +956,7 @@ export async function addAuthorityWorkUpdate(
 
   if (workUpdateError) {
     throw new Error(
-      `Failed to save progress update: ${workUpdateError.message}`,
+      `Failed to save work update: ${workUpdateError.message}`,
     );
   }
 

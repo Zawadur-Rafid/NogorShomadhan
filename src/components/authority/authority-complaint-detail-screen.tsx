@@ -84,6 +84,31 @@ function budgetToInput(value: string) {
   return cleanBudgetInput(value);
 }
 
+function isValidBudgetInput(value: string) {
+  const cleaned = cleanBudgetInput(value);
+  if (!cleaned) return false;
+
+  const amount = Number(cleaned);
+  return Number.isFinite(amount) && amount > 0;
+}
+
+function budgetsEqual(first: string, second: string) {
+  const firstCleaned = cleanBudgetInput(first);
+  const secondCleaned = cleanBudgetInput(second);
+
+  if (!firstCleaned && !secondCleaned) return true;
+  if (!firstCleaned || !secondCleaned) return false;
+
+  const firstAmount = Number(firstCleaned);
+  const secondAmount = Number(secondCleaned);
+
+  if (!Number.isFinite(firstAmount) || !Number.isFinite(secondAmount)) {
+    return firstCleaned === secondCleaned;
+  }
+
+  return firstAmount === secondAmount;
+}
+
 function startOfDay(date: Date) {
   const result = new Date(date);
   result.setHours(0, 0, 0, 0);
@@ -154,7 +179,10 @@ function DatePickerField({
 }) {
   const minimumDate = getTomorrow();
   const selectedDate = fromDateKey(value);
-  const initialMonth = selectedDate ?? minimumDate;
+  const initialMonth =
+    selectedDate && selectedDate.getTime() >= minimumDate.getTime()
+      ? selectedDate
+      : minimumDate;
 
   const [open, setOpen] = useState(false);
   const [visibleMonth, setVisibleMonth] = useState(
@@ -162,7 +190,12 @@ function DatePickerField({
   );
 
   useEffect(() => {
-    const next = fromDateKey(value) ?? minimumDate;
+    const parsed = fromDateKey(value);
+    const next =
+      parsed && parsed.getTime() >= minimumDate.getTime()
+        ? parsed
+        : minimumDate;
+
     setVisibleMonth(new Date(next.getFullYear(), next.getMonth(), 1));
   }, [value]);
 
@@ -791,11 +824,7 @@ export default function AuthorityComplaintDetailScreen() {
       return;
     }
 
-    setDeadline(
-      complaint.deadline && isAllowedDeadline(complaint.deadline)
-        ? complaint.deadline
-        : '',
-    );
+    setDeadline(complaint.deadline ?? '');
     setWorkBudget(budgetToInput(complaint.budget));
     setInitialNote(complaint.workNote ?? '');
   }, [complaint?.id, complaint?.status, complaint?.deadline, complaint?.budget, complaint?.workNote]);
@@ -876,6 +905,23 @@ export default function AuthorityComplaintDetailScreen() {
       : evidenceTitle === 'Latest Work Evidence'
         ? 'Most recent work photo attached to this complaint'
         : 'Photo submitted by the resident with the complaint';
+
+  const savedBudget = budgetToInput(complaint.budget);
+  const savedDeadline = complaint.deadline ?? '';
+
+  const budgetChanged = !budgetsEqual(workBudget, savedBudget);
+  const deadlineChanged = deadline !== savedDeadline;
+  const noteChanged = updateNote.trim().length > 0;
+  const photosChanged = updateImages.length > 0;
+
+  const hasAnyUpdateChange =
+    budgetChanged || deadlineChanged || noteChanged || photosChanged;
+
+  const changedBudgetIsValid =
+    !budgetChanged || isValidBudgetInput(workBudget);
+
+  const changedDeadlineIsValid =
+    !deadlineChanged || isAllowedDeadline(deadline);
 
   const pickPhotos = async (multiple: boolean) => {
     setFormMessage('');
@@ -962,15 +1008,22 @@ export default function AuthorityComplaintDetailScreen() {
   };
 
   const handleAddUpdate = async () => {
-    if (!updateNote.trim() || !deadline.trim() || !workBudget.trim()) {
+    if (!hasAnyUpdateChange) {
       setFormMessage(
-        'Deadline, current amount, and update notes are required. Photos are optional.',
+        'Change the estimated budget or deadline, add notes, or attach at least one photo.',
       );
       return;
     }
 
-    if (!isAllowedDeadline(deadline)) {
-      setFormMessage('Deadline must be tomorrow or a later date.');
+    if (budgetChanged && !isValidBudgetInput(workBudget)) {
+      setFormMessage('Enter a valid estimated budget greater than 0.');
+      return;
+    }
+
+    if (deadlineChanged && !isAllowedDeadline(deadline)) {
+      setFormMessage(
+        'A changed deadline must be tomorrow or a later date.',
+      );
       return;
     }
 
@@ -979,9 +1032,9 @@ export default function AuthorityComplaintDetailScreen() {
 
     try {
       await addWorkUpdate(complaint.id, {
-        deadline,
-        note: updateNote.trim(),
-        budget: workBudget.trim(),
+        budget: budgetChanged ? workBudget.trim() : undefined,
+        deadline: deadlineChanged ? deadline : undefined,
+        note: noteChanged ? updateNote.trim() : undefined,
         images: updateImages,
       });
 
@@ -1081,9 +1134,9 @@ export default function AuthorityComplaintDetailScreen() {
     initialNote.trim().length > 0;
 
   const canAddUpdate =
-    updateNote.trim().length > 0 &&
-    isAllowedDeadline(deadline) &&
-    workBudget.trim().length > 0;
+    hasAnyUpdateChange &&
+    changedBudgetIsValid &&
+    changedDeadlineIsValid;
 
   const canChangeContractor =
     newContractorName.trim().length > 0 &&
@@ -1411,6 +1464,10 @@ export default function AuthorityComplaintDetailScreen() {
                       multiline
                       style={[styles.inputBox, styles.noteInput]}
                     />
+
+                    <Text style={styles.updateRequirementHint}>
+                      Change the amount or deadline, add notes, or attach photos. Any one change is enough.
+                    </Text>
 
                     <Text style={styles.inputLabel}>Work Evidence (1–5 photos)</Text>
                     <TouchableOpacity style={styles.photoPicker} onPress={chooseUpdatePhotos}>
@@ -2388,6 +2445,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#F0E4D4',
   },
   progressBar: { height: '100%', borderRadius: 4, backgroundColor: '#C57C1B' },
+  updateRequirementHint: {
+    color: '#7890AB',
+    fontSize: 8,
+    lineHeight: 12,
+    marginTop: -2,
+  },
   photoPicker: {
     minHeight: 58,
     flexDirection: 'row',
