@@ -1,296 +1,321 @@
 import {
   createContext,
-  type PropsWithChildren,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
+  type PropsWithChildren,
 } from 'react';
 
-import { authorityProfileDetails } from './store-authority-account';
 import {
-  createInitialAuthorityComplaintDetails,
-  type AuthorityComplaintDetail,
-  type AuthorityEvidenceImage,
+  addAuthorityWorkUpdate,
+  changeAuthorityContractor,
+  getAuthorityComplaints,
+  resolveAuthorityComplaint,
+  startAuthorityComplaint,
+  type AddWorkUpdateInput,
+  type ChangeContractorInput,
+  type ResolveComplaintInput,
+  type StartComplaintInput,
+} from '@/services/authority.service';
+
+import type {
+  AuthorityComplaintDetail,
 } from './store-authority-complaint-details';
-
-type StartComplaintInput = {
-  deadline: string;
-  contractorName: string;
-  contractorPhone: string;
-  budget: string;
-  note: string;
-};
-
-type AddWorkUpdateInput = {
-  deadline: string;
-  budget: string;
-  note: string;
-  images: AuthorityEvidenceImage[];
-};
-
-type ResolveComplaintInput = {
-  budget: string;
-  note: string;
-  finalImage: AuthorityEvidenceImage;
-};
-
-type ChangeContractorInput = {
-  name: string;
-  phone: string;
-  reason: string;
-};
 
 type AuthorityComplaintsContextValue = {
   complaints: AuthorityComplaintDetail[];
-  startComplaint: (complaintId: string, input: StartComplaintInput) => void;
-  addWorkUpdate: (complaintId: string, input: AddWorkUpdateInput) => void;
+
+  loading: boolean;
+
+  error: string | null;
+
+  refreshComplaints: () => Promise<void>;
+
+  startComplaint: (
+    complaintId: string,
+    input: StartComplaintInput,
+  ) => Promise<void>;
+
+  addWorkUpdate: (
+    complaintId: string,
+    input: AddWorkUpdateInput,
+  ) => Promise<void>;
+
   changeContractor: (
     complaintId: string,
     input: ChangeContractorInput,
-  ) => void;
-  resolveComplaint: (complaintId: string, input: ResolveComplaintInput) => void;
+  ) => Promise<void>;
+
+  resolveComplaint: (
+    complaintId: string,
+    input: ResolveComplaintInput,
+  ) => Promise<void>;
+
+  clearError: () => void;
 };
 
 const AuthorityComplaintsContext =
-  createContext<AuthorityComplaintsContextValue | null>(null);
+  createContext<AuthorityComplaintsContextValue | null>(
+    null,
+  );
 
-function nowLabel() {
-  return new Intl.DateTimeFormat('en-GB', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-  }).format(new Date());
-}
-
-function getCurrentContractor(complaint: AuthorityComplaintDetail) {
-  for (
-    let index = complaint.contractorAssignments.length - 1;
-    index >= 0;
-    index -= 1
-  ) {
-    const assignment = complaint.contractorAssignments[index];
-    if (!assignment.assignedUntil) return assignment;
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message;
   }
 
-  return complaint.contractorAssignments.at(-1);
+  return 'An unexpected error occurred.';
 }
 
-export function AuthorityComplaintsProvider({ children }: PropsWithChildren) {
-  const [complaints, setComplaints] = useState<AuthorityComplaintDetail[]>(
-    createInitialAuthorityComplaintDetails,
-  );
+export function AuthorityComplaintsProvider({
+  children,
+}: PropsWithChildren) {
+  const [complaints, setComplaints] = useState<
+    AuthorityComplaintDetail[]
+  >([]);
 
-  const startComplaint = useCallback(
-    (complaintId: string, input: StartComplaintInput) => {
-      setComplaints((current) =>
-        current.map((complaint) => {
-          if (complaint.id !== complaintId) return complaint;
+  const [loading, setLoading] =
+    useState<boolean>(true);
 
-          const timestamp = nowLabel();
-          const contractorAssignmentId = `CTR-${complaint.id}-${Date.now()}`;
+  const [error, setError] =
+    useState<string | null>(null);
 
-          return {
-            ...complaint,
-            status: 'IN PROGRESS',
-            deadline: input.deadline,
-            budget: input.budget,
-            workNote: input.note,
-            progress: 10,
-            approvedBy: {
-              name: authorityProfileDetails.name,
-              initials: authorityProfileDetails.initials,
-              role: authorityProfileDetails.role,
-              approvedAt: timestamp,
-            },
-            contractorAssignments: [
-              {
-                id: contractorAssignmentId,
-                name: input.contractorName,
-                phone: input.contractorPhone,
-                assignedFrom: timestamp,
-              },
-            ],
-            updates: [
-              ...complaint.updates.filter((update) => update.complete),
-              {
-                id: `UPD-${complaint.id}-${Date.now()}`,
-                title: 'Work started',
-                note: input.note,
-                timestamp,
-                contractorAssignmentId,
-                complete: true,
-                budget: input.budget,
-                images: [],
-              },
-            ],
-          };
-        }),
-      );
-    },
-    [],
-  );
+  /*
+   * Load all complaints visible to the Authority.
+   *
+   * authority.service.ts only returns:
+   * - pending
+   * - in progress
+   * - resolved
+   *
+   * Therefore unverified complaints are not shown here.
+   */
+  const refreshComplaints =
+    useCallback(async () => {
+      setLoading(true);
+      setError(null);
 
-  const addWorkUpdate = useCallback(
-    (complaintId: string, input: AddWorkUpdateInput) => {
-      setComplaints((current) =>
-        current.map((complaint) => {
-          if (complaint.id !== complaintId) return complaint;
+      try {
+        const data =
+          await getAuthorityComplaints();
 
-          const completedUpdates = complaint.updates.filter((update) => update.complete);
-          const workUpdateNumber = completedUpdates.filter((update) =>
-            update.title.startsWith('Work update'),
-          ).length + 1;
+        setComplaints(data);
+      } catch (err) {
+        console.error(
+          'Failed to load authority complaints:',
+          err,
+        );
 
-          const currentContractor = getCurrentContractor(complaint);
-          return {
-            ...complaint,
-            deadline: input.deadline,
-            budget: input.budget,
-            progress: Math.min(95, complaint.progress + 15),
-            updates: [
-              ...completedUpdates,
-              {
-                id: `UPD-${complaint.id}-${Date.now()}`,
-                title: `Work update ${workUpdateNumber}`,
-                note: input.note,
-                timestamp: nowLabel(),
-                contractorAssignmentId: currentContractor?.id,
-                complete: true,
-                budget: input.budget,
-                images: [...input.images],
-              },
-            ],
-          };
-        }),
-      );
-    },
-    [],
-  );
+        setError(getErrorMessage(err));
+      } finally {
+        setLoading(false);
+      }
+    }, []);
 
-  const changeContractor = useCallback(
-    (complaintId: string, input: ChangeContractorInput) => {
-      setComplaints((current) =>
-        current.map((complaint) => {
-          if (complaint.id !== complaintId) return complaint;
+  /*
+   * Load real Supabase data as soon as the
+   * Authority module is mounted.
+   */
+  useEffect(() => {
+    void refreshComplaints();
+  }, [refreshComplaints]);
 
-          const timestamp = nowLabel();
-          const previousContractor = getCurrentContractor(complaint);
-          const contractorAssignmentId = `CTR-${complaint.id}-${Date.now()}`;
+  /*
+   * Pending -> In Progress
+   */
+  const startComplaint =
+    useCallback(
+      async (
+        complaintId: string,
+        input: StartComplaintInput,
+      ) => {
+        setError(null);
 
-          return {
-            ...complaint,
-            contractorAssignments: [
-              ...complaint.contractorAssignments.map((assignment) =>
-                assignment.id === previousContractor?.id
-                  ? {
-                      ...assignment,
-                      assignedUntil: timestamp,
-                      changeReason: input.reason,
-                    }
-                  : assignment,
-              ),
-              {
-                id: contractorAssignmentId,
-                name: input.name,
-                phone: input.phone,
-                assignedFrom: timestamp,
-              },
-            ],
-            updates: [
-              ...complaint.updates.filter((update) => update.complete),
-              {
-                id: `UPD-${complaint.id}-${Date.now()}`,
-                title: 'Contractor changed',
-                note: previousContractor
-                  ? `${previousContractor.name} was replaced by ${input.name}. Reason: ${input.reason}`
-                  : `${input.name} was assigned. Reason: ${input.reason}`,
-                timestamp,
-                complete: true,
-                budget: complaint.budget,
-                images: [],
-                contractorAssignmentId,
-              },
-            ],
-          };
-        }),
-      );
-    },
-    [],
-  );
+        try {
+          await startAuthorityComplaint(
+            complaintId,
+            input,
+          );
 
-  const resolveComplaint = useCallback(
-    (complaintId: string, input: ResolveComplaintInput) => {
-      setComplaints((current) =>
-        current.map((complaint) => {
-          if (complaint.id !== complaintId) return complaint;
+          /*
+           * Fetch the complaint again so the UI
+           * reflects the actual database state.
+           */
+          await refreshComplaints();
+        } catch (err) {
+          const message =
+            getErrorMessage(err);
 
-          const timestamp = nowLabel();
-          const currentContractor = getCurrentContractor(complaint);
-          return {
-            ...complaint,
-            status: 'RESOLVED',
-            progress: 100,
-            budget: input.budget,
-            completedAt: timestamp,
-            resolutionNote: input.note,
-            finalEvidence: input.finalImage,
-            contractorAssignments: complaint.contractorAssignments.map((assignment) =>
-              assignment.id === currentContractor?.id
-                ? {
-                    ...assignment,
-                    assignedUntil: timestamp,
-                  }
-                : assignment,
-            ),
-            updates: [
-              ...complaint.updates.filter((update) => update.complete),
-              {
-                id: `UPD-${complaint.id}-${Date.now()}`,
-                title: 'Complaint resolved',
-                note: input.note,
-                timestamp,
-                contractorAssignmentId: currentContractor?.id,
-                complete: true,
-                budget: input.budget,
-                images: [input.finalImage],
-              },
-            ],
-          };
-        }),
-      );
-    },
-    [],
-  );
+          console.error(
+            'Failed to start complaint:',
+            err,
+          );
 
-  const value = useMemo(
-    () => ({
-      complaints,
-      startComplaint,
-      addWorkUpdate,
-      changeContractor,
-      resolveComplaint,
-    }),
-    [
-      addWorkUpdate,
-      changeContractor,
-      complaints,
-      resolveComplaint,
-      startComplaint,
-    ],
-  );
+          setError(message);
+
+          /*
+           * Re-throw so the detail screen can
+           * show the backend failure instead of
+           * pretending that the operation worked.
+           */
+          throw err;
+        }
+      },
+      [refreshComplaints],
+    );
+
+  /*
+   * Add progress update.
+   */
+  const addWorkUpdate =
+    useCallback(
+      async (
+        complaintId: string,
+        input: AddWorkUpdateInput,
+      ) => {
+        setError(null);
+
+        try {
+          await addAuthorityWorkUpdate(
+            complaintId,
+            input,
+          );
+
+          await refreshComplaints();
+        } catch (err) {
+          const message =
+            getErrorMessage(err);
+
+          console.error(
+            'Failed to add work update:',
+            err,
+          );
+
+          setError(message);
+
+          throw err;
+        }
+      },
+      [refreshComplaints],
+    );
+
+  /*
+   * Change current contractor.
+   */
+  const changeContractor =
+    useCallback(
+      async (
+        complaintId: string,
+        input: ChangeContractorInput,
+      ) => {
+        setError(null);
+
+        try {
+          await changeAuthorityContractor(
+            complaintId,
+            input,
+          );
+
+          await refreshComplaints();
+        } catch (err) {
+          const message =
+            getErrorMessage(err);
+
+          console.error(
+            'Failed to change contractor:',
+            err,
+          );
+
+          setError(message);
+
+          throw err;
+        }
+      },
+      [refreshComplaints],
+    );
+
+  /*
+   * In Progress -> Resolved
+   */
+  const resolveComplaint =
+    useCallback(
+      async (
+        complaintId: string,
+        input: ResolveComplaintInput,
+      ) => {
+        setError(null);
+
+        try {
+          await resolveAuthorityComplaint(
+            complaintId,
+            input,
+          );
+
+          await refreshComplaints();
+        } catch (err) {
+          const message =
+            getErrorMessage(err);
+
+          console.error(
+            'Failed to resolve complaint:',
+            err,
+          );
+
+          setError(message);
+
+          throw err;
+        }
+      },
+      [refreshComplaints],
+    );
+
+  const clearError =
+    useCallback(() => {
+      setError(null);
+    }, []);
+
+  const value =
+    useMemo<AuthorityComplaintsContextValue>(
+      () => ({
+        complaints,
+        loading,
+        error,
+        refreshComplaints,
+        startComplaint,
+        addWorkUpdate,
+        changeContractor,
+        resolveComplaint,
+        clearError,
+      }),
+      [
+        complaints,
+        loading,
+        error,
+        refreshComplaints,
+        startComplaint,
+        addWorkUpdate,
+        changeContractor,
+        resolveComplaint,
+        clearError,
+      ],
+    );
 
   return (
-    <AuthorityComplaintsContext.Provider value={value}>
+    <AuthorityComplaintsContext.Provider
+      value={value}
+    >
       {children}
     </AuthorityComplaintsContext.Provider>
   );
 }
 
 export function useAuthorityComplaints() {
-  const context = useContext(AuthorityComplaintsContext);
+  const context =
+    useContext(
+      AuthorityComplaintsContext,
+    );
 
   if (!context) {
     throw new Error(
