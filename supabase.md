@@ -47,3 +47,62 @@
 - `acc_id`: UUID (Foreign Key to account.acc_id)
 - `comp_id`: UUID (Foreign Key to complaints.comp_id)
 - `timestamp`: TIMESTAMPTZ (Default: CURRENT_TIMESTAMP)
+
+### complaint_status_history
+- history_id: UUID (Primary Key, Default: gen_random_uuid())
+- comp_id: UUID (Foreign Key to complaints.comp_id, ON DELETE CASCADE, NOT NULL)
+- from_status: complaint_status (NOT NULL)
+- to_status: complaint_status (NOT NULL)
+- changed_by_acc_id: UUID (Foreign Key to account.acc_id, NOT NULL)
+- changed_at: TIMESTAMPTZ (Default: CURRENT_TIMESTAMP, NOT NULL)
+- note: TEXT (NULL)
+
+Purpose:
+- Audit trail for transitions such as unverified -> pending -> in progress -> resolved
+
+### complaint_work_updates
+- update_id: UUID (Primary Key, Default: gen_random_uuid())
+- comp_id: UUID (Foreign Key to complaints.comp_id, ON DELETE CASCADE, NOT NULL)
+- updated_by_acc_id: UUID (Foreign Key to account.acc_id, NOT NULL)
+- update_type: work_update_type (NOT NULL)
+- note: TEXT (NULL)
+- budget: NUMERIC(12,2) (NULL)
+- deadline: TIMESTAMPTZ (NULL)
+- progress_percent: INTEGER (NULL, CHECK between 0 and 100)
+- created_at: TIMESTAMPTZ (Default: CURRENT_TIMESTAMP, NOT NULL)
+
+Purpose:
+- Timeline of authority updates on in progress complaints
+
+### contractor_history
+- contractor_event_id: UUID (Primary Key, Default: gen_random_uuid())
+- comp_id: UUID (Foreign Key to complaints.comp_id, ON DELETE CASCADE, NOT NULL)
+- contractor_name: TEXT (NOT NULL)
+- contractor_phone: TEXT (NOT NULL)
+- change_reason: TEXT (NULL)
+- changed_by_acc_id: UUID (Foreign Key to account.acc_id, NOT NULL)
+- changed_at: TIMESTAMPTZ (Default: CURRENT_TIMESTAMP, NOT NULL)
+- is_current: BOOLEAN (Default: true, NOT NULL)
+
+Purpose:
+- Full contractor change history with reason and actor
+
+### complaint_update_evidence
+- update_evidence_id: UUID (Primary Key, Default: gen_random_uuid())
+- update_id: UUID (Foreign Key to complaint_work_updates.update_id, ON DELETE CASCADE, NOT NULL)
+- comp_id: UUID (Foreign Key to complaints.comp_id, ON DELETE CASCADE, NOT NULL)
+- img_url: TEXT (NOT NULL)
+- storage_path: TEXT (NULL)
+- uploaded_by_acc_id: UUID (Foreign Key to account.acc_id, NOT NULL)
+- uploaded_at: TIMESTAMPTZ (Default: CURRENT_TIMESTAMP, NOT NULL)
+
+Purpose:
+- Evidence images for authority progress and completion updates
+
+### complaint_resolution
+- comp_id: UUID (Primary Key, Foreign Key to complaints.comp_id, ON DELETE CASCADE)
+- resolved_by_acc_id: UUID (Foreign Key to account.acc_id, NOT NULL)
+- resolved_at: TIMESTAMPTZ (Default: CURRENT_TIMESTAMP, NOT NULL)
+- resolution_note: TEXT (NULL)
+- final_budget: NUMERIC(12,2) (NULL)
+- final_deadline: TIMESTAMPTZ (NULL)
