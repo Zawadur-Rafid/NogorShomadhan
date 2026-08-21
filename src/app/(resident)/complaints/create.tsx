@@ -3,19 +3,21 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Image,
 import { MaterialIcons } from '@expo/vector-icons';
 import LocationPickerMap from '../../../components/LocationPickerMap';
 import * as ImagePicker from 'expo-image-picker';
-
-
+import { categorizeComplaint } from '../../../services/ai.service';
+import { createComplaint } from '../../../services/resident.service';
+import { ActivityIndicator } from 'react-native';
 export default function NewComplaintForm() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [selectedLocation, setSelectedLocation] = useState<{lat: number, lng: number} | null>(null);
-  const [photos, setPhotos] = useState<string[]>([]);
+  const [photos, setPhotos] = useState<{uri: string, base64: string}[]>([]);
   const [errors, setErrors] = useState({
     title: false,
     description: false,
     location: false,
     photos: false,
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleClearLocation = () => {
     setSelectedLocation(null);
@@ -30,14 +32,18 @@ export default function NewComplaintForm() {
       }
 
       const result = await ImagePicker.launchCameraAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        mediaTypes: ['images'],
         allowsEditing: true,
         quality: 0.8,
+        base64: true,
       });
 
       if (!result.canceled && result.assets && result.assets.length > 0) {
-        setPhotos(prev => [...prev, result.assets[0].uri]);
-        if (errors.photos) setErrors(prev => ({ ...prev, photos: false }));
+        const asset = result.assets[0];
+        if (asset.base64) {
+          setPhotos(prev => [...prev, { uri: asset.uri, base64: asset.base64! }]);
+          if (errors.photos) setErrors(prev => ({ ...prev, photos: false }));
+        }
       }
     } catch (error) {
       Alert.alert('Error', 'Failed to open camera.');
@@ -53,14 +59,18 @@ export default function NewComplaintForm() {
       }
 
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        mediaTypes: ['images'],
         allowsEditing: true,
         quality: 0.8,
+        base64: true,
       });
 
       if (!result.canceled && result.assets && result.assets.length > 0) {
-        setPhotos(prev => [...prev, result.assets[0].uri]);
-        if (errors.photos) setErrors(prev => ({ ...prev, photos: false }));
+        const asset = result.assets[0];
+        if (asset.base64) {
+          setPhotos(prev => [...prev, { uri: asset.uri, base64: asset.base64! }]);
+          if (errors.photos) setErrors(prev => ({ ...prev, photos: false }));
+        }
       }
     } catch (error) {
       Alert.alert('Error', 'Failed to pick image from gallery.');
@@ -71,7 +81,7 @@ export default function NewComplaintForm() {
     setPhotos(prev => prev.filter((_, i) => i !== index));
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     const newErrors = {
       title: title.trim() === '',
       description: description.trim() === '',
@@ -81,22 +91,43 @@ export default function NewComplaintForm() {
     setErrors(newErrors);
 
     if (!newErrors.title && !newErrors.description && !newErrors.location && !newErrors.photos) {
-      Alert.alert(
-        'Submission Successful', 
-        'Your complaint has been logged and queued for review.',
-        [
-          {
-            text: 'OK',
-            onPress: () => {
-              setTitle('');
-              setDescription('');
-              setSelectedLocation(null);
-              setPhotos([]);
-              setErrors({ title: false, description: false, location: false, photos: false });
+      setIsSubmitting(true);
+      try {
+        const base64Images = photos.map(p => p.base64);
+
+        const category = await categorizeComplaint(title, description, base64Images);
+
+        await createComplaint({
+          title,
+          description,
+          latitude: selectedLocation!.lat,
+          longitude: selectedLocation!.lng,
+          category,
+          images: photos,
+        });
+
+        Alert.alert(
+          'Submission Successful', 
+          `Your complaint has been logged as "${category}" and queued for review.`,
+          [
+            {
+              text: 'OK',
+              onPress: () => {
+                setTitle('');
+                setDescription('');
+                setSelectedLocation(null);
+                setPhotos([]);
+                setErrors({ title: false, description: false, location: false, photos: false });
+              }
             }
-          }
-        ]
-      );
+          ]
+        );
+      } catch (error: any) {
+        console.error("Submission error:", error);
+        Alert.alert('Submission Failed', error.message || 'An error occurred while submitting.');
+      } finally {
+        setIsSubmitting(false);
+      }
     }
   };
 
@@ -153,7 +184,7 @@ export default function NewComplaintForm() {
         <View style={styles.mapPlaceholder}>
           <LocationPickerMap 
             selectedLocation={selectedLocation} 
-            onLocationSelect={(loc) => {
+            onLocationSelect={(loc: {lat: number, lng: number} | null) => {
               setSelectedLocation(loc);
               if (errors.location) setErrors(prev => ({ ...prev, location: false }));
             }} 
@@ -183,9 +214,9 @@ export default function NewComplaintForm() {
 
         {photos.length > 0 && (
           <View style={styles.selectedPhotosGrid}>
-            {photos.map((uri, idx) => (
-              <View key={`${uri}-${idx}`} style={styles.photoPreviewWrapper}>
-                <Image source={{ uri }} style={styles.photoPreview} />
+            {photos.map((photo, idx) => (
+              <View key={`${photo.uri}-${idx}`} style={styles.photoPreviewWrapper}>
+                <Image source={{ uri: photo.uri }} style={styles.photoPreview} />
                 <TouchableOpacity style={styles.removePhotoButton} onPress={() => removePhoto(idx)}>
                   <MaterialIcons name="close" size={16} color="#FFF" />
                 </TouchableOpacity>
@@ -197,9 +228,15 @@ export default function NewComplaintForm() {
       </View>
 
       {/* Submit Button */}
-      <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
-        <MaterialIcons name="send" size={20} color="#FFF" />
-        <Text style={styles.submitText}>SUBMIT COMPLAINT</Text>
+      <TouchableOpacity style={styles.submitButton} onPress={handleSubmit} disabled={isSubmitting}>
+        {isSubmitting ? (
+          <ActivityIndicator color="#FFF" size="small" />
+        ) : (
+          <>
+            <MaterialIcons name="send" size={20} color="#FFF" />
+            <Text style={styles.submitText}>SUBMIT COMPLAINT</Text>
+          </>
+        )}
       </TouchableOpacity>
       
     </ScrollView>
