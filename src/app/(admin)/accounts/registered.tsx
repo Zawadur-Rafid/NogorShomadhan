@@ -1,59 +1,57 @@
-// src/app/(admin)/accounts/registered.tsx
-
 import { useMemo, useState } from "react";
 import {
-  Modal,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    Modal,
+    Pressable,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 
-import AdminBottomNav from "@/components/AdminBottomNav";
 import Ionicons from "@expo/vector-icons/Ionicons";
 
-import {
-  useAdminAccounts,
-  type RegisteredAdminAccount,
-} from "@/store/admin-accounts-store";
+import AdminBottomNav from "@/components/AdminBottomNav";
+import { AdminAccount, useAdminAccounts } from "@/store/admin-accounts-store";
 
 const colors = {
   background: "#F5F6FA",
   white: "#FFFFFF",
-  primary: "#1F4868",
   text: "#1E1E1E",
   subtitle: "#707070",
-
   blue: "#E8F2FF",
   orange: "#FFF3E5",
   green: "#EAF8EF",
-
   blueIcon: "#2D6CDF",
   orangeIcon: "#C97816",
   greenIcon: "#1E8E3E",
 };
 
-type SelectedRegisteredAccount = RegisteredAdminAccount | null;
+export default function RegisteredAccountsPage() {
+  const { registeredAccounts, metrics, loading, error, refresh } =
+    useAdminAccounts();
+  const [query, setQuery] = useState("");
+  const [selectedAccount, setSelectedAccount] = useState<AdminAccount | null>(
+    null,
+  );
 
-export default function Registered() {
-  const { registeredAccounts } = useAdminAccounts();
-  const [selectedAccount, setSelectedAccount] =
-    useState<SelectedRegisteredAccount>(registeredAccounts[0] ?? null);
+  const filteredAccounts = useMemo(() => {
+    const search = query.trim().toLowerCase();
 
-  const selectedAccountId = selectedAccount?.id;
-
-  const displayedSelectedAccount = useMemo(() => {
-    if (!selectedAccountId) {
-      return null;
+    if (!search) {
+      return registeredAccounts;
     }
 
-    return (
-      registeredAccounts.find((account) => account.id === selectedAccountId) ??
-      null
-    );
-  }, [registeredAccounts, selectedAccountId]);
+    return registeredAccounts.filter((account) => {
+      return (
+        account.fullName.toLowerCase().includes(search) ||
+        account.email.toLowerCase().includes(search) ||
+        account.username.toLowerCase().includes(search) ||
+        account.role.toLowerCase().includes(search)
+      );
+    });
+  }, [registeredAccounts, query]);
 
   return (
     <View style={styles.container}>
@@ -61,24 +59,15 @@ export default function Registered() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.content}
       >
-        <View style={styles.pageIntro}>
-          <Text style={styles.kicker}>Registered accounts</Text>
-          <Text style={styles.title}>All approved accounts</Text>
-          <Text style={styles.subtitle}>
-            Review approved resident and authority profiles with a cleaner,
-            card-based layout.
-          </Text>
-        </View>
-
         <View style={styles.statsCard}>
           <View style={styles.iconBlue}>
             <Ionicons name="people-outline" size={24} color={colors.blueIcon} />
           </View>
 
-          <View style={{ marginLeft: 15 }}>
+          <View style={styles.statsTextBlock}>
             <Text style={styles.smallLabel}>REGISTERED</Text>
             <Text style={styles.bigText}>
-              {registeredAccounts.length} Accounts
+              {metrics.registeredCount} Accounts
             </Text>
           </View>
         </View>
@@ -92,9 +81,11 @@ export default function Registered() {
             />
           </View>
 
-          <View style={{ marginLeft: 15 }}>
+          <View style={styles.statsTextBlock}>
             <Text style={styles.smallLabel}>RECENTLY VERIFIED</Text>
-            <Text style={styles.bigText}>18 Citizens</Text>
+            <Text style={styles.bigText}>
+              {metrics.verifiedTodayCount} Citizens
+            </Text>
           </View>
         </View>
 
@@ -107,109 +98,98 @@ export default function Registered() {
             />
           </View>
 
-          <View style={{ marginLeft: 15 }}>
+          <View style={styles.statsTextBlock}>
             <Text style={styles.smallLabel}>AUTHORITY ACCOUNTS</Text>
-            <Text style={styles.bigText}>6 Offices</Text>
+            <Text style={styles.bigText}>{metrics.authorityCount} Offices</Text>
           </View>
         </View>
 
         <View style={styles.searchBar}>
           <Ionicons name="search" size={18} color="#777" />
-          <Text style={styles.searchPlaceholder}>
-            Search by name, role or email...
-          </Text>
+          <TextInput
+            value={query}
+            onChangeText={setQuery}
+            placeholder="Search by name, role, email or username"
+            placeholderTextColor="#8A8A8A"
+            style={styles.searchInput}
+          />
         </View>
 
-        <View style={styles.filterRow}>
-          <TouchableOpacity style={styles.activeChip}>
-            <Text style={styles.activeChipText}>All</Text>
-          </TouchableOpacity>
+        <TouchableOpacity
+          activeOpacity={0.85}
+          onPress={() => void refresh()}
+          style={styles.refreshButton}
+        >
+          <Ionicons name="refresh" size={16} color="#1F4868" />
+          <Text style={styles.refreshText}>Refresh</Text>
+        </TouchableOpacity>
 
-          <TouchableOpacity style={styles.chip}>
-            <Text style={styles.chipText}>Resident</Text>
-          </TouchableOpacity>
+        {error ? <Text style={styles.errorText}>{error}</Text> : null}
+        {loading ? (
+          <Text style={styles.loadingText}>Loading accounts...</Text>
+        ) : null}
 
-          <TouchableOpacity style={styles.chip}>
-            <Text style={styles.chipText}>Authority</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.filterIcon}>
-            <Ionicons name="options-outline" size={18} color="#666" />
-          </TouchableOpacity>
-        </View>
-
-        {registeredAccounts.length === 0 ? (
+        {!loading && filteredAccounts.length === 0 ? (
           <View style={styles.emptyState}>
             <Text style={styles.emptyTitle}>No registered accounts</Text>
             <Text style={styles.emptySubtitle}>
-              Approve a pending account to add it here.
+              Approved accounts will appear here.
             </Text>
           </View>
-        ) : (
-          registeredAccounts.map((account) => {
-            const isActive = selectedAccount?.id === account.id;
+        ) : null}
 
-            return (
-              <TouchableOpacity
-                key={account.id}
-                activeOpacity={0.85}
-                onPress={() => setSelectedAccount(account)}
-                style={[styles.card, isActive && styles.cardActive]}
-              >
-                <View style={styles.cardHeader}>
-                  <View style={styles.profileRow}>
-                    <View style={styles.avatar}>
-                      <Ionicons name="person" size={30} color="#555" />
-                    </View>
-
-                    <View style={{ flex: 1, marginLeft: 12 }}>
-                      <Text style={styles.cardName}>{account.fullName}</Text>
-                      <Text style={styles.cardMeta}>
-                        {account.role} • Verified
-                      </Text>
-
-                      <View style={styles.roleBadgeBlue}>
-                        <Text style={styles.roleBadgeBlueText}>
-                          APPROVED ACCOUNT
-                        </Text>
-                      </View>
-                    </View>
-                  </View>
-
-                  <View>
-                    <View style={styles.pill}>
-                      <Text style={styles.pillText}>Verified</Text>
-                    </View>
-                  </View>
+        {filteredAccounts.map((account) => (
+          <TouchableOpacity
+            key={account.id}
+            activeOpacity={0.88}
+            onPress={() => setSelectedAccount(account)}
+            style={styles.card}
+          >
+            <View style={styles.cardHeader}>
+              <View style={styles.profileRow}>
+                <View style={styles.avatar}>
+                  <Ionicons name="person" size={30} color="#555" />
                 </View>
 
-                <View style={styles.cardGrid}>
-                  <View style={styles.cardField}>
-                    <Text style={styles.label}>Email</Text>
-                    <Text style={styles.value}>{account.emailAddress}</Text>
-                  </View>
-                  <View style={styles.cardField}>
-                    <Text style={styles.label}>Phone</Text>
-                    <Text style={styles.value}>{account.phoneNumber}</Text>
+                <View style={styles.profileTextWrap}>
+                  <Text style={styles.personName}>{account.fullName}</Text>
+                  <Text style={styles.personInfo}>
+                    {account.role.toUpperCase()} • VERIFIED
+                  </Text>
+
+                  <View style={styles.roleBadge}>
+                    <Text style={styles.roleBadgeText}>APPROVED ACCOUNT</Text>
                   </View>
                 </View>
+              </View>
 
-                <TouchableOpacity
-                  activeOpacity={0.8}
-                  style={styles.viewButton}
-                  onPress={() => setSelectedAccount(account)}
-                >
-                  <Text style={styles.viewButtonText}>View details</Text>
-                  <Ionicons name="chevron-forward" size={16} color="#fff" />
-                </TouchableOpacity>
-              </TouchableOpacity>
-            );
-          })
-        )}
+              <View style={styles.pill}>
+                <Text style={styles.pillText}>Verified</Text>
+              </View>
+            </View>
+
+            <View style={styles.cardGrid}>
+              <View style={styles.cardField}>
+                <Text style={styles.label}>Email</Text>
+                <Text style={styles.value}>{account.email}</Text>
+              </View>
+
+              <View style={styles.cardField}>
+                <Text style={styles.label}>Phone</Text>
+                <Text style={styles.value}>{account.phoneNum || "-"}</Text>
+              </View>
+            </View>
+
+            <View style={styles.viewButton}>
+              <Text style={styles.viewButtonText}>View details</Text>
+              <Ionicons name="chevron-forward" size={16} color="#fff" />
+            </View>
+          </TouchableOpacity>
+        ))}
       </ScrollView>
 
       <Modal
-        visible={Boolean(displayedSelectedAccount)}
+        visible={Boolean(selectedAccount)}
         transparent
         animationType="fade"
         onRequestClose={() => setSelectedAccount(null)}
@@ -219,45 +199,53 @@ export default function Registered() {
           onPress={() => setSelectedAccount(null)}
         >
           <Pressable style={styles.modalCard} onPress={() => {}}>
-            {displayedSelectedAccount && (
+            {selectedAccount ? (
               <>
                 <Text style={styles.modalTitle}>
-                  {displayedSelectedAccount.fullName}
+                  {selectedAccount.fullName}
                 </Text>
                 <Text style={styles.modalSubtitle}>
-                  {displayedSelectedAccount.role} • Verified on{" "}
-                  {displayedSelectedAccount.verifiedOn}
+                  {selectedAccount.role.toUpperCase()} • VERIFIED
                 </Text>
 
                 <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>NID Number</Text>
-                  <Text style={styles.detailValue}>
-                    {displayedSelectedAccount.nidNumber}
-                  </Text>
+                  <Text style={styles.detailLabel}>NID</Text>
+                  <Text style={styles.detailValue}>{selectedAccount.nid}</Text>
                 </View>
                 <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>Email Address</Text>
+                  <Text style={styles.detailLabel}>Email</Text>
                   <Text style={styles.detailValue}>
-                    {displayedSelectedAccount.emailAddress}
+                    {selectedAccount.email}
                   </Text>
                 </View>
                 <View style={styles.detailRow}>
                   <Text style={styles.detailLabel}>Phone Number</Text>
                   <Text style={styles.detailValue}>
-                    {displayedSelectedAccount.phoneNumber}
+                    {selectedAccount.phoneNum || "-"}
                   </Text>
                 </View>
                 <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>Residential Address</Text>
+                  <Text style={styles.detailLabel}>House Number</Text>
                   <Text style={styles.detailValue}>
-                    {displayedSelectedAccount.houseNo},{" "}
-                    {displayedSelectedAccount.roadNo}
+                    {selectedAccount.houseNum || "-"}
+                  </Text>
+                </View>
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Road Number</Text>
+                  <Text style={styles.detailValue}>
+                    {selectedAccount.roadNumber || "-"}
+                  </Text>
+                </View>
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Avenue Number</Text>
+                  <Text style={styles.detailValue}>
+                    {selectedAccount.avenueNum || "-"}
                   </Text>
                 </View>
                 <View style={styles.detailRow}>
                   <Text style={styles.detailLabel}>Username</Text>
                   <Text style={styles.detailValue}>
-                    {displayedSelectedAccount.username}
+                    {selectedAccount.username}
                   </Text>
                 </View>
 
@@ -269,7 +257,7 @@ export default function Registered() {
                   <Text style={styles.closeButtonText}>Close</Text>
                 </TouchableOpacity>
               </>
-            )}
+            ) : null}
           </Pressable>
         </Pressable>
       </Modal>
@@ -288,67 +276,6 @@ const styles = StyleSheet.create({
     padding: 16,
     paddingBottom: 18,
   },
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 14,
-  },
-  headerLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  logo: {
-    marginLeft: 10,
-    fontSize: 22,
-    fontWeight: "700",
-    color: colors.text,
-    // No fontFamily - uses system default (SF Pro/Roboto)
-  },
-  headerRight: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  adminCircle: {
-    marginLeft: 15,
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    backgroundColor: "#D9E8F5",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  adminText: {
-    fontSize: 13,
-    color: colors.primary,
-    fontWeight: "700",
-    // No fontFamily - uses system default (SF Pro/Roboto)
-  },
-  pageIntro: {
-    marginBottom: 16,
-  },
-  kicker: {
-    fontSize: 12,
-    fontWeight: "700",
-    color: "#1E4867",
-    textTransform: "uppercase",
-    letterSpacing: 1,
-    marginBottom: 8,
-    // No fontFamily - uses system default (SF Pro/Roboto)
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: "800",
-    color: "#1B1B1B",
-    // No fontFamily - uses system default (SF Pro/Roboto)
-  },
-  subtitle: {
-    marginTop: 8,
-    fontSize: 14,
-    lineHeight: 20,
-    color: "#666",
-    // No fontFamily - uses system default (SF Pro/Roboto)
-  },
   statsCard: {
     backgroundColor: "#fff",
     marginBottom: 12,
@@ -361,6 +288,9 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 3 },
     elevation: 3,
+  },
+  statsTextBlock: {
+    marginLeft: 15,
   },
   iconBlue: {
     width: 46,
@@ -390,18 +320,16 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: "#666",
     fontWeight: "700",
-    // No fontFamily - uses system default (SF Pro/Roboto)
   },
   bigText: {
     marginTop: 2,
     fontSize: 28,
     color: "#222",
     fontWeight: "700",
-    // No fontFamily - uses system default (SF Pro/Roboto)
   },
   searchBar: {
     marginTop: 8,
-    marginBottom: 14,
+    marginBottom: 10,
     backgroundColor: "#ECEFF3",
     borderRadius: 22,
     height: 44,
@@ -409,95 +337,67 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 14,
   },
-  searchPlaceholder: {
+  searchInput: {
     marginLeft: 8,
-    color: "#8A8A8A",
+    color: "#1E1E1E",
     fontSize: 13,
-    // No fontFamily - uses system default (SF Pro/Roboto)
+    flex: 1,
   },
-  filterRow: {
+  refreshButton: {
+    alignSelf: "flex-start",
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 15,
+    gap: 6,
+    marginBottom: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 14,
+    backgroundColor: "#E8F2FF",
   },
-  activeChip: {
-    backgroundColor: "#23435D",
-    borderRadius: 20,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-  },
-  activeChipText: {
-    color: "#fff",
-    fontSize: 11,
+  refreshText: {
+    color: "#1F4868",
     fontWeight: "700",
-    // No fontFamily - uses system default (SF Pro/Roboto)
+    fontSize: 12,
   },
-  chip: {
-    backgroundColor: "#E8E8E8",
-    borderRadius: 20,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    marginLeft: 8,
+  loadingText: {
+    color: colors.subtitle,
+    marginBottom: 12,
   },
-  chipText: {
-    color: "#666",
-    fontSize: 11,
-    // No fontFamily - uses system default (SF Pro/Roboto)
-  },
-  filterIcon: {
-    marginLeft: "auto",
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    backgroundColor: "#EFEFEF",
-    justifyContent: "center",
-    alignItems: "center",
+  errorText: {
+    color: "#B42318",
+    marginBottom: 12,
   },
   emptyState: {
     backgroundColor: "#FFFFFF",
     borderRadius: 18,
     padding: 20,
     alignItems: "center",
-    shadowColor: "#000",
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 3,
   },
   emptyTitle: {
     fontSize: 18,
-    fontWeight: "800",
+    fontWeight: "700",
     color: "#1B1B1B",
-    // No fontFamily - uses system default (SF Pro/Roboto)
   },
   emptySubtitle: {
     marginTop: 8,
     fontSize: 14,
     color: "#666",
-    textAlign: "center",
-    // No fontFamily - uses system default (SF Pro/Roboto)
   },
   card: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "#fff",
+    marginBottom: 16,
     borderRadius: 16,
-    padding: 16,
-    marginBottom: 14,
+    padding: 15,
     shadowColor: "#000",
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 },
     elevation: 3,
-    borderWidth: 1,
-    borderColor: "transparent",
-  },
-  cardActive: {
-    borderColor: "#1E4867",
   },
   cardHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
-    marginBottom: 14,
   },
   profileRow: {
     flexDirection: "row",
@@ -505,148 +405,137 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   avatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: "#EAEAEA",
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: "#ECECEC",
     justifyContent: "center",
     alignItems: "center",
   },
-  cardName: {
+  profileTextWrap: {
+    marginLeft: 12,
+    flex: 1,
+  },
+  personName: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#1B1B1B",
-    // No fontFamily - uses system default (SF Pro/Roboto)
+    color: colors.text,
   },
-  cardMeta: {
-    marginTop: 2,
-    fontSize: 11,
-    color: "#777",
-    // No fontFamily - uses system default (SF Pro/Roboto)
+  personInfo: {
+    marginTop: 4,
+    fontSize: 13,
+    color: colors.subtitle,
+  },
+  roleBadge: {
+    marginTop: 8,
+    alignSelf: "flex-start",
+    borderRadius: 999,
+    backgroundColor: "#E8F2FF",
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  roleBadgeText: {
+    fontSize: 10,
+    fontWeight: "800",
+    letterSpacing: 0.2,
+    color: "#235EA8",
   },
   pill: {
-    backgroundColor: "#EEF8F1",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    backgroundColor: "#EAF8EF",
     borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
   },
   pillText: {
     color: "#1E8E3E",
+    fontSize: 11,
     fontWeight: "700",
-    fontSize: 12,
-    // No fontFamily - uses system default (SF Pro/Roboto)
   },
   cardGrid: {
-    flexDirection: "row",
-    gap: 12,
+    marginTop: 14,
+    gap: 10,
   },
   cardField: {
-    flex: 1,
-    backgroundColor: "#F6F7FB",
-    borderRadius: 14,
-    padding: 12,
+    borderRadius: 10,
+    backgroundColor: "#F8FAFD",
+    paddingHorizontal: 12,
+    paddingVertical: 10,
   },
   label: {
+    color: "#667085",
     fontSize: 12,
-    fontWeight: "700",
-    color: "#666",
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-    // No fontFamily - uses system default (SF Pro/Roboto)
+    fontWeight: "600",
+    marginBottom: 2,
   },
   value: {
-    marginTop: 6,
-    fontSize: 14,
+    color: "#101828",
+    fontSize: 13,
     fontWeight: "600",
-    color: "#1B1B1B",
-    // No fontFamily - uses system default (SF Pro/Roboto)
   },
   viewButton: {
-    marginTop: 14,
-    backgroundColor: "#23435D",
-    borderRadius: 22,
-    paddingVertical: 11,
+    marginTop: 12,
+    alignSelf: "flex-start",
     flexDirection: "row",
-    justifyContent: "center",
     alignItems: "center",
+    gap: 4,
+    backgroundColor: "#1F4868",
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
   },
   viewButtonText: {
-    marginRight: 6,
     color: "#fff",
-    fontSize: 14,
     fontWeight: "700",
-    // No fontFamily - uses system default (SF Pro/Roboto)
+    fontSize: 12,
   },
   backdrop: {
     flex: 1,
-    backgroundColor: "rgba(18, 24, 38, 0.55)",
+    backgroundColor: "rgba(15, 23, 42, 0.42)",
     justifyContent: "center",
-    padding: 20,
+    paddingHorizontal: 20,
   },
   modalCard: {
+    borderRadius: 18,
     backgroundColor: "#FFFFFF",
-    borderRadius: 20,
     padding: 18,
   },
   modalTitle: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: "800",
-    color: "#1B1B1B",
-    // No fontFamily - uses system default (SF Pro/Roboto)
+    color: "#182230",
   },
   modalSubtitle: {
-    marginTop: 6,
-    marginBottom: 16,
+    marginTop: 4,
     fontSize: 13,
-    color: "#666",
-    // No fontFamily - uses system default (SF Pro/Roboto)
+    color: "#667085",
+    marginBottom: 14,
   },
   detailRow: {
-    marginBottom: 12,
-    paddingBottom: 12,
+    paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: "#EEF1F5",
+    borderBottomColor: "#EEF2F6",
   },
   detailLabel: {
+    color: "#667085",
     fontSize: 12,
-    fontWeight: "700",
-    color: "#777",
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-    marginBottom: 4,
-    // No fontFamily - uses system default (SF Pro/Roboto)
+    fontWeight: "600",
+    marginBottom: 2,
   },
   detailValue: {
-    fontSize: 15,
+    color: "#101828",
+    fontSize: 14,
     fontWeight: "600",
-    color: "#1B1B1B",
-    // No fontFamily - uses system default (SF Pro/Roboto)
   },
   closeButton: {
-    marginTop: 6,
-    backgroundColor: "#1E4867",
-    borderRadius: 14,
-    paddingVertical: 14,
+    marginTop: 16,
+    backgroundColor: "#1F4868",
     alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 12,
+    paddingVertical: 11,
   },
   closeButtonText: {
-    color: "#FFFFFF",
-    fontWeight: "800",
-    fontSize: 15,
-    // No fontFamily - uses system default (SF Pro/Roboto)
-  },
-  roleBadgeBlue: {
-    alignSelf: "flex-start",
-    marginTop: 5,
-    backgroundColor: "#E8F2FF",
-    borderRadius: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-  },
-  roleBadgeBlueText: {
-    color: "#1F63C6",
-    fontSize: 10,
+    color: "#fff",
     fontWeight: "700",
-    // No fontFamily - uses system default (SF Pro/Roboto)
   },
 });

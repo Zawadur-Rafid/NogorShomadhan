@@ -1,168 +1,280 @@
 import {
     createContext,
+    useCallback,
     useContext,
+    useEffect,
     useMemo,
     useState,
     type ReactNode,
 } from "react";
 
-export type AdminAccountRole = "Resident" | "Authority";
+import { supabase } from "@/lib/supabase";
+
+export type AdminAccountRole = "resident" | "authority" | "admin";
+export type AdminAccountStatus = "unverified" | "verified" | "rejected";
 
 export type AdminAccount = {
   id: string;
   fullName: string;
-  nidNumber: string;
-  emailAddress: string;
-  phoneNumber: string;
-  houseNo: string;
-  roadNo: string;
+  nid: string;
+  email: string;
+  phoneNum: string;
+  houseNum: string;
+  roadNumber: string;
+  avenueNum: string;
   username: string;
   role: AdminAccountRole;
+  status: AdminAccountStatus;
+  createdAt: string | null;
+  updatedAt: string | null;
+  verifiedAt: string | null;
+  rejectedAt: string | null;
 };
 
-export type PendingAdminAccount = AdminAccount & {
-  requestedOn: string;
-};
-
-export type RegisteredAdminAccount = AdminAccount & {
-  verifiedOn: string;
+export type AdminAccountMetrics = {
+  pendingCount: number;
+  verifiedTodayCount: number;
+  rejectedTodayCount: number;
+  registeredCount: number;
+  authorityCount: number;
 };
 
 type AdminAccountsContextValue = {
-  pendingAccounts: PendingAdminAccount[];
-  registeredAccounts: RegisteredAdminAccount[];
-  approveAccount: (accountId: string) => void;
-  rejectAccount: (accountId: string) => void;
+  pendingAccounts: AdminAccount[];
+  registeredAccounts: AdminAccount[];
+  loading: boolean;
+  error: string | null;
+  metrics: AdminAccountMetrics;
+  refresh: () => Promise<void>;
+  approveAccount: (accountId: string) => Promise<void>;
+  rejectAccount: (accountId: string) => Promise<void>;
 };
 
-const initialPendingAccounts: PendingAdminAccount[] = [
-  {
-    id: "P-1001",
-    fullName: "Ayesha Rahman",
-    nidNumber: "1987456321098",
-    emailAddress: "ayesha.rahman@example.com",
-    phoneNumber: "+8801712345678",
-    houseNo: "House 14",
-    roadNo: "Road 5",
-    username: "ayesha.r",
-    role: "Resident",
-    requestedOn: "2026-07-16",
-  },
-  {
-    id: "P-1002",
-    fullName: "Md. Tamim Hasan",
-    nidNumber: "1990123478561",
-    emailAddress: "tamim.hasan@example.com",
-    phoneNumber: "+8801811223344",
-    houseNo: "House 8/A",
-    roadNo: "Road 12",
-    username: "tamim.hasan",
-    role: "Authority",
-    requestedOn: "2026-07-17",
-  },
-  {
-    id: "P-1003",
-    fullName: "Nusrat Jahan",
-    nidNumber: "1978563412200",
-    emailAddress: "nusrat.jahan@example.com",
-    phoneNumber: "+8801933445566",
-    houseNo: "House 22",
-    roadNo: "Road 3",
-    username: "nusrat.j",
-    role: "Resident",
-    requestedOn: "2026-07-18",
-  },
-];
+type AccountRow = {
+  acc_id?: string;
+  full_name?: string;
+  nid?: string;
+  email?: string;
+  phone_num?: string;
+  house_num?: string;
+  road_number?: string;
+  avenue_num?: string;
+  username?: string;
+  role?: string;
+  status?: string;
+  created_at?: string;
+  updated_at?: string;
+  verified_at?: string;
+  rejected_at?: string;
+};
 
-const initialRegisteredAccounts: RegisteredAdminAccount[] = [
-  {
-    id: "R-2001",
-    fullName: "Farhan Islam",
-    nidNumber: "1988112233445",
-    emailAddress: "farhan.islam@example.com",
-    phoneNumber: "+8801711002233",
-    houseNo: "House 7",
-    roadNo: "Road 1",
-    username: "farhan.i",
-    role: "Resident",
-    verifiedOn: "2026-07-10",
-  },
-  {
-    id: "R-2002",
-    fullName: "Sumi Akter",
-    nidNumber: "1994022755667",
-    emailAddress: "sumi.akter@example.com",
-    phoneNumber: "+8801912340044",
-    houseNo: "House 19",
-    roadNo: "Road 8",
-    username: "sumi.a",
-    role: "Resident",
-    verifiedOn: "2026-07-11",
-  },
-  {
-    id: "R-2003",
-    fullName: "Md. Rafiq Uddin",
-    nidNumber: "1979011122334",
-    emailAddress: "rafiq.uddin@example.com",
-    phoneNumber: "+8801822123456",
-    houseNo: "House 2/A",
-    roadNo: "Road 11",
-    username: "rafiq.u",
-    role: "Authority",
-    verifiedOn: "2026-07-13",
-  },
-];
+const initialMetrics: AdminAccountMetrics = {
+  pendingCount: 0,
+  verifiedTodayCount: 0,
+  rejectedTodayCount: 0,
+  registeredCount: 0,
+  authorityCount: 0,
+};
 
 const AdminAccountsContext = createContext<AdminAccountsContextValue | null>(
   null,
 );
 
-export function AdminAccountsProvider({ children }: { children: ReactNode }) {
-  const [pendingAccounts, setPendingAccounts] = useState(
-    initialPendingAccounts,
+function toRole(role: string | undefined): AdminAccountRole {
+  if (role === "authority" || role === "admin") {
+    return role;
+  }
+
+  return "resident";
+}
+
+function toStatus(status: string | undefined): AdminAccountStatus {
+  if (status === "verified") {
+    return "verified";
+  }
+
+  // Some deployments may store rejected records as "suspended".
+  if (status === "rejected" || status === "suspended") {
+    return "rejected";
+  }
+
+  return "unverified";
+}
+
+function mapRowToAccount(row: AccountRow): AdminAccount {
+  return {
+    id: row.acc_id ?? "",
+    fullName: row.full_name ?? "",
+    nid: row.nid ?? "",
+    email: row.email ?? "",
+    phoneNum: row.phone_num ?? "",
+    houseNum: row.house_num ?? "",
+    roadNumber: row.road_number ?? "",
+    avenueNum: row.avenue_num ?? "",
+    username: row.username ?? "",
+    role: toRole(row.role),
+    status: toStatus(row.status),
+    createdAt: row.created_at ?? null,
+    updatedAt: row.updated_at ?? null,
+    verifiedAt: row.verified_at ?? null,
+    rejectedAt: row.rejected_at ?? null,
+  };
+}
+
+function isToday(dateString: string | null): boolean {
+  if (!dateString) {
+    return false;
+  }
+
+  const value = new Date(dateString);
+
+  if (Number.isNaN(value.getTime())) {
+    return false;
+  }
+
+  const now = new Date();
+
+  return (
+    value.getFullYear() === now.getFullYear() &&
+    value.getMonth() === now.getMonth() &&
+    value.getDate() === now.getDate()
   );
-  const [registeredAccounts, setRegisteredAccounts] = useState(
-    initialRegisteredAccounts,
+}
+
+function getDateForStatus(
+  account: AdminAccount,
+  target: "verified" | "rejected",
+) {
+  if (target === "verified") {
+    return account.verifiedAt ?? account.updatedAt ?? account.createdAt;
+  }
+
+  return account.rejectedAt ?? account.updatedAt ?? account.createdAt;
+}
+
+export function AdminAccountsProvider({ children }: { children: ReactNode }) {
+  const [pendingAccounts, setPendingAccounts] = useState<AdminAccount[]>([]);
+  const [registeredAccounts, setRegisteredAccounts] = useState<AdminAccount[]>(
+    [],
+  );
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [metrics, setMetrics] = useState<AdminAccountMetrics>(initialMetrics);
+
+  const computeMetrics = useCallback((accounts: AdminAccount[]) => {
+    const pendingCount = accounts.filter(
+      (account) => account.status === "unverified",
+    ).length;
+    const verifiedAccounts = accounts.filter(
+      (account) => account.status === "verified",
+    );
+    const rejectedAccounts = accounts.filter(
+      (account) => account.status === "rejected",
+    );
+
+    return {
+      pendingCount,
+      verifiedTodayCount: verifiedAccounts.filter((account) =>
+        isToday(getDateForStatus(account, "verified")),
+      ).length,
+      rejectedTodayCount: rejectedAccounts.filter((account) =>
+        isToday(getDateForStatus(account, "rejected")),
+      ).length,
+      registeredCount: verifiedAccounts.length,
+      authorityCount: verifiedAccounts.filter(
+        (account) => account.role === "authority",
+      ).length,
+    } satisfies AdminAccountMetrics;
+  }, []);
+
+  const refresh = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+
+    const { data, error: fetchError } = await supabase
+      .from("account")
+      .select("*");
+
+    if (fetchError) {
+      setError(fetchError.message);
+      setLoading(false);
+      return;
+    }
+
+    const rows = (data ?? []) as AccountRow[];
+    const accounts = rows
+      .map(mapRowToAccount)
+      .filter((account) => Boolean(account.id));
+
+    setPendingAccounts(
+      accounts.filter((account) => account.status === "unverified"),
+    );
+    setRegisteredAccounts(
+      accounts.filter((account) => account.status === "verified"),
+    );
+    setMetrics(computeMetrics(accounts));
+    setLoading(false);
+  }, [computeMetrics]);
+
+  useEffect(() => {
+    void refresh();
+  }, [refresh]);
+
+  const approveAccount = useCallback(
+    async (accountId: string) => {
+      const { error: updateError } = await supabase
+        .from("account")
+        .update({ status: "verified" })
+        .eq("acc_id", accountId);
+
+      if (updateError) {
+        setError(updateError.message);
+        return;
+      }
+
+      await refresh();
+    },
+    [refresh],
+  );
+
+  const rejectAccount = useCallback(
+    async (accountId: string) => {
+      const { error: updateError } = await supabase
+        .from("account")
+        .update({ status: "suspended" })
+        .eq("acc_id", accountId);
+
+      if (updateError) {
+        setError(updateError.message);
+        return;
+      }
+
+      await refresh();
+    },
+    [refresh],
   );
 
   const value = useMemo<AdminAccountsContextValue>(
     () => ({
       pendingAccounts,
       registeredAccounts,
-      approveAccount: (accountId: string) => {
-        setPendingAccounts((currentPending) => {
-          const account = currentPending.find((item) => item.id === accountId);
-
-          if (!account) {
-            return currentPending;
-          }
-
-          setRegisteredAccounts((currentRegistered) => [
-            {
-              id: `R-${account.id.replace(/^P-/, "")}`,
-              fullName: account.fullName,
-              nidNumber: account.nidNumber,
-              emailAddress: account.emailAddress,
-              phoneNumber: account.phoneNumber,
-              houseNo: account.houseNo,
-              roadNo: account.roadNo,
-              username: account.username,
-              role: account.role,
-              verifiedOn: new Date().toISOString().slice(0, 10),
-            },
-            ...currentRegistered,
-          ]);
-
-          return currentPending.filter((item) => item.id !== accountId);
-        });
-      },
-      rejectAccount: (accountId: string) => {
-        setPendingAccounts((currentPending) =>
-          currentPending.filter((item) => item.id !== accountId),
-        );
-      },
+      loading,
+      error,
+      metrics,
+      refresh,
+      approveAccount,
+      rejectAccount,
     }),
-    [pendingAccounts, registeredAccounts],
+    [
+      pendingAccounts,
+      registeredAccounts,
+      loading,
+      error,
+      metrics,
+      refresh,
+      approveAccount,
+      rejectAccount,
+    ],
   );
 
   return (
