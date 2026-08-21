@@ -1,11 +1,12 @@
-import Ionicons from '@expo/vector-icons/Ionicons';
 import ProgressSegmentedControl from '@expo/ui/community/segmented-control';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { useLocalSearchParams } from 'expo-router';
-import { useMemo, useState } from 'react';
-import Animated, { FadeIn, FadeInDown, FadeOut } from 'react-native-reanimated';
+import { useEffect, useMemo, useState } from 'react';
 import {
+  ActivityIndicator,
+  Modal,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -15,6 +16,7 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native';
+import Animated, { FadeIn, FadeInDown, FadeOut } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useAuthorityComplaints } from './authority-complaints-context';
@@ -22,8 +24,8 @@ import AuthorityMap from './authority-map';
 import AuthorityPageHeader from './authority-page-header';
 import type {
   AuthorityApproval,
-  AuthorityContractorAssignment,
   AuthorityComplaintDetail,
+  AuthorityContractorAssignment,
   AuthorityEvidenceImage,
   AuthorityResidentFeedback,
   AuthorityWorkUpdate,
@@ -61,6 +63,260 @@ function getDetailMode(status?: string): AuthorityComplaintDetailMode {
   if (status === 'IN PROGRESS') return 'in-progress';
   if (status === 'RESOLVED') return 'resolved';
   return 'pending';
+}
+
+function normalizePhone(value: string) {
+  return value.replace(/[\s-]/g, '');
+}
+
+function isValidBangladeshPhone(value: string) {
+  const phone = normalizePhone(value);
+  return /^(?:01[3-9]\d{8}|\+8801[3-9]\d{8})$/.test(phone);
+}
+
+function cleanBudgetInput(value: string) {
+  const cleaned = value.replace(/[^\d.]/g, '');
+  const [whole, ...rest] = cleaned.split('.');
+  return rest.length > 0 ? `${whole}.${rest.join('').slice(0, 2)}` : whole;
+}
+
+function budgetToInput(value: string) {
+  return cleanBudgetInput(value);
+}
+
+function startOfDay(date: Date) {
+  const result = new Date(date);
+  result.setHours(0, 0, 0, 0);
+  return result;
+}
+
+function addDays(date: Date, days: number) {
+  const result = new Date(date);
+  result.setDate(result.getDate() + days);
+  return result;
+}
+
+function toDateKey(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function fromDateKey(value: string) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
+  const [year, month, day] = value.split('-').map(Number);
+  const date = new Date(year, month - 1, day);
+  if (
+    date.getFullYear() !== year ||
+    date.getMonth() !== month - 1 ||
+    date.getDate() !== day
+  ) {
+    return null;
+  }
+  return date;
+}
+
+function getTomorrow() {
+  return addDays(startOfDay(new Date()), 1);
+}
+
+function isAllowedDeadline(value: string) {
+  const parsed = fromDateKey(value);
+  return Boolean(parsed && parsed.getTime() >= getTomorrow().getTime());
+}
+
+function formatDateOnly(value: string) {
+  const parsed = fromDateKey(value);
+  if (!parsed) return value || 'Not available';
+
+  return new Intl.DateTimeFormat('en-GB', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  }).format(parsed);
+}
+
+function hasValidImage(
+  image?: AuthorityEvidenceImage | null,
+): image is AuthorityEvidenceImage {
+  if (!image) return false;
+  if (typeof image === 'number') return true;
+  return Boolean(image.uri?.trim());
+}
+
+function DatePickerField({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  const minimumDate = getTomorrow();
+  const selectedDate = fromDateKey(value);
+  const initialMonth = selectedDate ?? minimumDate;
+
+  const [open, setOpen] = useState(false);
+  const [visibleMonth, setVisibleMonth] = useState(
+    new Date(initialMonth.getFullYear(), initialMonth.getMonth(), 1),
+  );
+
+  useEffect(() => {
+    const next = fromDateKey(value) ?? minimumDate;
+    setVisibleMonth(new Date(next.getFullYear(), next.getMonth(), 1));
+  }, [value]);
+
+  const year = visibleMonth.getFullYear();
+  const month = visibleMonth.getMonth();
+  const firstWeekday = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+  const cells: Array<Date | null> = [
+    ...Array.from({ length: firstWeekday }, () => null),
+    ...Array.from(
+      { length: daysInMonth },
+      (_, index) => new Date(year, month, index + 1),
+    ),
+  ];
+
+  while (cells.length % 7 !== 0) cells.push(null);
+
+  const minMonth = new Date(
+    minimumDate.getFullYear(),
+    minimumDate.getMonth(),
+    1,
+  );
+
+  const canGoPrevious = visibleMonth.getTime() > minMonth.getTime();
+
+  const chooseDate = (date: Date) => {
+    if (date.getTime() < minimumDate.getTime()) return;
+    onChange(toDateKey(date));
+    setOpen(false);
+  };
+
+  return (
+    <>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Select deadline"
+        onPress={() => setOpen(true)}
+        style={styles.inputBox}
+      >
+        <Ionicons name="calendar-outline" size={17} color="#7A8493" />
+        <Text
+          style={[
+            styles.dateFieldText,
+            !value && styles.dateFieldPlaceholder,
+          ]}
+        >
+          {value ? formatDateOnly(value) : 'Select deadline'}
+        </Text>
+        <Ionicons name="chevron-down-outline" size={16} color="#98A2B3" />
+      </Pressable>
+
+      <Modal
+        visible={open}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setOpen(false)}
+      >
+        <View style={styles.calendarOverlay}>
+          <View style={styles.calendarCard}>
+            <View style={styles.calendarHeader}>
+              <TouchableOpacity
+                disabled={!canGoPrevious}
+                onPress={() =>
+                  setVisibleMonth(
+                    new Date(year, month - 1, 1),
+                  )
+                }
+                style={[
+                  styles.calendarNavButton,
+                  !canGoPrevious && styles.calendarNavButtonDisabled,
+                ]}
+              >
+                <Ionicons name="chevron-back" size={19} color="#23435D" />
+              </TouchableOpacity>
+
+              <Text style={styles.calendarMonthTitle}>
+                {new Intl.DateTimeFormat('en-GB', {
+                  month: 'long',
+                  year: 'numeric',
+                }).format(visibleMonth)}
+              </Text>
+
+              <TouchableOpacity
+                onPress={() =>
+                  setVisibleMonth(
+                    new Date(year, month + 1, 1),
+                  )
+                }
+                style={styles.calendarNavButton}
+              >
+                <Ionicons name="chevron-forward" size={19} color="#23435D" />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.calendarWeekHeader}>
+              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(
+                (weekday) => (
+                  <Text key={weekday} style={styles.calendarWeekday}>
+                    {weekday}
+                  </Text>
+                ),
+              )}
+            </View>
+
+            <View style={styles.calendarGrid}>
+              {cells.map((date, index) => {
+                if (!date) {
+                  return <View key={`empty-${index}`} style={styles.calendarDayCell} />;
+                }
+
+                const disabled = date.getTime() < minimumDate.getTime();
+                const selected = value === toDateKey(date);
+
+                return (
+                  <Pressable
+                    key={toDateKey(date)}
+                    disabled={disabled}
+                    onPress={() => chooseDate(date)}
+                    style={[
+                      styles.calendarDayCell,
+                      selected && styles.calendarDaySelected,
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.calendarDayText,
+                        disabled && styles.calendarDayDisabledText,
+                        selected && styles.calendarDaySelectedText,
+                      ]}
+                    >
+                      {date.getDate()}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+
+            <View style={styles.calendarFooter}>
+              <Text style={styles.calendarHint}>
+                Earliest selectable date: {formatDateOnly(toDateKey(minimumDate))}
+              </Text>
+              <TouchableOpacity
+                onPress={() => setOpen(false)}
+                style={styles.calendarCloseButton}
+              >
+                <Text style={styles.calendarCloseText}>Close</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+    </>
+  );
 }
 
 function DetailItem({
@@ -437,13 +693,15 @@ function ReporterProfile({ complaint }: { complaint: AuthorityComplaintDetail })
             </View>
             <View style={styles.otherReportersCopy}>
               <View style={styles.otherReportersTitleRow}>
-                <Text style={styles.otherReportersTitle}>Other Reporters</Text>
+                <Text style={styles.otherReportersTitle}>Others reported</Text>
                 <View style={styles.otherReportersCount}>
                   <Text style={styles.otherReportersCountText}>{reporterCount}</Text>
                 </View>
               </View>
               <Text style={styles.otherReportersDescription}>
-                AI-matched duplicate {reporterCount === 1 ? 'report' : 'reports'}
+                {reporterCount === 1
+                  ? '1 other resident reported the same issue'
+                  : `${reporterCount} other residents reported the same issue`}
               </Text>
             </View>
             <Ionicons
@@ -488,18 +746,22 @@ export default function AuthorityComplaintDetailScreen() {
   const { width } = useWindowDimensions();
   const {
     complaints,
+    loading,
+    error,
     startComplaint,
     addWorkUpdate,
     resolveComplaint,
     changeContractor,
   } = useAuthorityComplaints();
+
   const complaintId = Array.isArray(params.complaintId)
     ? params.complaintId[0]
     : params.complaintId;
   const complaint = complaints.find((item) => item.id === complaintId);
-  const [deadline, setDeadline] = useState(complaint?.deadline ?? '');
-  const [workBudget, setWorkBudget] = useState(complaint?.budget ?? '');
-  const [initialNote, setInitialNote] = useState(complaint?.workNote ?? '');
+
+  const [deadline, setDeadline] = useState('');
+  const [workBudget, setWorkBudget] = useState('');
+  const [initialNote, setInitialNote] = useState('');
   const [contractorName, setContractorName] = useState('');
   const [contractorPhone, setContractorPhone] = useState('');
   const [updateNote, setUpdateNote] = useState('');
@@ -513,18 +775,56 @@ export default function AuthorityComplaintDetailScreen() {
   const [newContractorName, setNewContractorName] = useState('');
   const [newContractorPhone, setNewContractorPhone] = useState('');
   const [contractorChangeReason, setContractorChangeReason] = useState('');
+  const [actionLoading, setActionLoading] = useState(false);
+
   const wide = width >= 900;
   const mode = getDetailMode(complaint?.status);
   const theme = modeTheme[mode];
 
+  useEffect(() => {
+    if (!complaint) return;
+
+    if (complaint.status === 'PENDING') {
+      setDeadline('');
+      setWorkBudget('');
+      setInitialNote('');
+      return;
+    }
+
+    setDeadline(
+      complaint.deadline && isAllowedDeadline(complaint.deadline)
+        ? complaint.deadline
+        : '',
+    );
+    setWorkBudget(budgetToInput(complaint.budget));
+    setInitialNote(complaint.workNote ?? '');
+  }, [complaint?.id, complaint?.status, complaint?.deadline, complaint?.budget, complaint?.workNote]);
+
   const latestWorkImage = useMemo(() => {
     if (!complaint) return undefined;
+
     for (let index = complaint.updates.length - 1; index >= 0; index -= 1) {
       const image = complaint.updates[index].images[0];
-      if (image) return image;
+      if (hasValidImage(image)) return image;
     }
+
     return undefined;
   }, [complaint]);
+
+  if (loading && !complaint) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <AuthorityPageHeader fallbackPath="/authority/complaints" />
+        <View style={styles.loadingState}>
+          <ActivityIndicator size="large" color="#23435D" />
+          <Text style={styles.loadingTitle}>Loading complaint</Text>
+          <Text style={styles.loadingText}>
+            Fetching complaint information from the database...
+          </Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   if (!complaint) {
     return (
@@ -534,22 +834,52 @@ export default function AuthorityComplaintDetailScreen() {
           <Ionicons name="document-text-outline" size={38} color="#98A2B3" />
           <Text style={styles.notFoundTitle}>Complaint not found</Text>
           <Text style={styles.notFoundText}>
-            This complaint record is not available in the current authority data.
+            {error
+              ? error
+              : 'This complaint record is not available in the authority database.'}
           </Text>
         </View>
       </SafeAreaView>
     );
   }
 
+  const residentEvidence = hasValidImage(complaint.evidence)
+    ? complaint.evidence
+    : undefined;
+  const finalCompletionEvidence = hasValidImage(complaint.finalEvidence)
+    ? complaint.finalEvidence
+    : undefined;
+
   const displayEvidence =
     mode === 'resolved'
-      ? complaint.finalEvidence ?? latestWorkImage ?? complaint.evidence
+      ? finalCompletionEvidence ?? latestWorkImage ?? residentEvidence
       : mode === 'in-progress'
-        ? latestWorkImage ?? complaint.evidence
-        : complaint.evidence;
+        ? latestWorkImage ?? residentEvidence
+        : residentEvidence;
+
+  const evidenceTitle =
+    mode === 'resolved'
+      ? finalCompletionEvidence
+        ? 'Final Completion Evidence'
+        : latestWorkImage
+          ? 'Latest Work Evidence'
+          : 'Resident Evidence'
+      : mode === 'in-progress'
+        ? latestWorkImage
+          ? 'Latest Work Evidence'
+          : 'Resident Evidence'
+        : 'Resident Evidence';
+
+  const evidenceSubtitle =
+    evidenceTitle === 'Final Completion Evidence'
+      ? 'Required proof submitted when the complaint was closed'
+      : evidenceTitle === 'Latest Work Evidence'
+        ? 'Most recent work photo attached to this complaint'
+        : 'Photo submitted by the resident with the complaint';
 
   const pickPhotos = async (multiple: boolean) => {
     setFormMessage('');
+
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
       setFormMessage('Photo access is required to attach work evidence.');
@@ -579,7 +909,7 @@ export default function AuthorityComplaintDetailScreen() {
     if (selected[0]) setFinalEvidence(selected[0]);
   };
 
-  const handleStartWork = () => {
+  const handleStartWork = async () => {
     if (
       !contractorName.trim() ||
       !contractorPhone.trim() ||
@@ -593,17 +923,45 @@ export default function AuthorityComplaintDetailScreen() {
       return;
     }
 
-    startComplaint(complaint.id, {
-      deadline: deadline.trim(),
-      contractorName: contractorName.trim(),
-      contractorPhone: contractorPhone.trim(),
-      budget: workBudget.trim(),
-      note: initialNote.trim(),
-    });
-    setFormMessage('Work started. This complaint is now In Progress.');
+    if (!isValidBangladeshPhone(contractorPhone)) {
+      setFormMessage(
+        'Enter a valid Bangladesh phone number, e.g. 01712345678 or +8801712345678.',
+      );
+      return;
+    }
+
+    if (!isAllowedDeadline(deadline)) {
+      setFormMessage('Deadline must be tomorrow or a later date.');
+      return;
+    }
+
+    setActionLoading(true);
+    setFormMessage('');
+
+    try {
+      await startComplaint(complaint.id, {
+        deadline,
+        contractorName: contractorName.trim(),
+        contractorPhone: contractorPhone.trim(),
+        budget: workBudget.trim(),
+        note: initialNote.trim(),
+      });
+
+      setFormMessage(
+        'Work started successfully. This complaint is now In Progress.',
+      );
+    } catch (err) {
+      setFormMessage(
+        err instanceof Error
+          ? err.message
+          : 'Failed to start work on this complaint.',
+      );
+    } finally {
+      setActionLoading(false);
+    }
   };
 
-  const handleAddUpdate = () => {
+  const handleAddUpdate = async () => {
     if (!updateNote.trim() || !deadline.trim() || !workBudget.trim()) {
       setFormMessage(
         'Deadline, current amount, and update notes are required. Photos are optional.',
@@ -611,18 +969,35 @@ export default function AuthorityComplaintDetailScreen() {
       return;
     }
 
-    addWorkUpdate(complaint.id, {
-      deadline: deadline.trim(),
-      note: updateNote.trim(),
-      budget: workBudget.trim(),
-      images: updateImages,
-    });
-    setUpdateNote('');
-    setUpdateImages([]);
-    setFormMessage('Work update added to the complaint history.');
+    if (!isAllowedDeadline(deadline)) {
+      setFormMessage('Deadline must be tomorrow or a later date.');
+      return;
+    }
+
+    setActionLoading(true);
+    setFormMessage('');
+
+    try {
+      await addWorkUpdate(complaint.id, {
+        deadline,
+        note: updateNote.trim(),
+        budget: workBudget.trim(),
+        images: updateImages,
+      });
+
+      setUpdateNote('');
+      setUpdateImages([]);
+      setFormMessage('Work update successfully added to the complaint history.');
+    } catch (err) {
+      setFormMessage(
+        err instanceof Error ? err.message : 'Failed to save the work update.',
+      );
+    } finally {
+      setActionLoading(false);
+    }
   };
 
-  const handleChangeContractor = () => {
+  const handleChangeContractor = async () => {
     if (
       !newContractorName.trim() ||
       !newContractorPhone.trim() ||
@@ -634,18 +1009,39 @@ export default function AuthorityComplaintDetailScreen() {
       return;
     }
 
-    changeContractor(complaint.id, {
-      name: newContractorName.trim(),
-      phone: newContractorPhone.trim(),
-      reason: contractorChangeReason.trim(),
-    });
-    setNewContractorName('');
-    setNewContractorPhone('');
-    setContractorChangeReason('');
-    setFormMessage('Contractor assignment updated and added to the history.');
+    if (!isValidBangladeshPhone(newContractorPhone)) {
+      setFormMessage(
+        'Enter a valid Bangladesh phone number, e.g. 01712345678 or +8801712345678.',
+      );
+      return;
+    }
+
+    setActionLoading(true);
+    setFormMessage('');
+
+    try {
+      await changeContractor(complaint.id, {
+        name: newContractorName.trim(),
+        phone: newContractorPhone.trim(),
+        reason: contractorChangeReason.trim(),
+      });
+
+      setNewContractorName('');
+      setNewContractorPhone('');
+      setContractorChangeReason('');
+      setFormMessage(
+        'Contractor successfully changed and recorded in the complaint history.',
+      );
+    } catch (err) {
+      setFormMessage(
+        err instanceof Error ? err.message : 'Failed to change the contractor.',
+      );
+    } finally {
+      setActionLoading(false);
+    }
   };
 
-  const handleResolve = () => {
+  const handleResolve = async () => {
     if (!resolutionNote.trim() || !finalEvidence) {
       setFormMessage(
         'A final completion photo and completion notes are required before closing.',
@@ -653,31 +1049,49 @@ export default function AuthorityComplaintDetailScreen() {
       return;
     }
 
-    resolveComplaint(complaint.id, {
-      note: resolutionNote.trim(),
-      budget: complaint.budget,
-      finalImage: finalEvidence,
-    });
+    setActionLoading(true);
     setFormMessage('');
+
+    try {
+      await resolveComplaint(complaint.id, {
+        note: resolutionNote.trim(),
+        budget: workBudget.trim() || complaint.budget,
+        finalImage: finalEvidence,
+      });
+
+      setFinalEvidence(null);
+      setResolutionNote('');
+      setFormMessage('Complaint successfully marked as resolved.');
+    } catch (err) {
+      setFormMessage(
+        err instanceof Error
+          ? err.message
+          : 'Failed to resolve this complaint.',
+      );
+    } finally {
+      setActionLoading(false);
+    }
   };
 
   const canStartWork =
     contractorName.trim().length > 0 &&
-    contractorPhone.trim().length > 0 &&
-    deadline.trim().length > 0 &&
+    isValidBangladeshPhone(contractorPhone) &&
+    isAllowedDeadline(deadline) &&
     workBudget.trim().length > 0 &&
     initialNote.trim().length > 0;
+
   const canAddUpdate =
     updateNote.trim().length > 0 &&
-    deadline.trim().length > 0 &&
+    isAllowedDeadline(deadline) &&
     workBudget.trim().length > 0;
+
   const canChangeContractor =
     newContractorName.trim().length > 0 &&
-    newContractorPhone.trim().length > 0 &&
+    isValidBangladeshPhone(newContractorPhone) &&
     contractorChangeReason.trim().length > 0;
+
   const canResolve =
-    resolutionNote.trim().length > 0 &&
-    finalEvidence !== null;
+    resolutionNote.trim().length > 0 && finalEvidence !== null;
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -720,50 +1134,62 @@ export default function AuthorityComplaintDetailScreen() {
                   <View>
                     <Text style={styles.panelTitle}>Complaint Information</Text>
                     <Text style={styles.panelSubtitle}>
-                      Verified resident report and assignment details
+                      Verified resident report details
                     </Text>
                   </View>
                   <Ionicons name="information-circle-outline" size={22} color="#23435D" />
                 </View>
 
                 <View style={styles.detailsGrid}>
-                  <DetailItem icon="layers-outline" label="Category" value={complaint.category} />
-                  <DetailItem icon="location-outline" label="Location" value={complaint.location} />
-                  <DetailItem icon="calendar-outline" label="Submitted" value={complaint.submittedAt} />
-                  <DetailItem icon="map-outline" label="Assigned Zone" value={complaint.zone} />
+                  <DetailItem
+                    icon="layers-outline"
+                    label="Category"
+                    value={complaint.category}
+                  />
+                  <DetailItem
+                    icon="location-outline"
+                    label="Location"
+                    value={complaint.location}
+                  />
+                  <DetailItem
+                    icon="calendar-outline"
+                    label="Submitted"
+                    value={complaint.submittedAt}
+                  />
                   <DetailItem
                     icon="arrow-up-circle-outline"
                     label="Urgency"
                     value={`${complaint.urgency} resident signals`}
                   />
-                  <DetailItem icon="person-outline" label="Reported By" value={complaint.reporter} />
                 </View>
               </View>
 
               <View style={styles.panel}>
                 <View style={styles.panelHeading}>
                   <View>
-                    <Text style={styles.panelTitle}>
-                      {mode === 'pending'
-                        ? 'Resident Evidence'
-                        : mode === 'in-progress'
-                          ? 'Latest Work Evidence'
-                          : 'Final Completion Evidence'}
-                    </Text>
-                    <Text style={styles.panelSubtitle}>
-                      {mode === 'resolved'
-                        ? 'Required proof submitted when the complaint was closed'
-                        : 'Most recent photo attached to this complaint record'}
-                    </Text>
+                    <Text style={styles.panelTitle}>{evidenceTitle}</Text>
+                    <Text style={styles.panelSubtitle}>{evidenceSubtitle}</Text>
                   </View>
                   <Ionicons name="image-outline" size={21} color="#23435D" />
                 </View>
-                <Image
-                  source={displayEvidence}
-                  style={styles.evidenceImage}
-                  contentFit="cover"
-                  transition={180}
-                />
+                {hasValidImage(displayEvidence) ? (
+                  <Image
+                    source={displayEvidence}
+                    style={styles.evidenceImage}
+                    contentFit="cover"
+                    transition={180}
+                  />
+                ) : (
+                  <View style={styles.noEvidence}>
+                    <Ionicons name="image-outline" size={32} color="#98A2B3" />
+                    <Text style={styles.noEvidenceTitle}>
+                      No evidence image available
+                    </Text>
+                    <Text style={styles.noEvidenceText}>
+                      No photo is attached to this complaint record.
+                    </Text>
+                  </View>
+                )}
               </View>
 
               <View style={styles.panel}>
@@ -784,8 +1210,12 @@ export default function AuthorityComplaintDetailScreen() {
                 </View>
               </View>
 
-              <ComplaintTimeline complaint={complaint} />
-              {mode === 'resolved' && <ResidentFeedback complaint={complaint} />}
+              {mode !== 'pending' && (
+                <ComplaintTimeline complaint={complaint} />
+              )}
+              {mode === 'resolved' && (
+                <ResidentFeedback complaint={complaint} />
+              )}
             </View>
 
             <View style={styles.sideColumn}>
@@ -832,34 +1262,37 @@ export default function AuthorityComplaintDetailScreen() {
                     <Ionicons name="call-outline" size={17} color="#7A8493" />
                     <TextInput
                       value={contractorPhone}
-                      onChangeText={setContractorPhone}
-                      placeholder="Enter mobile number"
+                      onChangeText={(value) =>
+                        setContractorPhone(value.replace(/[^\d+]/g, ''))
+                      }
+                      placeholder="01712345678 or +8801712345678"
                       placeholderTextColor="#98A2B3"
                       keyboardType="phone-pad"
+                      maxLength={14}
                       style={styles.input}
                     />
                   </View>
+                  {contractorPhone.length > 0 &&
+                    !isValidBangladeshPhone(contractorPhone) && (
+                      <Text style={styles.validationError}>
+                        Use 01XXXXXXXXX or +8801XXXXXXXXX
+                      </Text>
+                    )}
 
                   <Text style={styles.inputLabel}>Deadline</Text>
-                  <View style={styles.inputBox}>
-                    <Ionicons name="calendar-outline" size={17} color="#7A8493" />
-                    <TextInput
-                      value={deadline}
-                      onChangeText={setDeadline}
-                      placeholder="DD MMM YYYY"
-                      placeholderTextColor="#98A2B3"
-                      style={styles.input}
-                    />
-                  </View>
+                  <DatePickerField value={deadline} onChange={setDeadline} />
 
                   <Text style={styles.inputLabel}>Estimated Budget</Text>
                   <View style={styles.inputBox}>
                     <Ionicons name="cash-outline" size={17} color="#7A8493" />
                     <TextInput
                       value={workBudget}
-                      onChangeText={setWorkBudget}
+                      onChangeText={(value) =>
+                        setWorkBudget(cleanBudgetInput(value))
+                      }
                       placeholder="Enter estimated budget"
                       placeholderTextColor="#98A2B3"
+                      keyboardType="decimal-pad"
                       style={styles.input}
                     />
                   </View>
@@ -882,15 +1315,25 @@ export default function AuthorityComplaintDetailScreen() {
                   )}
 
                   <TouchableOpacity
-                    disabled={!canStartWork}
+                    disabled={!canStartWork || actionLoading}
                     style={[
                       styles.primaryButton,
-                      !canStartWork && styles.buttonDisabled,
+                      (!canStartWork || actionLoading) && styles.buttonDisabled,
                     ]}
                     onPress={handleStartWork}
                   >
-                    <Ionicons name="construct-outline" size={18} color="#FFFFFF" />
-                    <Text style={styles.primaryButtonText}>Start Work</Text>
+                    {actionLoading ? (
+                      <ActivityIndicator size="small" color="#FFFFFF" />
+                    ) : (
+                      <>
+                        <Ionicons
+                          name="construct-outline"
+                          size={18}
+                          color="#FFFFFF"
+                        />
+                        <Text style={styles.primaryButtonText}>Start Work</Text>
+                      </>
+                    )}
                   </TouchableOpacity>
                 </View>
               )}
@@ -946,24 +1389,18 @@ export default function AuthorityComplaintDetailScreen() {
                       <Ionicons name="cash-outline" size={17} color="#7A8493" />
                       <TextInput
                         value={workBudget}
-                        onChangeText={setWorkBudget}
+                        onChangeText={(value) =>
+                          setWorkBudget(cleanBudgetInput(value))
+                        }
                         placeholder="Enter updated amount"
                         placeholderTextColor="#98A2B3"
+                        keyboardType="decimal-pad"
                         style={styles.input}
                       />
                     </View>
 
                     <Text style={styles.inputLabel}>Deadline</Text>
-                    <View style={styles.inputBox}>
-                      <Ionicons name="calendar-outline" size={17} color="#7A8493" />
-                      <TextInput
-                        value={deadline}
-                        onChangeText={setDeadline}
-                        placeholder="DD MMM YYYY"
-                        placeholderTextColor="#98A2B3"
-                        style={styles.input}
-                      />
-                    </View>
+                    <DatePickerField value={deadline} onChange={setDeadline} />
 
                     <Text style={styles.inputLabel}>Update Notes</Text>
                     <TextInput
@@ -1004,15 +1441,25 @@ export default function AuthorityComplaintDetailScreen() {
                     )}
 
                     <TouchableOpacity
-                      disabled={!canAddUpdate}
+                      disabled={!canAddUpdate || actionLoading}
                       style={[
                         styles.secondaryButton,
-                        !canAddUpdate && styles.buttonDisabled,
+                        (!canAddUpdate || actionLoading) && styles.buttonDisabled,
                       ]}
                       onPress={handleAddUpdate}
                     >
-                      <Ionicons name="add-circle-outline" size={18} color="#23435D" />
-                      <Text style={styles.secondaryButtonText}>Add Update</Text>
+                      {actionLoading ? (
+                        <ActivityIndicator size="small" color="#23435D" />
+                      ) : (
+                        <>
+                          <Ionicons
+                            name="add-circle-outline"
+                            size={18}
+                            color="#23435D"
+                          />
+                          <Text style={styles.secondaryButtonText}>Add Update</Text>
+                        </>
+                      )}
                     </TouchableOpacity>
                       </Animated.View>
                     )}
@@ -1052,13 +1499,22 @@ export default function AuthorityComplaintDetailScreen() {
                           <Ionicons name="call-outline" size={17} color="#7A8493" />
                           <TextInput
                             value={newContractorPhone}
-                            onChangeText={setNewContractorPhone}
-                            placeholder="Enter mobile number"
+                            onChangeText={(value) =>
+                              setNewContractorPhone(value.replace(/[^\d+]/g, ''))
+                            }
+                            placeholder="01712345678 or +8801712345678"
                             placeholderTextColor="#98A2B3"
                             keyboardType="phone-pad"
+                            maxLength={14}
                             style={styles.input}
                           />
                         </View>
+                        {newContractorPhone.length > 0 &&
+                          !isValidBangladeshPhone(newContractorPhone) && (
+                            <Text style={styles.validationError}>
+                              Use 01XXXXXXXXX or +8801XXXXXXXXX
+                            </Text>
+                          )}
 
                         <Text style={styles.inputLabel}>Reason for Contractor Change</Text>
                         <TextInput
@@ -1085,15 +1541,28 @@ export default function AuthorityComplaintDetailScreen() {
                         )}
 
                         <TouchableOpacity
-                          disabled={!canChangeContractor}
+                          disabled={!canChangeContractor || actionLoading}
                           style={[
                             styles.secondaryButton,
-                            !canChangeContractor && styles.buttonDisabled,
+                            (!canChangeContractor || actionLoading) &&
+                              styles.buttonDisabled,
                           ]}
                           onPress={handleChangeContractor}
                         >
-                          <Ionicons name="person-add-outline" size={18} color="#23435D" />
-                          <Text style={styles.secondaryButtonText}>Assign New Contractor</Text>
+                          {actionLoading ? (
+                            <ActivityIndicator size="small" color="#23435D" />
+                          ) : (
+                            <>
+                              <Ionicons
+                                name="person-add-outline"
+                                size={18}
+                                color="#23435D"
+                              />
+                              <Text style={styles.secondaryButtonText}>
+                                Assign New Contractor
+                              </Text>
+                            </>
+                          )}
                         </TouchableOpacity>
                       </Animated.View>
                     )}
@@ -1149,15 +1618,27 @@ export default function AuthorityComplaintDetailScreen() {
                     )}
 
                     <TouchableOpacity
-                      disabled={!canResolve}
+                      disabled={!canResolve || actionLoading}
                       style={[
                         styles.primaryButton,
-                        !canResolve && styles.buttonDisabled,
+                        (!canResolve || actionLoading) && styles.buttonDisabled,
                       ]}
                       onPress={handleResolve}
                     >
-                      <Ionicons name="checkmark-done-outline" size={18} color="#FFFFFF" />
-                      <Text style={styles.primaryButtonText}>Mark as Completed</Text>
+                      {actionLoading ? (
+                        <ActivityIndicator size="small" color="#FFFFFF" />
+                      ) : (
+                        <>
+                          <Ionicons
+                            name="checkmark-done-outline"
+                            size={18}
+                            color="#FFFFFF"
+                          />
+                          <Text style={styles.primaryButtonText}>
+                            Mark as Completed
+                          </Text>
+                        </>
+                      )}
                     </TouchableOpacity>
                       </Animated.View>
                     )}
@@ -1183,12 +1664,16 @@ export default function AuthorityComplaintDetailScreen() {
                     <DetailItem
                       icon="flag-outline"
                       label="Final Deadline"
-                      value={complaint.deadline}
+                      value={
+                        complaint.deadline
+                          ? formatDateOnly(complaint.deadline)
+                          : 'Not available'
+                      }
                     />
                     <DetailItem
                       icon="cash-outline"
                       label="Final Budget"
-                      value={complaint.budget}
+                      value={complaint.budget || 'Not available'}
                     />
                   </View>
 
@@ -1199,7 +1684,7 @@ export default function AuthorityComplaintDetailScreen() {
                     </Text>
                   </View>
 
-                  {complaint.finalEvidence && (
+                  {hasValidImage(complaint.finalEvidence) && (
                     <View style={styles.finalEvidenceCard}>
                       <Text style={styles.resolutionNoteLabel}>FINAL COMPLETION PHOTO</Text>
                       <Image
@@ -1305,6 +1790,24 @@ const styles = StyleSheet.create({
     aspectRatio: 1.5,
     borderRadius: 12,
     backgroundColor: '#E8EDF4',
+  },
+  noEvidence: {
+    minHeight: 220,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    borderRadius: 12,
+    backgroundColor: '#F2F4F7',
+  },
+  noEvidenceTitle: {
+    color: '#475467',
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  noEvidenceText: {
+    color: '#98A2B3',
+    fontSize: 9,
+    textAlign: 'center',
   },
   evidenceGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 9 },
   evidenceThumbWrap: {
@@ -1725,6 +2228,120 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
   },
   input: { flex: 1, color: '#344054', fontSize: 10 },
+  validationError: {
+    color: '#DC2626',
+    fontSize: 8,
+    marginTop: -4,
+  },
+  dateFieldText: {
+    flex: 1,
+    color: '#344054',
+    fontSize: 10,
+  },
+  dateFieldPlaceholder: {
+    color: '#98A2B3',
+  },
+  calendarOverlay: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 20,
+    backgroundColor: 'rgba(15, 23, 42, 0.42)',
+  },
+  calendarCard: {
+    width: '100%',
+    maxWidth: 390,
+    padding: 16,
+    borderRadius: 16,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  calendarHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 10,
+  },
+  calendarNavButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F1F5F9',
+  },
+  calendarNavButtonDisabled: {
+    opacity: 0.3,
+  },
+  calendarMonthTitle: {
+    flex: 1,
+    color: '#1F2937',
+    fontSize: 14,
+    fontWeight: '800',
+    textAlign: 'center',
+  },
+  calendarWeekHeader: {
+    flexDirection: 'row',
+    marginTop: 14,
+  },
+  calendarWeekday: {
+    width: '14.2857%',
+    color: '#98A2B3',
+    fontSize: 8,
+    fontWeight: '800',
+    textAlign: 'center',
+  },
+  calendarGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginTop: 7,
+  },
+  calendarDayCell: {
+    width: '14.2857%',
+    aspectRatio: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 20,
+  },
+  calendarDaySelected: {
+    backgroundColor: '#23435D',
+  },
+  calendarDayText: {
+    color: '#344054',
+    fontSize: 10,
+    fontWeight: '700',
+  },
+  calendarDayDisabledText: {
+    color: '#D0D5DD',
+  },
+  calendarDaySelectedText: {
+    color: '#FFFFFF',
+  },
+  calendarFooter: {
+    gap: 10,
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#EAECF0',
+  },
+  calendarHint: {
+    color: '#667085',
+    fontSize: 8,
+    textAlign: 'center',
+  },
+  calendarCloseButton: {
+    alignSelf: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 16,
+    backgroundColor: '#F1F5F9',
+  },
+  calendarCloseText: {
+    color: '#23435D',
+    fontSize: 9,
+    fontWeight: '800',
+  },
   noteInput: {
     minHeight: 92,
     color: '#344054',
@@ -1953,6 +2570,24 @@ const styles = StyleSheet.create({
   emptyFeedback: { alignItems: 'center', paddingVertical: 20 },
   emptyFeedbackTitle: { color: '#475467', fontSize: 11, fontWeight: '800', marginTop: 7 },
   emptyFeedbackText: { color: '#98A2B3', fontSize: 8, marginTop: 3 },
+  loadingState: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 30,
+  },
+  loadingTitle: {
+    color: '#344054',
+    fontSize: 16,
+    fontWeight: '800',
+    marginTop: 14,
+  },
+  loadingText: {
+    color: '#8A93A1',
+    fontSize: 10,
+    textAlign: 'center',
+    marginTop: 5,
+  },
   notFound: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 28 },
   notFoundTitle: { color: '#344054', fontSize: 17, fontWeight: '800', marginTop: 10 },
   notFoundText: { color: '#8A93A1', fontSize: 10, textAlign: 'center', marginTop: 5 },

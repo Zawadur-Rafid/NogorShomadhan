@@ -20,6 +20,7 @@ function TabIcon({
   color: ColorValue;
 }) {
   const [inactiveIcon, activeIcon] = tabIcons[route];
+
   return (
     <Ionicons
       name={focused ? activeIcon : inactiveIcon}
@@ -40,14 +41,17 @@ export default function AuthorityTabsLayout() {
         tabBarActiveTintColor: '#23435D',
         tabBarInactiveTintColor: '#8A8A8A',
         tabBarHideOnKeyboard: true,
+
         tabBarLabelStyle: {
           fontSize: 10,
           fontWeight: '600',
         },
+
         tabBarItemStyle: {
           minHeight: 50,
           paddingVertical: 3,
         },
+
         tabBarStyle: {
           minHeight: 64,
           paddingHorizontal: 4,
@@ -56,6 +60,7 @@ export default function AuthorityTabsLayout() {
           backgroundColor: '#FFFFFF',
           borderTopColor: '#ECECEC',
         },
+
         sceneStyle: {
           backgroundColor: '#F7F8FA',
         },
@@ -66,52 +71,80 @@ export default function AuthorityTabsLayout() {
         options={{
           title: 'Home',
           tabBarIcon: ({ focused, color }) => (
-            <TabIcon route="dashboard" focused={focused} color={color} />
+            <TabIcon
+              route="dashboard"
+              focused={focused}
+              color={color}
+            />
           ),
         }}
       />
+
       <Tabs.Screen
         name="map"
         options={{
           title: 'Map',
           tabBarIcon: ({ focused, color }) => (
-            <TabIcon route="map" focused={focused} color={color} />
+            <TabIcon
+              route="map"
+              focused={focused}
+              color={color}
+            />
           ),
         }}
       />
+
       <Tabs.Screen
         name="complaints"
         listeners={{
           tabPress: (event) => {
             event.preventDefault();
+
             router.navigate({
               pathname: '/authority/complaints',
-              params: { status: '', category: '', area: '', query: '' },
+              params: {
+                status: '',
+                query: '',
+              },
             } as never);
           },
         }}
         options={{
           title: 'Complaints',
           tabBarIcon: ({ focused, color }) => (
-            <TabIcon route="complaints" focused={focused} color={color} />
+            <TabIcon
+              route="complaints"
+              focused={focused}
+              color={color}
+            />
           ),
         }}
       />
+
       <Tabs.Screen
         name="analytics"
         options={{
           title: 'Analytics',
           tabBarIcon: ({ focused, color }) => (
-            <TabIcon route="analytics" focused={focused} color={color} />
+            <TabIcon
+              route="analytics"
+              focused={focused}
+              color={color}
+            />
           ),
         }}
       />
+
       <Tabs.Screen
         name="feedback-center"
         options={{
           title: 'Feedback',
           tabBarIcon: ({ focused, color }) => (
-            <TabIcon route="feedback" focused={focused} color={color} />
+            <TabIcon
+              route="feedback"
+              focused={focused}
+              color={color}
+            />
           ),
         }}
       />
