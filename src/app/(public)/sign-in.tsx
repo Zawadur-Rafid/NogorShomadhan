@@ -1,67 +1,67 @@
-import React, { useState } from 'react';
+import BackButton from "@/components/back-button";
+import Logo from "@/components/logo";
+import { supabase } from "@/lib/supabase";
+import { MaterialIcons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Link, useRouter } from "expo-router";
+import React, { useState } from "react";
 import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  Animated,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter, Link } from 'expo-router';
-import { MaterialIcons } from '@expo/vector-icons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import Logo from '@/components/logo';
-import BackButton from '@/components/back-button';
-import { supabase } from '@/lib/supabase';
+    Animated,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 // Design tokens based on design.md
 const colors = {
-  background: '#f8f9fc',
-  primary: '#00475e',
-  onPrimary: '#ffffff',
-  surface: '#ffffff', // For cards (surface-container-lowest)
-  onSurface: '#191c1e',
-  onSurfaceVariant: '#40484d',
-  outline: '#70787d',
-  outlineVariant: '#c0c8cd',
-  error: '#ba1a1a',
+  background: "#f8f9fc",
+  primary: "#00475e",
+  onPrimary: "#ffffff",
+  surface: "#ffffff", // For cards (surface-container-lowest)
+  onSurface: "#191c1e",
+  onSurfaceVariant: "#40484d",
+  outline: "#70787d",
+  outlineVariant: "#c0c8cd",
+  error: "#ba1a1a",
 };
 
 const typography = {
   headlineLg: {
-    fontFamily: 'Inter',
+    fontFamily: "Inter",
     fontSize: 28,
-    fontWeight: '700' as const,
+    fontWeight: "700" as const,
     color: colors.onSurface,
   },
   bodyLg: {
-    fontFamily: 'Inter',
+    fontFamily: "Inter",
     fontSize: 16,
-    fontWeight: '400' as const,
+    fontWeight: "400" as const,
     color: colors.onSurfaceVariant,
   },
   labelMd: {
-    fontFamily: 'Inter',
+    fontFamily: "Inter",
     fontSize: 12,
-    fontWeight: '700' as const,
+    fontWeight: "700" as const,
   },
   buttonText: {
-    fontFamily: 'Inter',
+    fontFamily: "Inter",
     fontSize: 16,
-    fontWeight: '600' as const,
-  }
+    fontWeight: "600" as const,
+  },
 };
 
 export default function SignInScreen() {
   const router = useRouter();
-  const [identifier, setIdentifier] = useState('');
-  const [password, setPassword] = useState('');
+  const [identifier, setIdentifier] = useState("");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [errorMsg, setErrorMsg] = useState('');
+  const [errorMsg, setErrorMsg] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
   const [showToast, setShowToast] = useState(false);
@@ -85,9 +85,9 @@ export default function SignInScreen() {
   };
 
   const handleSignIn = async () => {
-    setErrorMsg('');
+    setErrorMsg("");
     if (!identifier.trim() || !password.trim()) {
-      setErrorMsg('Invalid credentials.');
+      setErrorMsg("Invalid credentials.");
       return;
     }
 
@@ -95,37 +95,55 @@ export default function SignInScreen() {
     try {
       // Check account table for matching email or username and password
       const { data, error } = await supabase
-        .from('account')
-        .select('*')
+        .from("account")
+        .select("*")
         .or(`email.eq.${identifier},username.eq.${identifier}`)
-        .eq('password', password)
+        .eq("password", password)
         .single();
 
-      if (error || !data || data.status !== 'verified') {
-        setErrorMsg('Invalid credentials.');
+      if (error || !data) {
+        setErrorMsg("Invalid credentials.");
         setIsLoading(false);
         return;
       }
 
-      await AsyncStorage.setItem('acc_id', data.acc_id);
+      if (data.status === "unverified") {
+        setErrorMsg("Your account is pending admin verification.");
+        setIsLoading(false);
+        return;
+      }
+
+      if (data.status === "suspended" || data.status === "rejected") {
+        setErrorMsg("Your account has been rejected. Please contact support.");
+        setIsLoading(false);
+        return;
+      }
+
+      if (data.status !== "verified") {
+        setErrorMsg("Invalid account status.");
+        setIsLoading(false);
+        return;
+      }
+
+      await AsyncStorage.setItem("acc_id", data.acc_id);
 
       triggerToast();
       setTimeout(() => {
         // Route based on role
-        if (data.role === 'resident') {
-          router.replace('/(resident)/dashboard');
-        } else if (data.role === 'authority') {
+        if (data.role === "resident") {
+          router.replace("/(resident)/dashboard");
+        } else if (data.role === "authority") {
           // Assume authority has a similar route structure
-          router.replace('/authority/dashboard');
-        } else if (data.role === 'admin') {
-          router.replace('/(admin)/dashboard');
+          router.replace("/authority/dashboard");
+        } else if (data.role === "admin") {
+          router.replace("/(admin)/dashboard");
         } else {
-          setErrorMsg('Unknown user role.');
+          setErrorMsg("Unknown user role.");
         }
       }, 3000);
     } catch (err) {
       console.error(err);
-      setErrorMsg('An unexpected error occurred.');
+      setErrorMsg("An unexpected error occurred.");
     } finally {
       setIsLoading(false);
     }
@@ -134,23 +152,41 @@ export default function SignInScreen() {
   return (
     <SafeAreaView style={styles.container}>
       {showToast && (
-        <Animated.View style={[styles.toastContainer, { transform: [{ translateX: slideAnim }] }]}>
+        <Animated.View
+          style={[
+            styles.toastContainer,
+            { transform: [{ translateX: slideAnim }] },
+          ]}
+        >
           <View style={styles.toastLeftBorder} />
-          <MaterialIcons name="check-circle" size={24} color="#1b7a43" style={styles.toastIcon} />
+          <MaterialIcons
+            name="check-circle"
+            size={24}
+            color="#1b7a43"
+            style={styles.toastIcon}
+          />
           <View style={styles.toastContent}>
             <Text style={styles.toastTitle}>Success</Text>
-            <Text style={styles.toastText}>Sign in successful. Redirecting...</Text>
+            <Text style={styles.toastText}>
+              Sign in successful. Redirecting...
+            </Text>
           </View>
-          <TouchableOpacity onPress={() => setShowToast(false)} style={styles.toastCloseButton}>
+          <TouchableOpacity
+            onPress={() => setShowToast(false)}
+            style={styles.toastCloseButton}
+          >
             <MaterialIcons name="close" size={18} color="#1a1a1a" />
           </TouchableOpacity>
         </Animated.View>
       )}
-      <KeyboardAvoidingView 
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={{ flex: 1 }}
       >
-        <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+        >
           <View style={styles.topNav}>
             <BackButton />
           </View>
@@ -191,7 +227,7 @@ export default function SignInScreen() {
                   onPress={() => setShowPassword(!showPassword)}
                 >
                   <MaterialIcons
-                    name={showPassword ? 'visibility' : 'visibility-off'}
+                    name={showPassword ? "visibility" : "visibility-off"}
                     size={20}
                     color={colors.outline}
                   />
@@ -206,13 +242,18 @@ export default function SignInScreen() {
               <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity 
-              style={[styles.signInButton, isLoading && styles.signInButtonDisabled]} 
-              onPress={handleSignIn} 
+            <TouchableOpacity
+              style={[
+                styles.signInButton,
+                isLoading && styles.signInButtonDisabled,
+              ]}
+              onPress={handleSignIn}
               activeOpacity={0.8}
               disabled={isLoading}
             >
-              <Text style={styles.signInButtonText}>{isLoading ? 'Signing In...' : 'Sign In'}</Text>
+              <Text style={styles.signInButtonText}>
+                {isLoading ? "Signing In..." : "Sign In"}
+              </Text>
             </TouchableOpacity>
 
             <View style={styles.footer}>
@@ -238,33 +279,33 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     padding: 16,
-    justifyContent: 'center',
+    justifyContent: "center",
   },
   topNav: {
-    alignSelf: 'flex-start',
+    alignSelf: "flex-start",
     marginBottom: 16,
-    marginTop: Platform.OS === 'android' ? 16 : 0,
+    marginTop: Platform.OS === "android" ? 16 : 0,
   },
   header: {
     marginBottom: 32,
-    alignItems: 'center',
+    alignItems: "center",
   },
   title: {
     ...typography.headlineLg,
     color: colors.primary,
     marginBottom: 8,
-    textAlign: 'center',
+    textAlign: "center",
   },
   subtitle: {
     ...typography.bodyLg,
-    textAlign: 'center',
+    textAlign: "center",
   },
   formContainer: {
     backgroundColor: colors.surface,
     borderRadius: 16, // Cards use 16px radius
     padding: 24,
     // Soft ambient shadow (Level 1)
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.05,
     shadowRadius: 10,
@@ -272,10 +313,10 @@ const styles = StyleSheet.create({
   },
   errorText: {
     color: colors.error,
-    fontFamily: 'Inter',
+    fontFamily: "Inter",
     fontSize: 12,
     marginTop: 8,
-    textAlign: 'left',
+    textAlign: "left",
   },
   inputGroup: {
     marginBottom: 16,
@@ -292,13 +333,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     fontSize: 16,
-    fontFamily: 'Inter',
+    fontFamily: "Inter",
     color: colors.onSurface,
     backgroundColor: colors.background,
   },
   passwordContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     borderWidth: 1,
     borderColor: colors.outlineVariant,
     borderRadius: 8,
@@ -309,14 +350,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     fontSize: 16,
-    fontFamily: 'Inter',
+    fontFamily: "Inter",
     color: colors.onSurface,
   },
   eyeIcon: {
     padding: 12,
   },
   forgotPassword: {
-    alignSelf: 'flex-end',
+    alignSelf: "flex-end",
     marginBottom: 24,
   },
   forgotPasswordText: {
@@ -327,9 +368,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary,
     borderRadius: 8,
     paddingVertical: 14,
-    alignItems: 'center',
+    alignItems: "center",
     // Slightly more shadow for interactivity
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -343,8 +384,8 @@ const styles = StyleSheet.create({
     color: colors.onPrimary,
   },
   footer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
+    flexDirection: "row",
+    justifyContent: "center",
     marginTop: 24,
   },
   footerText: {
@@ -354,35 +395,35 @@ const styles = StyleSheet.create({
   registerText: {
     ...typography.bodyLg,
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: "700",
     color: colors.primary,
   },
   toastContainer: {
-    position: 'absolute',
-    top: Platform.OS === 'ios' ? 60 : 40,
+    position: "absolute",
+    top: Platform.OS === "ios" ? 60 : 40,
     right: 16,
     width: 320,
-    backgroundColor: '#ebf4ec',
+    backgroundColor: "#ebf4ec",
     borderRadius: 6,
-    flexDirection: 'row',
-    alignItems: 'flex-start',
+    flexDirection: "row",
+    alignItems: "flex-start",
     paddingVertical: 16,
     paddingRight: 16,
     zIndex: 1000,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
     shadowRadius: 12,
     elevation: 6,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   toastLeftBorder: {
-    position: 'absolute',
+    position: "absolute",
     left: 0,
     top: 0,
     bottom: 0,
     width: 4,
-    backgroundColor: '#1b7a43',
+    backgroundColor: "#1b7a43",
   },
   toastIcon: {
     marginLeft: 16,
@@ -393,17 +434,17 @@ const styles = StyleSheet.create({
     marginLeft: 12,
   },
   toastTitle: {
-    fontFamily: 'Inter',
+    fontFamily: "Inter",
     fontSize: 16,
-    fontWeight: '700',
-    color: '#1a1a1a',
+    fontWeight: "700",
+    color: "#1a1a1a",
     marginBottom: 4,
   },
   toastText: {
-    fontFamily: 'Inter',
+    fontFamily: "Inter",
     fontSize: 14,
-    fontWeight: '400',
-    color: '#2a2a2a',
+    fontWeight: "400",
+    color: "#2a2a2a",
     lineHeight: 20,
   },
   toastCloseButton: {

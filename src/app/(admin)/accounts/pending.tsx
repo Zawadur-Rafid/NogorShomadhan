@@ -1,56 +1,103 @@
-import AdminBottomNav from "@/components/AdminBottomNav";
-import Ionicons from "@expo/vector-icons/Ionicons";
+import { useMemo, useState } from "react";
 import {
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    Modal,
+    Pressable,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
+
+import Ionicons from "@expo/vector-icons/Ionicons";
+
+import AdminBottomNav from "@/components/AdminBottomNav";
+import { AdminAccount, useAdminAccounts } from "@/store/admin-accounts-store";
 
 const colors = {
   background: "#F5F6FA",
   white: "#FFFFFF",
-  primary: "#1F4868",
   text: "#1E1E1E",
   subtitle: "#707070",
   border: "#E5E7EB",
-
   blue: "#E8F2FF",
   orange: "#FFF3E5",
   red: "#FFECEC",
-
   blueIcon: "#2D6CDF",
   orangeIcon: "#C97816",
   redIcon: "#C0392B",
-
-  shadow: "#000",
 };
 
-export default function VerificationDesk() {
+export default function PendingAccountsPage() {
+  const {
+    pendingAccounts,
+    metrics,
+    loading,
+    error,
+    refresh,
+    approveAccount,
+    rejectAccount,
+  } = useAdminAccounts();
+
+  const [query, setQuery] = useState("");
+  const [selectedAccount, setSelectedAccount] = useState<AdminAccount | null>(
+    null,
+  );
+  const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
+
+  const filteredAccounts = useMemo(() => {
+    const search = query.trim().toLowerCase();
+
+    if (!search) {
+      return pendingAccounts;
+    }
+
+    return pendingAccounts.filter((account) => {
+      return (
+        account.fullName.toLowerCase().includes(search) ||
+        account.nid.toLowerCase().includes(search) ||
+        account.email.toLowerCase().includes(search) ||
+        account.username.toLowerCase().includes(search)
+      );
+    });
+  }, [pendingAccounts, query]);
+
+  const handleApprove = async (accountId: string) => {
+    setActionLoadingId(accountId);
+    await approveAccount(accountId);
+    setActionLoadingId(null);
+
+    if (selectedAccount?.id === accountId) {
+      setSelectedAccount(null);
+    }
+  };
+
+  const handleReject = async (accountId: string) => {
+    setActionLoadingId(accountId);
+    await rejectAccount(accountId);
+    setActionLoadingId(null);
+
+    if (selectedAccount?.id === accountId) {
+      setSelectedAccount(null);
+    }
+  };
+
   return (
     <View style={styles.container}>
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{
-          paddingBottom: 25,
-        }}
+        contentContainerStyle={styles.content}
       >
-        {/* Pending */}
-
         <View style={styles.statsCard}>
           <View style={styles.iconBlue}>
             <Ionicons name="people-outline" size={24} color={colors.blueIcon} />
           </View>
-
-          <View style={{ marginLeft: 15 }}>
-            <Text style={styles.smallLabel}>PENDING</Text>
-
-            <Text style={styles.bigText}>24 Accounts</Text>
+          <View style={styles.statsTextBlock}>
+            <Text style={styles.smallLabel}>PENDING ACCOUNT</Text>
+            <Text style={styles.bigText}>{metrics.pendingCount} Accounts</Text>
           </View>
         </View>
-
-        {/* Verified */}
 
         <View style={styles.statsCard}>
           <View style={styles.iconOrange}>
@@ -60,15 +107,13 @@ export default function VerificationDesk() {
               color={colors.orangeIcon}
             />
           </View>
-
-          <View style={{ marginLeft: 15 }}>
+          <View style={styles.statsTextBlock}>
             <Text style={styles.smallLabel}>VERIFIED TODAY</Text>
-
-            <Text style={styles.bigText}>156 Citizens</Text>
+            <Text style={styles.bigText}>
+              {metrics.verifiedTodayCount} Citizens
+            </Text>
           </View>
         </View>
-
-        {/* Rejected */}
 
         <View style={styles.statsCard}>
           <View style={styles.iconRed}>
@@ -78,158 +123,191 @@ export default function VerificationDesk() {
               color={colors.redIcon}
             />
           </View>
-
-          <View style={{ marginLeft: 15 }}>
-            <Text style={styles.smallLabel}>REJECTED</Text>
-
-            <Text style={styles.bigText}>12 Flags</Text>
+          <View style={styles.statsTextBlock}>
+            <Text style={styles.smallLabel}>REJECTED TODAY</Text>
+            <Text style={styles.bigText}>
+              {metrics.rejectedTodayCount} Accounts
+            </Text>
           </View>
         </View>
-
-        {/* Search */}
 
         <View style={styles.searchBar}>
           <Ionicons name="search" size={18} color="#777" />
-
-          <Text style={styles.searchPlaceholder}>
-            Search by name, ID or email...
-          </Text>
+          <TextInput
+            value={query}
+            onChangeText={setQuery}
+            placeholder="Search by name, NID, email or username"
+            placeholderTextColor="#8A8A8A"
+            style={styles.searchInput}
+          />
         </View>
 
-        {/* Filters */}
-
-        <View style={styles.filterRow}>
-          <TouchableOpacity style={styles.chip}>
-            <Text style={styles.chipText}>Resident</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.filterIcon}>
-            <Ionicons name="options-outline" size={18} color="#666" />
-          </TouchableOpacity>
-        </View>
-
-        {/* Request Card 1 */}
-
-        <View style={styles.requestCard}>
-          <View style={styles.profileRow}>
-            <View style={styles.avatar}>
-              <Ionicons name="person" size={30} color="#555" />
-            </View>
-
-            <View style={{ flex: 1, marginLeft: 12 }}>
-              <Text style={styles.personName}>Ahmed Karim Chowdhury</Text>
-
-              <Text style={styles.personInfo}>Resident • ID: NID-8829-102</Text>
-
-              <View style={styles.roleBadge}>
-                <Text style={styles.roleBadgeText}>NEW RESIDENT</Text>
-              </View>
-            </View>
-          </View>
-
-          <View style={styles.buttonRow}>
-            <TouchableOpacity style={styles.rejectButton}>
-              <Ionicons name="close-circle-outline" size={18} color="#C0392B" />
-
-              <Text style={styles.rejectText}>Reject</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.approveButton}>
-              <Ionicons
-                name="checkmark-circle-outline"
-                size={18}
-                color="#fff"
-              />
-
-              <Text style={styles.approveText}>Approve</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* Request Card 2 */}
-
-        <View style={styles.requestCard}>
-          <View style={styles.profileRow}>
-            <View style={styles.avatar}>
-              <Ionicons name="person" size={30} color="#555" />
-            </View>
-
-            <View style={{ flex: 1, marginLeft: 12 }}>
-              <Text style={styles.personName}>Nusrat Jahan Mim</Text>
-
-              <Text style={styles.personInfo}>Resident • ID: BC-1123-990</Text>
-
-              <View style={styles.roleBadgeBlue}>
-                <Text style={styles.roleBadgeBlueText}>NEW RESIDENT</Text>
-              </View>
-            </View>
-          </View>
-
-          <View style={styles.buttonRow}>
-            <TouchableOpacity style={styles.rejectButton}>
-              <Ionicons name="close-circle-outline" size={18} color="#C0392B" />
-
-              <Text style={styles.rejectText}>Reject</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.approveButton}>
-              <Ionicons
-                name="checkmark-circle-outline"
-                size={18}
-                color="#fff"
-              />
-
-              <Text style={styles.approveText}>Approve</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* Request Card 3 */}
-
-        <View style={styles.requestCard}>
-          <View style={styles.profileRow}>
-            <View style={styles.avatar}>
-              <Ionicons name="person" size={30} color="#555" />
-            </View>
-
-            <View style={{ flex: 1, marginLeft: 12 }}>
-              <Text style={styles.personName}>Rafiqul Islam</Text>
-
-              <Text style={styles.personInfo}>Resident • ID: BC-1123-990</Text>
-
-              <View style={styles.roleBadgeBlue}>
-                <Text style={styles.roleBadgeBlueText}>NEW RESIDENT</Text>
-              </View>
-            </View>
-          </View>
-
-          <View style={styles.buttonRow}>
-            <TouchableOpacity style={styles.rejectButton}>
-              <Ionicons name="close-circle-outline" size={18} color="#C0392B" />
-
-              <Text style={styles.rejectText}>Reject</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.approveButton}>
-              <Ionicons
-                name="checkmark-circle-outline"
-                size={18}
-                color="#fff"
-              />
-
-              <Text style={styles.approveText}>Approve</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* Load More */}
-
-        <TouchableOpacity activeOpacity={0.8} style={styles.loadMoreButton}>
-          <Text style={styles.loadMoreText}>Load more requests</Text>
-
-          <Ionicons name="chevron-down" size={16} color="#666" />
+        <TouchableOpacity
+          activeOpacity={0.85}
+          onPress={() => void refresh()}
+          style={styles.refreshButton}
+        >
+          <Ionicons name="refresh" size={16} color="#1F4868" />
+          <Text style={styles.refreshText}>Refresh</Text>
         </TouchableOpacity>
+
+        {error ? <Text style={styles.errorText}>{error}</Text> : null}
+        {loading ? (
+          <Text style={styles.loadingText}>Loading accounts...</Text>
+        ) : null}
+
+        {!loading && filteredAccounts.length === 0 ? (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyTitle}>No pending accounts</Text>
+            <Text style={styles.emptySubtitle}>
+              New unverified accounts will appear here.
+            </Text>
+          </View>
+        ) : null}
+
+        {filteredAccounts.map((account) => {
+          const busy = actionLoadingId === account.id;
+
+          return (
+            <View key={account.id} style={styles.requestCard}>
+              <View style={styles.profileRow}>
+                <View style={styles.avatar}>
+                  <Ionicons name="person" size={30} color="#555" />
+                </View>
+
+                <View style={styles.profileTextWrap}>
+                  <Text style={styles.personName}>{account.fullName}</Text>
+                  <Text style={styles.personInfo}>NID: {account.nid}</Text>
+
+                  <View style={styles.roleBadge}>
+                    <Text style={styles.roleBadgeText}>NEW RESIDENT</Text>
+                  </View>
+                </View>
+              </View>
+
+              <View style={styles.buttonRow}>
+                <TouchableOpacity
+                  style={styles.infoButton}
+                  onPress={() => setSelectedAccount(account)}
+                >
+                  <Ionicons name="eye-outline" size={18} color="#1F4868" />
+                  <Text style={styles.infoText}>View info</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.rejectButton}
+                  onPress={() => void handleReject(account.id)}
+                  disabled={busy}
+                >
+                  <Ionicons
+                    name="close-circle-outline"
+                    size={18}
+                    color="#C0392B"
+                  />
+                  <Text style={styles.rejectText}>
+                    {busy ? "Processing" : "Reject"}
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.approveButton}
+                  onPress={() => void handleApprove(account.id)}
+                  disabled={busy}
+                >
+                  <Ionicons
+                    name="checkmark-circle-outline"
+                    size={18}
+                    color="#fff"
+                  />
+                  <Text style={styles.approveText}>
+                    {busy ? "Processing" : "Approve"}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          );
+        })}
       </ScrollView>
+
+      <Modal
+        visible={Boolean(selectedAccount)}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setSelectedAccount(null)}
+      >
+        <Pressable
+          style={styles.backdrop}
+          onPress={() => setSelectedAccount(null)}
+        >
+          <Pressable style={styles.modalCard} onPress={() => {}}>
+            {selectedAccount ? (
+              <>
+                <Text style={styles.modalTitle}>
+                  {selectedAccount.fullName}
+                </Text>
+                <Text style={styles.modalSubtitle}>
+                  Complete account details
+                </Text>
+
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Full Name</Text>
+                  <Text style={styles.detailValue}>
+                    {selectedAccount.fullName}
+                  </Text>
+                </View>
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>NID</Text>
+                  <Text style={styles.detailValue}>{selectedAccount.nid}</Text>
+                </View>
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Email</Text>
+                  <Text style={styles.detailValue}>
+                    {selectedAccount.email}
+                  </Text>
+                </View>
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Phone Number</Text>
+                  <Text style={styles.detailValue}>
+                    {selectedAccount.phoneNum}
+                  </Text>
+                </View>
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>House Number</Text>
+                  <Text style={styles.detailValue}>
+                    {selectedAccount.houseNum || "-"}
+                  </Text>
+                </View>
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Road Number</Text>
+                  <Text style={styles.detailValue}>
+                    {selectedAccount.roadNumber || "-"}
+                  </Text>
+                </View>
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Avenue Number</Text>
+                  <Text style={styles.detailValue}>
+                    {selectedAccount.avenueNum || "-"}
+                  </Text>
+                </View>
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Username</Text>
+                  <Text style={styles.detailValue}>
+                    {selectedAccount.username}
+                  </Text>
+                </View>
+
+                <TouchableOpacity
+                  style={styles.closeButton}
+                  activeOpacity={0.85}
+                  onPress={() => setSelectedAccount(null)}
+                >
+                  <Text style={styles.closeButtonText}>Close</Text>
+                </TouchableOpacity>
+              </>
+            ) : null}
+          </Pressable>
+        </Pressable>
+      </Modal>
 
       <AdminBottomNav activeRoute="users" />
     </View>
@@ -241,70 +319,26 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
-
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingTop: 14,
-    marginBottom: 14,
+  content: {
+    padding: 16,
+    paddingBottom: 25,
   },
-
-  headerLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-
-  logo: {
-    marginLeft: 10,
-    fontSize: 22,
-    fontWeight: "700",
-    color: colors.text,
-    // No fontFamily - uses system default (SF Pro/Roboto)
-  },
-
-  headerRight: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-
-  adminCircle: {
-    marginLeft: 15,
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    backgroundColor: "#D9E8F5",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-
-  adminText: {
-    fontSize: 13,
-    color: colors.primary,
-    fontWeight: "700",
-    // No fontFamily - uses system default (SF Pro/Roboto)
-  },
-
   statsCard: {
     backgroundColor: "#fff",
-    marginHorizontal: 16,
     marginBottom: 12,
     padding: 15,
     borderRadius: 14,
     flexDirection: "row",
     alignItems: "center",
-
     shadowColor: "#000",
     shadowOpacity: 0.05,
     shadowRadius: 8,
-    shadowOffset: {
-      width: 0,
-      height: 3,
-    },
+    shadowOffset: { width: 0, height: 3 },
     elevation: 3,
   },
-
+  statsTextBlock: {
+    marginLeft: 15,
+  },
   iconBlue: {
     width: 46,
     height: 46,
@@ -313,7 +347,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-
   iconOrange: {
     width: 46,
     height: 46,
@@ -322,7 +355,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-
   iconRed: {
     width: 46,
     height: 46,
@@ -331,26 +363,20 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-
   smallLabel: {
     fontSize: 10,
     color: "#666",
     fontWeight: "700",
-    // No fontFamily - uses system default (SF Pro/Roboto)
   },
-
   bigText: {
     marginTop: 2,
     fontSize: 28,
     color: "#222",
     fontWeight: "700",
-    // No fontFamily - uses system default (SF Pro/Roboto)
   },
-
   searchBar: {
-    marginHorizontal: 16,
     marginTop: 8,
-    marginBottom: 14,
+    marginBottom: 10,
     backgroundColor: "#ECEFF3",
     borderRadius: 22,
     height: 44,
@@ -358,180 +384,201 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 14,
   },
-
-  searchPlaceholder: {
+  searchInput: {
     marginLeft: 8,
-    color: "#8A8A8A",
+    color: "#1E1E1E",
     fontSize: 13,
-    // No fontFamily - uses system default (SF Pro/Roboto)
+    flex: 1,
   },
-
-  filterRow: {
+  refreshButton: {
+    alignSelf: "flex-start",
     flexDirection: "row",
     alignItems: "center",
-    marginHorizontal: 16,
-    marginBottom: 15,
+    gap: 6,
+    marginBottom: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 14,
+    backgroundColor: "#E8F2FF",
   },
-
-  chip: {
-    backgroundColor: "#E8E8E8",
-    borderRadius: 20,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+  refreshText: {
+    color: "#1F4868",
+    fontWeight: "700",
+    fontSize: 12,
   },
-
-  chipText: {
-    color: "#666",
-    fontSize: 11,
-    // No fontFamily - uses system default (SF Pro/Roboto)
+  loadingText: {
+    color: colors.subtitle,
+    marginBottom: 12,
   },
-
-  filterIcon: {
-    marginLeft: "auto",
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    backgroundColor: "#EFEFEF",
-    justifyContent: "center",
-    alignItems: "center",
+  errorText: {
+    color: "#B42318",
+    marginBottom: 12,
   },
-
+  emptyState: {
+    backgroundColor: "#fff",
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: 16,
+  },
+  emptyTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: colors.text,
+  },
+  emptySubtitle: {
+    fontSize: 13,
+    color: colors.subtitle,
+    marginTop: 6,
+  },
   requestCard: {
     backgroundColor: "#fff",
-    marginHorizontal: 16,
     marginBottom: 16,
     borderRadius: 16,
     padding: 15,
-
     shadowColor: "#000",
     shadowOpacity: 0.05,
     shadowRadius: 8,
-    shadowOffset: {
-      width: 0,
-      height: 3,
-    },
+    shadowOffset: { width: 0, height: 3 },
     elevation: 3,
   },
-
   profileRow: {
     flexDirection: "row",
     alignItems: "center",
   },
-
   avatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: "#EAEAEA",
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: "#ECECEC",
     justifyContent: "center",
     alignItems: "center",
   },
-
+  profileTextWrap: {
+    flex: 1,
+    marginLeft: 12,
+  },
   personName: {
     fontSize: 16,
-    color: "#222",
     fontWeight: "700",
-    // No fontFamily - uses system default (SF Pro/Roboto)
+    color: colors.text,
   },
-
   personInfo: {
-    marginTop: 2,
-    fontSize: 11,
-    color: "#666",
-    // No fontFamily - uses system default (SF Pro/Roboto)
-  },
-
-  roleBadge: {
-    alignSelf: "flex-start",
-    marginTop: 5,
-    backgroundColor: "#F8E5BF",
-    borderRadius: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-  },
-
-  roleBadgeText: {
-    color: "#8A5A00",
-    fontSize: 10,
-    fontWeight: "700",
-    // No fontFamily - uses system default (SF Pro/Roboto)
-  },
-
-  roleBadgeBlue: {
-    alignSelf: "flex-start",
-    marginTop: 5,
-    backgroundColor: "#E8F2FF",
-    borderRadius: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-  },
-
-  roleBadgeBlueText: {
-    color: "#1F63C6",
-    fontSize: 10,
-    fontWeight: "700",
-    // No fontFamily - uses system default (SF Pro/Roboto)
-  },
-
-  buttonRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginTop: 15,
-  },
-
-  rejectButton: {
-    flex: 0.47,
-    borderWidth: 1,
-    borderColor: "#D9534F",
-    borderRadius: 22,
-    paddingVertical: 11,
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-
-  rejectText: {
-    marginLeft: 5,
-    color: "#C0392B",
-    fontSize: 14,
-    fontWeight: "700",
-    // No fontFamily - uses system default (SF Pro/Roboto)
-  },
-
-  approveButton: {
-    flex: 0.47,
-    backgroundColor: "#23435D",
-    borderRadius: 22,
-    paddingVertical: 11,
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-
-  approveText: {
-    marginLeft: 5,
-    color: "#fff",
-    fontSize: 14,
-    fontWeight: "700",
-    // No fontFamily - uses system default (SF Pro/Roboto)
-  },
-
-  loadMoreButton: {
-    alignSelf: "center",
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#ECECEC",
-    borderRadius: 22,
-    paddingHorizontal: 22,
-    paddingVertical: 10,
-    marginTop: 8,
-  },
-
-  loadMoreText: {
-    marginRight: 6,
-    color: "#666",
+    marginTop: 4,
     fontSize: 13,
+    color: colors.subtitle,
+  },
+  roleBadge: {
+    marginTop: 8,
+    alignSelf: "flex-start",
+    borderRadius: 999,
+    backgroundColor: "#E8F2FF",
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  roleBadgeText: {
+    fontSize: 10,
+    fontWeight: "800",
+    letterSpacing: 0.2,
+    color: "#235EA8",
+  },
+  buttonRow: {
+    marginTop: 14,
+    flexDirection: "row",
+    gap: 8,
+    alignItems: "center",
+  },
+  infoButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#EAF1F7",
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    gap: 6,
+  },
+  infoText: {
+    color: "#1F4868",
     fontWeight: "700",
-    // No fontFamily - uses system default (SF Pro/Roboto)
+    fontSize: 12,
+  },
+  rejectButton: {
+    marginLeft: "auto",
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FFEFEF",
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    gap: 6,
+  },
+  rejectText: {
+    color: "#C0392B",
+    fontWeight: "700",
+    fontSize: 12,
+  },
+  approveButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#1F4868",
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    gap: 6,
+  },
+  approveText: {
+    color: "#fff",
+    fontWeight: "700",
+    fontSize: 12,
+  },
+  backdrop: {
+    flex: 1,
+    backgroundColor: "rgba(15, 23, 42, 0.42)",
+    justifyContent: "center",
+    paddingHorizontal: 20,
+  },
+  modalCard: {
+    borderRadius: 18,
+    backgroundColor: "#FFFFFF",
+    padding: 18,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: "800",
+    color: "#182230",
+  },
+  modalSubtitle: {
+    marginTop: 4,
+    fontSize: 13,
+    color: "#667085",
+    marginBottom: 14,
+  },
+  detailRow: {
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: "#EEF2F6",
+  },
+  detailLabel: {
+    color: "#667085",
+    fontSize: 12,
+    fontWeight: "600",
+    marginBottom: 2,
+  },
+  detailValue: {
+    color: "#101828",
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  closeButton: {
+    marginTop: 16,
+    backgroundColor: "#1F4868",
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 12,
+    paddingVertical: 11,
+  },
+  closeButtonText: {
+    color: "#fff",
+    fontWeight: "700",
   },
 });
