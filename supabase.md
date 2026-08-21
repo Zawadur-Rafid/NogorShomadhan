@@ -6,6 +6,8 @@
 
 - `account_status`: ENUM ('unverified', 'verified', 'suspended')
 - `account_role`: ENUM ('resident', 'admin', 'authority')
+- `complaint_status`: ENUM ('unverified', 'pending', 'in progress', 'resolved')
+- `complaint_category`: ENUM ('Road Damage', 'Garbage & Waste', 'Drainage & Waterlogging', 'Streetlight & Electrical', 'Water Supply', 'Sanitation & Public Toilets', 'Traffic & Illegal Parking', 'Public Safety & Encroachment', 'Noise & Environmental Pollution', 'Parks & Public Spaces', 'Animal-Related Issues', 'Other')
 
 ## Tables
 
@@ -30,8 +32,8 @@
 - `description`: TEXT (NOT NULL)
 - `longitude`: DOUBLE PRECISION (NOT NULL)
 - `latitude`: DOUBLE PRECISION (NOT NULL)
-- `category`: TEXT (NOT NULL)
-- `status`: TEXT (Default: 'Pending', NOT NULL)
+- `category`: complaint_category (NOT NULL)
+- `status`: complaint_status (Default: 'unverified', NOT NULL)
 - `timestamp`: TIMESTAMPTZ (Default: CURRENT_TIMESTAMP)
 - `urgency`: INTEGER (Default: 0, NOT NULL)
 
