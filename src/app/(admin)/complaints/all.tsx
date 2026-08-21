@@ -1,18 +1,40 @@
-import AdminBottomNav from "@/components/AdminBottomNav";
+﻿import AdminBottomNav from "@/components/AdminBottomNav";
 import { dummyComplaints } from "@/components/store/store_complaint";
+import { supabase } from "@/lib/supabase";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
-  Image,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    Alert,
+    Image,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 
 type ComplaintFilter = "All" | "Pending" | "In Progress" | "Resolved";
+type ReviewSort = "latest" | "earliest";
+
+type ReviewComplaint = {
+  compId: string;
+  accId: string | null;
+  title: string;
+  description: string;
+  category: string;
+  status: string;
+  latitude: number;
+  longitude: number;
+  timestamp: string | null;
+  urgency: number;
+  reporterName: string;
+  reporterEmail: string;
+  reporterNid: string;
+  reporterPhone: string;
+  evidenceImages: string[];
+};
 
 const theme = {
   background: "#f8f9fc",
@@ -44,10 +66,260 @@ export default function AllComplaintsScreen() {
   return <ComplaintsListScreen />;
 }
 
-export function ComplaintsListScreen({ reviewMode = false }: ComplaintsListProps) {
+export function ComplaintsListScreen({
+  reviewMode = false,
+}: ComplaintsListProps) {
   const router = useRouter();
   const [activeFilter, setActiveFilter] = useState<ComplaintFilter>("All");
-  const [complaints, setComplaints] = useState(dummyComplaints);
+  const [reviewSort, setReviewSort] = useState<ReviewSort>("latest");
+  const [complaints, setComplaints] = useState<
+    Array<(typeof dummyComplaints)[number]>
+  >([]);
+  const [complaintsLoading, setComplaintsLoading] = useState(false);
+  const [complaintsError, setComplaintsError] = useState<string | null>(null);
+  const [reviewComplaints, setReviewComplaints] = useState<ReviewComplaint[]>(
+    [],
+  );
+  const [reviewLoading, setReviewLoading] = useState(false);
+  const [reviewError, setReviewError] = useState<string | null>(null);
+  const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
+  const [actionMessage, setActionMessage] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+
+  const confirmAction = async (
+    title: string,
+    message: string,
+    confirmLabel: string,
+  ) => {
+    if (Platform.OS === "web") {
+      if (typeof globalThis.confirm === "function") {
+        return globalThis.confirm(`${title}\n\n${message}`);
+      }
+      return true;
+    }
+
+    return new Promise<boolean>((resolve) => {
+      Alert.alert(
+        title,
+        message,
+        [
+          {
+            text: "Cancel",
+            style: "cancel",
+            onPress: () => resolve(false),
+          },
+          {
+            text: confirmLabel,
+            onPress: () => resolve(true),
+          },
+        ],
+        {
+          cancelable: true,
+          onDismiss: () => resolve(false),
+        },
+      );
+    });
+  };
+
+  const getMaterialIconFromCategory = (
+    category: string,
+  ): keyof typeof MaterialIcons.glyphMap => {
+    const value = category.toLowerCase();
+
+    if (value.includes("water") || value.includes("drain")) return "water-drop";
+    if (value.includes("road") || value.includes("traffic"))
+      return "directions-car";
+    if (value.includes("light") || value.includes("electrical"))
+      return "lightbulb";
+    if (value.includes("garbage") || value.includes("waste")) return "delete";
+    if (value.includes("park")) return "park";
+    if (value.includes("animal")) return "pets";
+
+    return "report-problem";
+  };
+
+  const formatComplaintDate = (dateValue: string | null) => {
+    if (!dateValue) return "Unknown date";
+    const parsed = new Date(dateValue);
+    if (Number.isNaN(parsed.getTime())) return "Unknown date";
+
+    return parsed.toLocaleString();
+  };
+
+  const fetchAllComplaints = async () => {
+    setComplaintsLoading(true);
+    setComplaintsError(null);
+
+    const { data: complaintData, error: complaintError } = await supabase
+      .from("complaints")
+      .select("comp_id,title,description,category,status,latitude,longitude,timestamp")
+      .in("status", ["pending", "in progress", "resolved"])
+      .order("timestamp", { ascending: false });
+
+    if (complaintError) {
+      setComplaintsError(complaintError.message);
+      setComplaintsLoading(false);
+      return;
+    }
+
+    const rows = (complaintData ?? []) as Array<{
+      comp_id: string; title: string; description: string; category: string;
+      status: string; latitude: number; longitude: number; timestamp: string | null;
+    }>;
+    const complaintIds = rows.map((item) => item.comp_id);
+    const { data: evidenceData, error: evidenceError } = complaintIds.length
+      ? await supabase.from("evidence").select("comp_id,img_url").in("comp_id", complaintIds)
+      : { data: [], error: null };
+
+    if (evidenceError) {
+      setComplaintsError(evidenceError.message);
+      setComplaintsLoading(false);
+      return;
+    }
+
+    const firstEvidence = new Map<string, string>();
+    for (const evidence of (evidenceData ?? []) as Array<{ comp_id: string; img_url: string }>) {
+      if (!firstEvidence.has(evidence.comp_id)) firstEvidence.set(evidence.comp_id, evidence.img_url);
+    }
+
+    setComplaints(rows.map((item) => ({
+      id: item.comp_id,
+      title: item.title,
+      description: item.description,
+      date: formatComplaintDate(item.timestamp),
+      location: `${item.latitude.toFixed(4)}, ${item.longitude.toFixed(4)}`,
+      status: (item.status === "in progress" ? "IN PROGRESS" : item.status.toUpperCase()) as "PENDING" | "IN PROGRESS" | "RESOLVED",
+      category: item.category,
+      urgencyCount: 0,
+      urgencyLevel: "LOW",
+      evidence: firstEvidence.has(item.comp_id) ? "Resident uploaded photo evidence" : "No image evidence uploaded",
+      images: firstEvidence.has(item.comp_id) ? [firstEvidence.get(item.comp_id)!] : [],
+      color: "#60A5FA",
+      icon: item.category.toLowerCase(),
+      lat: item.latitude,
+      lng: item.longitude,
+      image: firstEvidence.get(item.comp_id) ?? "",
+    })));
+    setComplaintsLoading(false);
+  };
+  const fetchReviewComplaints = async () => {
+    setReviewLoading(true);
+    setReviewError(null);
+
+    const { data: complaintsData, error: complaintsError } = await supabase
+      .from("complaints")
+      .select(
+        "comp_id,acc_id,title,description,category,status,latitude,longitude,timestamp,urgency",
+      )
+      .eq("status", "unverified");
+
+    if (complaintsError) {
+      setReviewError(complaintsError.message);
+      setReviewLoading(false);
+      return;
+    }
+
+    const complaintRows = (complaintsData ?? []) as Array<{
+      comp_id: string;
+      acc_id: string | null;
+      title: string;
+      description: string;
+      category: string;
+      status: string;
+      latitude: number;
+      longitude: number;
+      timestamp: string | null;
+      urgency: number;
+    }>;
+
+    const accountIds = Array.from(
+      new Set(
+        complaintRows
+          .map((item) => item.acc_id)
+          .filter((item): item is string => Boolean(item)),
+      ),
+    );
+    const complaintIds = complaintRows.map((item) => item.comp_id);
+
+    const [
+      { data: accountsData, error: accountsError },
+      { data: evidenceData, error: evidenceError },
+    ] = await Promise.all([
+      accountIds.length
+        ? supabase
+            .from("account")
+            .select(
+              "acc_id,full_name,email,nid,phone_num,house_num,road_number,avenue_num,username",
+            )
+            .in("acc_id", accountIds)
+        : Promise.resolve({ data: [], error: null }),
+      complaintIds.length
+        ? supabase
+            .from("evidence")
+            .select("comp_id,img_url")
+            .in("comp_id", complaintIds)
+        : Promise.resolve({ data: [], error: null }),
+    ]);
+
+    if (accountsError) {
+      setReviewError(accountsError.message);
+      setReviewLoading(false);
+      return;
+    }
+
+    if (evidenceError) {
+      setReviewError(evidenceError.message);
+      setReviewLoading(false);
+      return;
+    }
+
+    const accountMap = new Map(
+      (accountsData ?? []).map((item: any) => [item.acc_id, item]),
+    );
+    const evidenceMap = new Map<string, string[]>();
+
+    for (const row of (evidenceData ?? []) as Array<{
+      comp_id: string;
+      img_url: string;
+    }>) {
+      const current = evidenceMap.get(row.comp_id) ?? [];
+      current.push(row.img_url);
+      evidenceMap.set(row.comp_id, current);
+    }
+
+    const mapped: ReviewComplaint[] = complaintRows.map((item) => {
+      const account = item.acc_id ? accountMap.get(item.acc_id) : null;
+
+      return {
+        compId: item.comp_id,
+        accId: item.acc_id,
+        title: item.title,
+        description: item.description,
+        category: item.category,
+        status: item.status,
+        latitude: item.latitude,
+        longitude: item.longitude,
+        timestamp: item.timestamp,
+        urgency: item.urgency,
+        reporterName: account?.full_name ?? "Unknown resident",
+        reporterEmail: account?.email ?? "",
+        reporterNid: account?.nid ?? "",
+        reporterPhone: account?.phone_num ?? "",
+        evidenceImages: evidenceMap.get(item.comp_id) ?? [],
+      };
+    });
+
+    setReviewComplaints(mapped);
+    setReviewLoading(false);
+  };
+
+  useEffect(() => {
+    if (reviewMode) {
+      void fetchReviewComplaints();
+    } else {
+      void fetchAllComplaints();
+    }
+  }, [reviewMode]);
 
   const filteredComplaints = useMemo(() => {
     if (activeFilter === "All") {
@@ -59,8 +331,87 @@ export function ComplaintsListScreen({ reviewMode = false }: ComplaintsListProps
     );
   }, [activeFilter, complaints]);
 
-  const removeFromReview = (complaintId: string) => {
-    setComplaints((current) => current.filter((complaint) => complaint.id !== complaintId));
+  const sortedReviewComplaints = useMemo(() => {
+    const rows = [...reviewComplaints];
+
+    rows.sort((a, b) => {
+      const aTime = a.timestamp ? new Date(a.timestamp).getTime() : 0;
+      const bTime = b.timestamp ? new Date(b.timestamp).getTime() : 0;
+
+      return reviewSort === "latest" ? bTime - aTime : aTime - bTime;
+    });
+
+    return rows;
+  }, [reviewComplaints, reviewSort]);
+
+  const handleAcceptReviewComplaint = (complaintId: string) => {
+    void (async () => {
+      const confirmed = await confirmAction(
+        "Accept complaint",
+        "Move this complaint to pending status?",
+        "Accept",
+      );
+
+      if (!confirmed) {
+        return;
+      }
+
+      setActionLoadingId(complaintId);
+      setActionMessage(null);
+      setActionError(null);
+
+      const { error } = await supabase
+        .from("complaints")
+        .update({ status: "pending" })
+        .eq("comp_id", complaintId);
+
+      if (error) {
+        setActionError(`Accept failed: ${error.message}`);
+        setActionLoadingId(null);
+        return;
+      }
+
+      setReviewComplaints((current) =>
+        current.filter((item) => item.compId !== complaintId),
+      );
+      setActionMessage("Complaint accepted and moved to pending.");
+      setActionLoadingId(null);
+    })();
+  };
+
+  const handleDeleteReviewComplaint = (complaintId: string) => {
+    void (async () => {
+      const confirmed = await confirmAction(
+        "Delete complaint",
+        "Delete this complaint permanently?",
+        "Delete",
+      );
+
+      if (!confirmed) {
+        return;
+      }
+
+      setActionLoadingId(complaintId);
+      setActionMessage(null);
+      setActionError(null);
+
+      const { error } = await supabase
+        .from("complaints")
+        .delete()
+        .eq("comp_id", complaintId);
+
+      if (error) {
+        setActionError(`Delete failed: ${error.message}`);
+        setActionLoadingId(null);
+        return;
+      }
+
+      setReviewComplaints((current) =>
+        current.filter((item) => item.compId !== complaintId),
+      );
+      setActionMessage("Complaint deleted from review.");
+      setActionLoadingId(null);
+    })();
   };
 
   return (
@@ -71,7 +422,9 @@ export function ComplaintsListScreen({ reviewMode = false }: ComplaintsListProps
       >
         {/* Header Section */}
         <View style={styles.pageIntro}>
-          <Text style={styles.title}>{reviewMode ? "Review Complaints" : "All Complaints"}</Text>
+          <Text style={styles.title}>
+            {reviewMode ? "Review Complaints" : "All Complaints"}
+          </Text>
           <Text style={styles.subtitle}>
             {reviewMode
               ? "Verify newly submitted resident reports before they enter the system."
@@ -79,45 +432,119 @@ export function ComplaintsListScreen({ reviewMode = false }: ComplaintsListProps
           </Text>
         </View>
 
-        {/* Filter Tabs */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.filterScroll}
-          contentContainerStyle={styles.filterContainer}
-        >
-          {(
-            ["All", "Pending", "In Progress", "Resolved"] as ComplaintFilter[]
-          ).map((filter) => {
-            const isActive = activeFilter === filter;
-            return (
-              <TouchableOpacity
-                key={filter}
+        {/* Filter Controls */}
+        {reviewMode ? (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.filterScroll}
+            contentContainerStyle={styles.filterContainer}
+          >
+            <TouchableOpacity
+              style={[
+                styles.filterBtn,
+                reviewSort === "latest"
+                  ? styles.activeFilter
+                  : styles.inactiveFilter,
+              ]}
+              onPress={() => setReviewSort("latest")}
+              activeOpacity={0.8}
+            >
+              <Text
                 style={[
-                  styles.filterBtn,
-                  isActive ? styles.activeFilter : styles.inactiveFilter,
+                  styles.filterText,
+                  reviewSort === "latest"
+                    ? styles.activeFilterText
+                    : styles.inactiveFilterText,
                 ]}
-                onPress={() => setActiveFilter(filter)}
-                activeOpacity={0.8}
               >
-                <Text
+                Latest First
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.filterBtn,
+                reviewSort === "earliest"
+                  ? styles.activeFilter
+                  : styles.inactiveFilter,
+              ]}
+              onPress={() => setReviewSort("earliest")}
+              activeOpacity={0.8}
+            >
+              <Text
+                style={[
+                  styles.filterText,
+                  reviewSort === "earliest"
+                    ? styles.activeFilterText
+                    : styles.inactiveFilterText,
+                ]}
+              >
+                Earliest First
+              </Text>
+            </TouchableOpacity>
+          </ScrollView>
+        ) : (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.filterScroll}
+            contentContainerStyle={styles.filterContainer}
+          >
+            {(
+              ["All", "Pending", "In Progress", "Resolved"] as ComplaintFilter[]
+            ).map((filter) => {
+              const isActive = activeFilter === filter;
+              return (
+                <TouchableOpacity
+                  key={filter}
                   style={[
-                    styles.filterText,
-                    isActive
-                      ? styles.activeFilterText
-                      : styles.inactiveFilterText,
+                    styles.filterBtn,
+                    isActive ? styles.activeFilter : styles.inactiveFilter,
                   ]}
+                  onPress={() => setActiveFilter(filter)}
+                  activeOpacity={0.8}
                 >
-                  {filter}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
+                  <Text
+                    style={[
+                      styles.filterText,
+                      isActive
+                        ? styles.activeFilterText
+                        : styles.inactiveFilterText,
+                    ]}
+                  >
+                    {filter}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        )}
 
         {/* Complaint List */}
         <View style={styles.listContainer}>
-          {filteredComplaints.length === 0 ? (
+          {!reviewMode && complaintsError ? (
+            <Text style={styles.errorText}>Failed to load complaints: {complaintsError}</Text>
+          ) : null}
+          {!reviewMode && complaintsLoading ? (
+            <Text style={styles.emptyDesc}>Loading complaints...</Text>
+          ) : null}
+          {reviewMode && actionMessage ? (
+            <Text style={styles.successText}>{actionMessage}</Text>
+          ) : null}
+          {reviewMode && actionError ? (
+            <Text style={styles.errorText}>{actionError}</Text>
+          ) : null}
+          {reviewMode && reviewLoading ? (
+            <Text style={styles.emptyDesc}>
+              Loading unverified complaints...
+            </Text>
+          ) : null}
+          {(
+            reviewMode
+              ? !reviewLoading && sortedReviewComplaints.length === 0
+              : !complaintsLoading && filteredComplaints.length === 0
+          ) ? (
             <View style={styles.emptyState}>
               <MaterialIcons
                 name="error-outline"
@@ -127,135 +554,202 @@ export function ComplaintsListScreen({ reviewMode = false }: ComplaintsListProps
               />
               <Text style={styles.emptyTitle}>No complaints found</Text>
               <Text style={styles.emptyDesc}>
-                There are no reports in this category.
+                {reviewMode
+                  ? "There are no unverified complaints to review right now."
+                  : "There are no reports in this category."}
               </Text>
             </View>
           ) : (
-            filteredComplaints.map((item) => {
-              // Status colors mapping
-              const displayStatus = reviewMode ? "PENDING" : item.status;
-              let badgeBg = theme.pendingBg;
-              let badgeText = theme.pendingText;
-              let statusLabel = "Pending";
-              if (displayStatus === "IN PROGRESS") {
-                badgeBg = theme.progressBg;
-                badgeText = theme.progressText;
-                statusLabel = "In Progress";
-              } else if (displayStatus === "RESOLVED") {
-                badgeBg = theme.resolvedBg;
-                badgeText = theme.resolvedText;
-                statusLabel = "Resolved";
-              }
+            (reviewMode ? sortedReviewComplaints : filteredComplaints).map(
+              (item) => {
+                const reviewItem = reviewMode
+                  ? (item as ReviewComplaint)
+                  : null;
+                const normalItem = reviewMode
+                  ? null
+                  : (item as (typeof dummyComplaints)[number]);
 
-              // Icon mapping from string to MaterialIcons
-              let materialIcon: keyof typeof MaterialIcons.glyphMap =
-                "report-problem";
-              if (item.icon.includes("water")) materialIcon = "water-drop";
-              if (item.icon.includes("construct"))
-                materialIcon = "construction";
-              if (item.icon.includes("bulb")) materialIcon = "lightbulb";
-              if (item.icon.includes("trash")) materialIcon = "delete";
-              if (item.icon.includes("bicycle") || item.icon.includes("car"))
-                materialIcon = "directions-car";
-              if (item.icon.includes("leaf")) materialIcon = "park";
-              if (item.icon.includes("paw")) materialIcon = "pets";
-              if (item.icon.includes("warning")) materialIcon = "warning";
+                const itemId = reviewMode ? reviewItem!.compId : normalItem!.id;
+                const isBusy = actionLoadingId === itemId;
+                const itemTitle = reviewMode
+                  ? reviewItem!.title
+                  : normalItem!.title;
+                const itemDescription = reviewMode
+                  ? reviewItem!.description
+                  : normalItem!.description;
+                const itemDate = reviewMode
+                  ? formatComplaintDate(reviewItem!.timestamp)
+                  : normalItem!.date;
+                const itemImage = reviewMode
+                  ? reviewItem!.evidenceImages[0]
+                  : normalItem!.image;
 
-              return (
-                <View key={item.id} style={styles.card}>
-                  <View style={styles.cardHeader}>
-                    <View style={styles.cardHeaderLeft}>
-                      <View style={styles.iconCircle}>
-                        <MaterialIcons
-                          name={materialIcon}
-                          size={24}
-                          color={theme.primary}
-                        />
+                // Status colors mapping
+                const displayStatus = reviewMode
+                  ? "UNVERIFIED"
+                  : normalItem!.status;
+                let badgeBg = theme.pendingBg;
+                let badgeText = theme.pendingText;
+                let statusLabel = reviewMode ? "Unverified" : "Pending";
+                if (displayStatus === "IN PROGRESS") {
+                  badgeBg = theme.progressBg;
+                  badgeText = theme.progressText;
+                  statusLabel = "In Progress";
+                } else if (displayStatus === "RESOLVED") {
+                  badgeBg = theme.resolvedBg;
+                  badgeText = theme.resolvedText;
+                  statusLabel = "Resolved";
+                }
+
+                // Icon mapping from string to MaterialIcons
+                let materialIcon: keyof typeof MaterialIcons.glyphMap =
+                  "report-problem";
+                if (reviewMode) {
+                  materialIcon = getMaterialIconFromCategory(
+                    reviewItem!.category,
+                  );
+                } else {
+                  if (normalItem!.icon.includes("water"))
+                    materialIcon = "water-drop";
+                  if (normalItem!.icon.includes("construct"))
+                    materialIcon = "construction";
+                  if (normalItem!.icon.includes("bulb"))
+                    materialIcon = "lightbulb";
+                  if (normalItem!.icon.includes("trash"))
+                    materialIcon = "delete";
+                  if (
+                    normalItem!.icon.includes("bicycle") ||
+                    normalItem!.icon.includes("car")
+                  )
+                    materialIcon = "directions-car";
+                  if (normalItem!.icon.includes("leaf")) materialIcon = "park";
+                  if (normalItem!.icon.includes("paw")) materialIcon = "pets";
+                  if (normalItem!.icon.includes("warning"))
+                    materialIcon = "warning";
+                }
+
+                return (
+                  <View key={itemId} style={styles.card}>
+                    <View style={styles.cardHeader}>
+                      <View style={styles.cardHeaderLeft}>
+                        <View style={styles.iconCircle}>
+                          <MaterialIcons
+                            name={materialIcon}
+                            size={24}
+                            color={theme.primary}
+                          />
+                        </View>
+                        <View style={styles.titleArea}>
+                          <Text style={styles.cardTitle}>{itemTitle}</Text>
+                          <Text style={styles.cardMeta}>
+                            {itemDate} â€¢{" "}
+                            {reviewMode
+                              ? itemId.slice(0, 8)
+                              : `#${normalItem!.id.slice(0, 8)}`}
+                          </Text>
+                        </View>
                       </View>
-                      <View style={styles.titleArea}>
-                        <Text style={styles.cardTitle}>{item.title}</Text>
-                        <Text style={styles.cardMeta}>
-                          {item.date} • #CMP-{item.id.padStart(4, "0")}
+                      <View
+                        style={[
+                          styles.statusBadge,
+                          { backgroundColor: badgeBg },
+                        ]}
+                      >
+                        <Text
+                          style={[styles.statusBadgeText, { color: badgeText }]}
+                        >
+                          {statusLabel}
                         </Text>
                       </View>
                     </View>
-                    <View
-                      style={[styles.statusBadge, { backgroundColor: badgeBg }]}
-                    >
-                      <Text
-                        style={[styles.statusBadgeText, { color: badgeText }]}
+
+                    {itemImage && (
+                      <Image
+                        source={{ uri: itemImage }}
+                        style={styles.evidenceImage}
+                      />
+                    )}
+
+                    <Text style={styles.cardDesc} numberOfLines={2}>
+                      {itemDescription}
+                    </Text>
+
+                    <View style={styles.actionRow}>
+                      <TouchableOpacity
+                        style={styles.viewBtn}
+                        onPress={() =>
+                          router.push({
+                            pathname: "/(admin)/complaints/[complaintId]",
+                            params: {
+                              complaintId: reviewMode
+                                ? reviewItem!.compId
+                                : normalItem!.id,
+                            },
+                          } as never)
+                        }
                       >
-                        {statusLabel}
-                      </Text>
+                        <Text style={styles.viewBtnText}>View Details</Text>
+                      </TouchableOpacity>
+                      {reviewMode ? (
+                        <>
+                          <TouchableOpacity
+                            style={styles.acceptBtn}
+                            onPress={() =>
+                              handleAcceptReviewComplaint(reviewItem!.compId)
+                            }
+                            disabled={isBusy}
+                          >
+                            <MaterialIcons
+                              name="check"
+                              size={16}
+                              color="#FFFFFF"
+                            />
+                            <Text style={styles.acceptBtnText}>
+                              {isBusy ? "Processing" : "Accept"}
+                            </Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            style={styles.deleteBtn}
+                            onPress={() =>
+                              handleDeleteReviewComplaint(reviewItem!.compId)
+                            }
+                            disabled={isBusy}
+                          >
+                            <MaterialIcons
+                              name="delete-outline"
+                              size={16}
+                              color="#B42318"
+                            />
+                            <Text style={styles.deleteBtnText}>
+                              {isBusy ? "Processing" : "Delete"}
+                            </Text>
+                          </TouchableOpacity>
+                        </>
+                      ) : (
+                        normalItem!.status === "IN PROGRESS" && (
+                          <TouchableOpacity style={styles.trackBtn}>
+                            <Text style={styles.trackBtnText}>Track Team</Text>
+                          </TouchableOpacity>
+                        )
+                      )}
+                      {!reviewMode && normalItem!.status === "RESOLVED" && (
+                        <TouchableOpacity style={styles.closedBtn} disabled>
+                          <Text style={styles.closedBtnText}>Case Closed</Text>
+                        </TouchableOpacity>
+                      )}
                     </View>
                   </View>
-
-                  {item.image && (
-                    <Image
-                      source={{ uri: item.image }}
-                      style={styles.evidenceImage}
-                    />
-                  )}
-
-                  <Text style={styles.cardDesc} numberOfLines={2}>
-                    {item.description}
-                  </Text>
-
-                  <View style={styles.actionRow}>
-                    <TouchableOpacity
-                      style={styles.viewBtn}
-                      onPress={() =>
-                        router.push({
-                          pathname: "/(admin)/complaints/[complaintId]",
-                          params: { complaintId: `CMP-${item.id.padStart(4, "0")}` },
-                        } as never)
-                      }
-                    >
-                      <Text style={styles.viewBtnText}>View Details</Text>
-                    </TouchableOpacity>
-                    {reviewMode ? (
-                      <>
-                        <TouchableOpacity
-                          style={styles.acceptBtn}
-                          onPress={() => removeFromReview(item.id)}
-                        >
-                          <MaterialIcons name="check" size={16} color="#FFFFFF" />
-                          <Text style={styles.acceptBtnText}>Accept</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          style={styles.deleteBtn}
-                          onPress={() => removeFromReview(item.id)}
-                        >
-                          <MaterialIcons name="delete-outline" size={16} color="#B42318" />
-                          <Text style={styles.deleteBtnText}>Delete</Text>
-                        </TouchableOpacity>
-                      </>
-                    ) : item.status === "IN PROGRESS" && (
-                      <TouchableOpacity style={styles.trackBtn}>
-                        <Text style={styles.trackBtnText}>Track Team</Text>
-                      </TouchableOpacity>
-                    )}
-                    {!reviewMode && item.status === "RESOLVED" && (
-                      <TouchableOpacity style={styles.closedBtn} disabled>
-                        <Text style={styles.closedBtnText}>Case Closed</Text>
-                      </TouchableOpacity>
-                    )}
-                  </View>
-                </View>
-              );
-            })
+                );
+              },
+            )
           )}
+          {reviewMode && reviewError ? (
+            <Text style={[styles.emptyDesc, { color: "#B42318" }]}>
+              {reviewError}
+            </Text>
+          ) : null}
         </View>
       </ScrollView>
-
-      {/* Floating Action Button */}
-      <TouchableOpacity style={styles.fab}>
-        <MaterialIcons
-          name="add"
-          size={28}
-          color={theme.onSecondaryContainer}
-        />
-      </TouchableOpacity>
 
       <AdminBottomNav activeRoute="complaints" />
     </View>
@@ -516,20 +1010,14 @@ const styles = StyleSheet.create({
     color: theme.onSurfaceVariant,
     // No fontFamily - uses system default (SF Pro/Roboto)
   },
-  fab: {
-    position: "absolute",
-    right: 16,
-    bottom: 80,
-    backgroundColor: theme.secondaryContainer,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    justifyContent: "center",
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 6,
+  successText: {
+    fontSize: 14,
+    color: "#027A48",
+    fontWeight: "600",
+  },
+  errorText: {
+    fontSize: 14,
+    color: "#B42318",
+    fontWeight: "600",
   },
 });
