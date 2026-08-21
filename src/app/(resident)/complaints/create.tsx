@@ -6,6 +6,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { categorizeComplaint } from '../../../services/ai.service';
 import { createComplaint } from '../../../services/resident.service';
 import { ActivityIndicator } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 export default function NewComplaintForm() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -97,6 +98,8 @@ export default function NewComplaintForm() {
 
         const category = await categorizeComplaint(title, description, base64Images);
 
+        const acc_id = await AsyncStorage.getItem('acc_id');
+
         await createComplaint({
           title,
           description,
@@ -104,6 +107,7 @@ export default function NewComplaintForm() {
           longitude: selectedLocation!.lng,
           category,
           images: photos,
+          acc_id: acc_id || undefined,
         });
 
         Alert.alert(
