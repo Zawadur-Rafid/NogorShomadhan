@@ -8,6 +8,7 @@
 - `account_role`: ENUM ('resident', 'admin', 'authority')
 - `complaint_status`: ENUM ('unverified', 'pending', 'in progress', 'resolved')
 - `complaint_category`: ENUM ('Road Damage', 'Garbage & Waste', 'Drainage & Waterlogging', 'Streetlight & Electrical', 'Water Supply', 'Sanitation & Public Toilets', 'Traffic & Illegal Parking', 'Public Safety & Encroachment', 'Noise & Environmental Pollution', 'Parks & Public Spaces', 'Animal-Related Issues', 'Other')
+- `forum_post_type`: ENUM ('Announcement', 'Update', 'Alert')
 
 ## Tables
 
@@ -106,3 +107,28 @@ Purpose:
 - resolution_note: TEXT (NULL)
 - final_budget: NUMERIC(12,2) (NULL)
 - final_deadline: TIMESTAMPTZ (NULL)
+
+### `forum_posts`
+- `post_id`: UUID (Primary Key, Default: gen_random_uuid())
+- `acc_id`: UUID (Foreign Key to account.acc_id, ON DELETE CASCADE, NOT NULL)
+- `title`: TEXT (NOT NULL)
+- `body`: TEXT (NOT NULL)
+- `status`: forum_post_type (Default: 'Update', NOT NULL)
+- `is_official`: BOOLEAN (Default: false, NOT NULL)
+- `created_at`: TIMESTAMPTZ (Default: CURRENT_TIMESTAMP, NOT NULL)
+
+Purpose:
+- Stores forum posts, announcements, updates, and community alerts across all stakeholders.
+
+### `forum_comments`
+- `comment_id`: UUID (Primary Key, Default: gen_random_uuid())
+- `post_id`: UUID (Foreign Key to forum_posts.post_id, ON DELETE CASCADE, NOT NULL)
+- `acc_id`: UUID (Foreign Key to account.acc_id, ON DELETE CASCADE, NOT NULL - secondary key linking the resident/user)
+- `parent_comment_id`: UUID (Foreign Key to forum_comments.comment_id, ON DELETE CASCADE, NULL)
+- `content`: TEXT (NOT NULL)
+- `is_official`: BOOLEAN (Default: false, NOT NULL)
+- `created_at`: TIMESTAMPTZ (Default: CURRENT_TIMESTAMP, NOT NULL)
+
+Purpose:
+- Stores comments on forum posts and direct replies to specific comments. Supports admin moderation/deletion.
+
