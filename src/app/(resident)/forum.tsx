@@ -1,5 +1,5 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
   ScrollView,
@@ -9,18 +9,22 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import BottomNav from "@/components/BottomNav";
+import { forumService } from "@/services/forum.service";
 
 type ForumStatus = "Announcement" | "Update" | "Alert";
-type ForumComment = {
+interface ForumCommentUI {
   id: string;
   author: string;
   initials: string;
   text: string;
   time: string;
-};
-type ForumPost = {
+  parent_comment_id?: string | null;
+  official?: boolean;
+}
+interface ForumPostUI {
   id: string;
   author: string;
   initials: string;
@@ -28,10 +32,11 @@ type ForumPost = {
   title: string;
   body: string;
   time: string;
-  comments: ForumComment[];
-};
+  official?: boolean;
+  comments: ForumCommentUI[];
+}
 
-const initialPosts: ForumPost[] = [
+const initialPosts: ForumPostUI[] = [
   {
     id: "post-1",
     author: "Nusrat Jahan",
@@ -47,6 +52,7 @@ const initialPosts: ForumPost[] = [
         initials: "CA",
         text: "The maintenance team has been informed and is inspecting the line.",
         time: "10 min ago",
+        official: true,
       },
     ],
   },
@@ -76,6 +82,7 @@ const initialPosts: ForumPost[] = [
     title: "Weekend road maintenance",
     body: "Road resurfacing near the east gate will take place this Friday from 9 AM to 4 PM.",
     time: "Yesterday",
+    official: true,
     comments: [],
   },
 ];
@@ -87,65 +94,130 @@ const statusStyle: Record<ForumStatus, { background: string; color: string }> = 
 };
 
 export default function ResidentForumScreen() {
-  const [posts, setPosts] = useState(initialPosts);
+  const [posts, setPosts] = useState<ForumPostUI[]>(initialPosts);
   const [postTitle, setPostTitle] = useState("");
   const [postBody, setPostBody] = useState("");
   const [commentDrafts, setCommentDrafts] = useState<Record<string, string>>({});
+  const [replyTarget, setReplyTarget] = useState<Record<string, string | null>>({});
   const [activeFilter, setActiveFilter] = useState<ForumStatus | "All">("All");
+
+  const loadPostsFromDb = async () => {
+    try {
+      const dbPosts = await forumService.fetchPosts();
+      if (dbPosts && dbPosts.length > 0) {
+        const formatted: ForumPostUI[] = dbPosts.map((p) => ({
+          id: p.post_id,
+          author: p.account?.full_name || (p.is_official ? "Authority" : "Resident"),
+          initials: getInitials(p.account?.full_name || (p.is_official ? "Authority" : "Resident")),
+          status: p.status,
+          title: p.title,
+          body: p.body,
+          time: formatTimeAgo(p.created_at),
+          official: p.is_official,
+          comments: (p.comments || []).map((c) => ({
+            id: c.comment_id,
+            author: c.account?.full_name || (c.is_official ? "Authority" : "Resident"),
+            initials: getInitials(c.account?.full_name || (c.is_official ? "Authority" : "Resident")),
+            text: c.content,
+            time: formatTimeAgo(c.created_at),
+            parent_comment_id: c.parent_comment_id,
+            official: c.is_official,
+          })),
+        }));
+        setPosts(formatted);
+      }
+    } catch (e) {
+      console.warn("Could not load posts from Supabase:", e);
+    }
+  };
+
+  useEffect(() => {
+    loadPostsFromDb();
+  }, []);
 
   const visiblePosts = useMemo(
     () => (activeFilter === "All" ? posts : posts.filter((post) => post.status === activeFilter)),
     [activeFilter, posts],
   );
 
-  const publishPost = () => {
-    if (!postTitle.trim() || !postBody.trim()) {
-      return;
-    }
+  const publishPost = async () => {
+    if (!postTitle.trim() || !postBody.trim()) return;
 
-    setPosts((current) => [
-      {
-        id: `post-${Date.now()}`,
-        author: "Resident",
-        initials: "RS",
-        status: "Update",
-        title: postTitle.trim(),
-        body: postBody.trim(),
-        time: "Just now",
-        comments: [],
-      },
-      ...current,
-    ]);
+    const title = postTitle.trim();
+    const body = postBody.trim();
     setPostTitle("");
     setPostBody("");
+
+    const newPostUI: ForumPostUI = {
+      id: `post-${Date.now()}`,
+      author: "Resident",
+      initials: "RS",
+      status: "Update",
+      title,
+      body,
+      time: "Just now",
+      comments: [],
+    };
+    setPosts((current) => [newPostUI, ...current]);
+
+    try {
+      const accId = (await AsyncStorage.getItem("acc_id")) || "00000000-0000-0000-0000-000000000000";
+      await forumService.createPost({
+        acc_id: accId,
+        title,
+        body,
+        status: "Update",
+        is_official: false,
+      });
+      loadPostsFromDb();
+    } catch (e) {
+      console.log("Local resident post created; database sync skipped.");
+    }
   };
 
-  const addComment = (postId: string) => {
+  const addComment = async (postId: string) => {
     const text = commentDrafts[postId]?.trim();
-    if (!text) {
-      return;
-    }
+    if (!text) return;
+
+    const parentId = replyTarget[postId] || null;
+
+    setCommentDrafts((current) => ({ ...current, [postId]: "" }));
+    setReplyTarget((current) => ({ ...current, [postId]: null }));
+
+    const newCommentUI: ForumCommentUI = {
+      id: `comment-${Date.now()}`,
+      author: "Resident",
+      initials: "RS",
+      text,
+      time: "Just now",
+      parent_comment_id: parentId,
+      official: false,
+    };
 
     setPosts((current) =>
       current.map((post) =>
         post.id === postId
           ? {
               ...post,
-              comments: [
-                ...post.comments,
-                {
-                  id: `comment-${Date.now()}`,
-                  author: "Resident",
-                  initials: "RS",
-                  text,
-                  time: "Just now",
-                },
-              ],
+              comments: [...post.comments, newCommentUI],
             }
           : post,
       ),
     );
-    setCommentDrafts((current) => ({ ...current, [postId]: "" }));
+
+    try {
+      const accId = (await AsyncStorage.getItem("acc_id")) || "00000000-0000-0000-0000-000000000000";
+      await forumService.createComment({
+        post_id: postId,
+        acc_id: accId,
+        parent_comment_id: parentId,
+        content: text,
+        is_official: false,
+      });
+      loadPostsFromDb();
+    } catch (e) {
+      console.log("Local resident comment added; database sync skipped.");
+    }
   };
 
   return (
@@ -155,7 +227,7 @@ export default function ResidentForumScreen() {
           <Text style={styles.kicker}>Community Forum</Text>
           <Text style={styles.title}>Resident discussions</Text>
           <Text style={styles.subtitle}>
-            Share updates, ask questions, and keep up with neighbourhood announcements.
+            Share updates, ask questions, comment, and reply to neighborhood discussions.
           </Text>
         </View>
 
@@ -228,33 +300,69 @@ export default function ResidentForumScreen() {
             </View>
 
             {post.comments.map((comment) => (
-              <View key={comment.id} style={styles.comment}>
+              <View
+                key={comment.id}
+                style={[styles.comment, comment.parent_comment_id && styles.replyComment]}
+              >
                 <View style={styles.commentAvatar}>
                   <Text style={styles.commentAvatarText}>{comment.initials}</Text>
                 </View>
                 <View style={styles.commentCopy}>
                   <View style={styles.commentTop}>
                     <Text style={styles.commentAuthor}>{comment.author}</Text>
+                    {comment.official ? (
+                      <View style={styles.officialBadge}>
+                        <Text style={styles.officialBadgeText}>Official</Text>
+                      </View>
+                    ) : null}
                     <Text style={styles.commentTime}>{comment.time}</Text>
                   </View>
                   <Text style={styles.commentText}>{comment.text}</Text>
+
+                  {/* Reply Action */}
+                  <TouchableOpacity
+                    style={styles.replyAction}
+                    onPress={() =>
+                      setReplyTarget((current) => ({
+                        ...current,
+                        [post.id]: comment.id,
+                      }))
+                    }
+                  >
+                    <Ionicons name="return-down-forward" size={12} color="#00475E" />
+                    <Text style={styles.replyActionText}>Reply</Text>
+                  </TouchableOpacity>
                 </View>
               </View>
             ))}
 
             <View style={styles.commentComposer}>
-              <TextInput
-                value={commentDrafts[post.id] ?? ""}
-                onChangeText={(text) =>
-                  setCommentDrafts((current) => ({ ...current, [post.id]: text }))
-                }
-                placeholder="Add a reply..."
-                placeholderTextColor="#98A2B3"
-                style={styles.commentInput}
-              />
-              <TouchableOpacity onPress={() => addComment(post.id)} style={styles.commentSend}>
-                <Ionicons name="send" size={16} color="#FFFFFF" />
-              </TouchableOpacity>
+              {replyTarget[post.id] && (
+                <View style={styles.replyingBanner}>
+                  <Text style={styles.replyingText}>Replying to comment</Text>
+                  <TouchableOpacity
+                    onPress={() => setReplyTarget((current) => ({ ...current, [post.id]: null }))}
+                  >
+                    <Ionicons name="close-circle" size={14} color="#667085" />
+                  </TouchableOpacity>
+                </View>
+              )}
+              <View style={styles.composerInputRow}>
+                <TextInput
+                  value={commentDrafts[post.id] ?? ""}
+                  onChangeText={(text) =>
+                    setCommentDrafts((current) => ({ ...current, [post.id]: text }))
+                  }
+                  placeholder={
+                    replyTarget[post.id] ? "Write a reply to comment..." : "Add a reply..."
+                  }
+                  placeholderTextColor="#98A2B3"
+                  style={styles.commentInput}
+                />
+                <TouchableOpacity onPress={() => addComment(post.id)} style={styles.commentSend}>
+                  <Ionicons name="send" size={16} color="#FFFFFF" />
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
         ))}
@@ -270,6 +378,27 @@ export default function ResidentForumScreen() {
       <BottomNav activeRoute="forum" />
     </SafeAreaView>
   );
+}
+
+function getInitials(name: string): string {
+  if (!name) return "U";
+  const parts = name.trim().split(" ");
+  if (parts.length >= 2) return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+  return name.substring(0, 2).toUpperCase();
+}
+
+function formatTimeAgo(timestamp: string): string {
+  if (!timestamp) return "Just now";
+  const date = new Date(timestamp);
+  if (isNaN(date.getTime())) return timestamp;
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  if (diffMins < 1) return "Just now";
+  if (diffMins < 60) return `${diffMins} min ago`;
+  const diffHours = Math.floor(diffMins / 60);
+  if (diffHours < 24) return `${diffHours} hr ago`;
+  return `${Math.floor(diffHours / 24)} days ago`;
 }
 
 const styles = StyleSheet.create({
@@ -305,14 +434,22 @@ const styles = StyleSheet.create({
   commentHeading: { flexDirection: "row", alignItems: "center", gap: 5, marginTop: 16, marginBottom: 8 },
   commentHeadingText: { color: "#667085", fontSize: 12, fontWeight: "600" },
   comment: { flexDirection: "row", alignItems: "flex-start", gap: 8, marginTop: 8, padding: 9, borderRadius: 9, backgroundColor: "#F7F8FA" },
+  replyComment: { marginLeft: 20, backgroundColor: "#EFF6FF", borderLeftWidth: 2, borderLeftColor: "#00475E" },
   commentAvatar: { width: 27, height: 27, alignItems: "center", justifyContent: "center", borderRadius: 14, backgroundColor: "#EAF3FF" },
   commentAvatarText: { color: "#304B6B", fontSize: 9, fontWeight: "700" },
   commentCopy: { flex: 1 },
   commentTop: { flexDirection: "row", alignItems: "center", gap: 6 },
   commentAuthor: { color: "#344054", fontSize: 11, fontWeight: "700" },
+  officialBadge: { backgroundColor: "#E0F2FE", paddingHorizontal: 5, paddingVertical: 1, borderRadius: 4 },
+  officialBadgeText: { color: "#0369A1", fontSize: 9, fontWeight: "700" },
   commentTime: { color: "#98A2B3", fontSize: 10 },
   commentText: { marginTop: 3, color: "#475467", fontSize: 12, lineHeight: 17 },
-  commentComposer: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 12 },
+  replyAction: { flexDirection: "row", alignItems: "center", gap: 3, marginTop: 4 },
+  replyActionText: { color: "#00475E", fontSize: 10, fontWeight: "700" },
+  commentComposer: { gap: 6, marginTop: 12 },
+  replyingBanner: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", backgroundColor: "#EAF3FF", paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6 },
+  replyingText: { color: "#1D4ED8", fontSize: 11, fontWeight: "600" },
+  composerInputRow: { flexDirection: "row", alignItems: "center", gap: 8 },
   commentInput: { flex: 1, minHeight: 38, paddingHorizontal: 11, borderWidth: 1, borderColor: "#D0D5DD", borderRadius: 8, color: "#191C1E", fontSize: 12 },
   commentSend: { width: 38, height: 38, alignItems: "center", justifyContent: "center", borderRadius: 8, backgroundColor: "#00475E" },
   empty: { minHeight: 160, alignItems: "center", justifyContent: "center", gap: 8 },
