@@ -1,4 +1,4 @@
-﻿import Ionicons from "@expo/vector-icons/Ionicons";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
@@ -12,7 +12,6 @@ import {
 
 import AdminBottomNav from "@/components/AdminBottomNav";
 import MapViewComponent from "@/components/MapView";
-import { dummyComplaints } from "@/components/store/store_complaint";
 import { supabase } from "@/lib/supabase";
 
 const statusTheme = {
@@ -78,10 +77,6 @@ export default function AdminComplaintDetails() {
   const router = useRouter();
   const { complaintId } = useLocalSearchParams<{ complaintId?: string }>();
   const complaintIdValue = complaintId ?? "";
-  const isDbComplaintId =
-    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
-      complaintIdValue,
-    );
 
   const [dbComplaint, setDbComplaint] = useState<DbComplaintDetails | null>(
     null,
@@ -89,19 +84,11 @@ export default function AdminComplaintDetails() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const recordId =
-    complaintIdValue.replace("CMP-", "").replace(/^0+/, "") ?? "";
-  const fallbackComplaint = dummyComplaints.find(
-    (item) => item.id === recordId,
-  );
-
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
   useEffect(() => {
     const fetchComplaint = async () => {
-      if (!isDbComplaintId) {
-        return;
-      }
+      if (!complaintIdValue) return;
 
       setLoading(true);
       setError(null);
@@ -195,7 +182,7 @@ export default function AdminComplaintDetails() {
     };
 
     void fetchComplaint();
-  }, [complaintIdValue, isDbComplaintId]);
+  }, [complaintIdValue]);
 
   const complaint = dbComplaint
     ? {
@@ -218,9 +205,9 @@ export default function AdminComplaintDetails() {
             ? "Resident uploaded photo evidence"
             : "No image evidence uploaded",
       }
-    : fallbackComplaint;
+    : null;
 
-  if (isDbComplaintId && loading) {
+  if (loading) {
     return (
       <View style={styles.page}>
         <View style={styles.empty}>
@@ -249,7 +236,7 @@ export default function AdminComplaintDetails() {
     );
   }
 
-  if (isDbComplaintId && error) {
+  if (error) {
     return (
       <View style={styles.page}>
         <View style={styles.empty}>

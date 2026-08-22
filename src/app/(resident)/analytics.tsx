@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -6,29 +6,45 @@ import {
   ScrollView,
   TouchableOpacity,
   Dimensions,
+  ActivityIndicator,
+  Alert
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { PieChart, BarChart } from 'react-native-chart-kit';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import TopNav from '../../components/TopNav';
 import BottomNav from '../../components/BottomNav';
-import { dummyComplaints } from '../../components/store/store_complaint';
+import { getAnalyticsData } from '../../services/resident.service';
 
 const screenWidth = Dimensions.get('window').width;
 
 export default function Analytics() {
   const [filter, setFilter] = useState<'ALL' | 'MY'>('ALL');
+  const [data, setData] = useState<{all: any[], my: any[]}>({ all: [], my: [] });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const analytics = await getAnalyticsData();
+        setData(analytics);
+      } catch (error) {
+        if (error instanceof Error) Alert.alert('Error', error.message);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadData();
+  }, []);
 
   // Filter complaints based on the selected tab
-  const activeComplaints = filter === 'ALL'
-    ? dummyComplaints
-    : dummyComplaints.filter(c => c.isMyComplaint);
+  const activeComplaints = filter === 'ALL' ? data.all : data.my;
 
   // Compute stats
   const total = activeComplaints.length;
-  const pending = activeComplaints.filter(c => c.status === 'PENDING').length;
-  const inProgress = activeComplaints.filter(c => c.status === 'IN PROGRESS').length;
-  const resolved = activeComplaints.filter(c => c.status === 'RESOLVED').length;
+  const pending = activeComplaints.filter(c => c.status.toUpperCase() === 'PENDING' || c.status.toUpperCase() === 'UNVERIFIED').length;
+  const inProgress = activeComplaints.filter(c => c.status.toUpperCase() === 'IN PROGRESS').length;
+  const resolved = activeComplaints.filter(c => c.status.toUpperCase() === 'RESOLVED').length;
 
   // Prepare data for Pie Chart (Status Distribution)
   const pieData = [
@@ -103,7 +119,13 @@ export default function Analytics() {
           <Text style={styles.subtitle}>Track complaint statistics</Text>
         </View>
 
-        {/* Custom Tab Switcher */}
+        {loading ? (
+          <View style={{ padding: 20, alignItems: 'center' }}>
+            <ActivityIndicator size="large" color="#23435D" />
+          </View>
+        ) : (
+          <>
+            {/* Custom Tab Switcher */}
         <View style={styles.tabContainer}>
           <TouchableOpacity
             style={[styles.tab, filter === 'ALL' && styles.activeTab]}
@@ -196,6 +218,8 @@ export default function Analytics() {
             </View>
           )}
         </View>
+          </>
+        )}
         
         {/* Extra padding at the bottom for scroll clearance */}
         <View style={{ height: 40 }} />

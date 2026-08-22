@@ -1,3 +1,4 @@
+import React, { useState, useEffect } from "react";
 import {
   FlatList,
   ScrollView,
@@ -6,6 +7,7 @@ import {
   TouchableOpacity,
   View,
   Image,
+  Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Ionicons from "@expo/vector-icons/Ionicons";
@@ -14,11 +16,28 @@ import MapViewComponent from "../../components/MapView";
 import TopNav from "../../components/TopNav";
 import BottomNav from "../../components/BottomNav";
 
-import { dummyComplaints as complaints } from "../../components/store/store_complaint";
+import { getDashboardData, DashboardData } from "../../services/resident.service";
 
 export default function Dashboard() {
   const router = useRouter();
-  
+  const [data, setData] = useState<DashboardData | null>(null);
+
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const dashboardData = await getDashboardData();
+        setData(dashboardData);
+      } catch (error) {
+        if (error instanceof Error) Alert.alert("Error", error.message);
+      }
+    }
+    loadData();
+  }, []);
+
+  const stats = data?.stats || { total: 0, pending: 0, inProgress: 0, resolved: 0 };
+  const recentComplaints = data?.recentComplaints || [];
+  const mapComplaints = data?.mapComplaints || [];
+
   const styles = StyleSheet.create({
     container: {
       flex: 1,
@@ -414,14 +433,14 @@ export default function Dashboard() {
           <View style={styles.whiteCard}>
             <Ionicons name="document-text-outline" size={18} color="#3B82F6" />
             <Text style={styles.cardLabel}>Total Issues</Text>
-            <Text style={styles.cardNumber}>12</Text>
+            <Text style={styles.cardNumber}>{stats.total}</Text>
           </View>
           <View style={[styles.whiteCard, { backgroundColor: "#FFF1F1" }]}>
             <Ionicons name="sad-outline" size={18} color="#EF4444" />
             <Text style={[styles.cardLabel, { color: "#EF4444" }]}>
               Pending
             </Text>
-            <Text style={[styles.cardNumber, { color: "#EF4444" }]}>3</Text>
+            <Text style={[styles.cardNumber, { color: "#EF4444" }]}>{stats.pending}</Text>
           </View>
         </View>
 
@@ -431,7 +450,7 @@ export default function Dashboard() {
             <Text style={[styles.cardLabel, { color: "#C67B00" }]}>
               In Progress
             </Text>
-            <Text style={[styles.cardNumber, { color: "#C67B00" }]}>5</Text>
+            <Text style={[styles.cardNumber, { color: "#C67B00" }]}>{stats.inProgress}</Text>
           </View>
           <View style={[styles.whiteCard, { backgroundColor: "#EEF6FF" }]}>
             <Ionicons
@@ -442,7 +461,7 @@ export default function Dashboard() {
             <Text style={[styles.cardLabel, { color: "#2563EB" }]}>
               Resolved
             </Text>
-            <Text style={[styles.cardNumber, { color: "#2563EB" }]}>4</Text>
+            <Text style={[styles.cardNumber, { color: "#2563EB" }]}>{stats.resolved}</Text>
           </View>
         </View>
 
@@ -456,7 +475,7 @@ export default function Dashboard() {
 
         <FlatList
           scrollEnabled={false}
-          data={complaints.slice(0, 3)}
+          data={recentComplaints}
           keyExtractor={(item) => item.id}
           renderItem={renderComplaint}
         />
@@ -472,7 +491,7 @@ export default function Dashboard() {
         {/* Map */}
         <View style={styles.mapCard}>
           <MapViewComponent 
-            locations={complaints}
+            locations={mapComplaints}
             onLocationPress={(loc) => router.push(`/(resident)/complaints/${loc.id}`)}
           />
         </View>

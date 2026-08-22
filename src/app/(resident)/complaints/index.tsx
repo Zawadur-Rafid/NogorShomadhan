@@ -1,5 +1,5 @@
 import { MaterialIcons, Ionicons } from "@expo/vector-icons";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import {
   ScrollView,
   StyleSheet,
@@ -7,9 +7,10 @@ import {
   TouchableOpacity,
   View,
   Image,
+  Alert
 } from "react-native";
 import { useRouter } from "expo-router";
-import { dummyComplaints } from "@/components/store/store_complaint";
+import { getFeedComplaints } from "@/services/resident.service";
 
 type StatusFilter = "All" | "Pending" | "In Progress" | "Resolved";
 
@@ -51,9 +52,24 @@ export default function ResidentAllComplaintsScreen() {
   const [activeStatusFilter, setActiveStatusFilter] = useState<StatusFilter>("All");
   const [activeCategoryFilter, setActiveCategoryFilter] = useState<string>("All Categories");
   const [upvotedComplaints, setUpvotedComplaints] = useState<Set<string>>(new Set());
+  const [complaints, setComplaints] = useState<any[]>([]);
+
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const data = await getFeedComplaints();
+        setComplaints(data);
+      } catch (error) {
+        if (error instanceof Error) {
+          Alert.alert("Error", error.message);
+        }
+      }
+    }
+    loadData();
+  }, []);
 
   const filteredComplaints = useMemo(() => {
-    return dummyComplaints.filter((complaint) => {
+    return complaints.filter((complaint) => {
       const matchStatus =
         activeStatusFilter === "All" ||
         complaint.status.toUpperCase() === activeStatusFilter.toUpperCase();
@@ -62,7 +78,7 @@ export default function ResidentAllComplaintsScreen() {
         complaint.category === activeCategoryFilter;
       return matchStatus && matchCategory;
     });
-  }, [activeStatusFilter, activeCategoryFilter]);
+  }, [activeStatusFilter, activeCategoryFilter, complaints]);
 
   const handleOpenDetails = (id: string) => {
     router.push({
