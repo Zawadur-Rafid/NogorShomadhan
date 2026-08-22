@@ -1,5 +1,5 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   ScrollView,
   StyleSheet,
@@ -10,21 +10,24 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import AuthorityPageHeader from '@/components/authority/authority-page-header';
+import { forumService } from '@/services/forum.service';
 
 type ForumStatus = 'Announcement' | 'Update' | 'Alert';
 
-type ForumComment = {
+type ForumCommentUI = {
   id: string;
   author: string;
   initials: string;
   text: string;
   time: string;
+  parent_comment_id?: string | null;
   official?: boolean;
 };
 
-type ForumPost = {
+type ForumPostUI = {
   id: string;
   author: string;
   initials: string;
@@ -33,10 +36,10 @@ type ForumPost = {
   body: string;
   time: string;
   official?: boolean;
-  comments: ForumComment[];
+  comments: ForumCommentUI[];
 };
 
-const initialPosts: ForumPost[] = [
+const initialPosts: ForumPostUI[] = [
   {
     id: 'post-1',
     author: 'Nusrat Jahan',
@@ -96,12 +99,47 @@ const statusTheme: Record<ForumStatus, { background: string; color: string }> = 
 export default function AuthorityForumScreen() {
   const { width } = useWindowDimensions();
   const wide = width >= 760;
-  const [posts, setPosts] = useState(initialPosts);
+  const [posts, setPosts] = useState<ForumPostUI[]>(initialPosts);
   const [postTitle, setPostTitle] = useState('');
   const [postBody, setPostBody] = useState('');
   const [postStatus, setPostStatus] = useState<ForumStatus>('Announcement');
   const [activeFilter, setActiveFilter] = useState<ForumStatus | 'All'>('All');
   const [replyDrafts, setReplyDrafts] = useState<Record<string, string>>({});
+  const [replyTarget, setReplyTarget] = useState<Record<string, string | null>>({});
+
+  const loadPostsFromDb = async () => {
+    try {
+      const dbPosts = await forumService.fetchPosts();
+      if (dbPosts && dbPosts.length > 0) {
+        const formatted: ForumPostUI[] = dbPosts.map((p) => ({
+          id: p.post_id,
+          author: p.account?.full_name || (p.is_official ? 'Community Authority' : 'Resident'),
+          initials: getInitials(p.account?.full_name || (p.is_official ? 'Authority' : 'Resident')),
+          status: p.status,
+          title: p.title,
+          body: p.body,
+          time: formatTimeAgo(p.created_at),
+          official: p.is_official,
+          comments: (p.comments || []).map((c) => ({
+            id: c.comment_id,
+            author: c.account?.full_name || (c.is_official ? 'Community Authority' : 'Resident'),
+            initials: getInitials(c.account?.full_name || (c.is_official ? 'Authority' : 'Resident')),
+            text: c.content,
+            time: formatTimeAgo(c.created_at),
+            parent_comment_id: c.parent_comment_id,
+            official: c.is_official,
+          })),
+        }));
+        setPosts(formatted);
+      }
+    } catch (e) {
+      console.warn('Could not load posts from Supabase:', e);
+    }
+  };
+
+  useEffect(() => {
+    loadPostsFromDb();
+  }, []);
 
   const visiblePosts = useMemo(
     () => (activeFilter === 'All' ? posts : posts.filter((post) => post.status === activeFilter)),
@@ -114,55 +152,85 @@ export default function AuthorityForumScreen() {
     0,
   );
 
-  const publishPost = () => {
+  const publishPost = async () => {
     const title = postTitle.trim();
     const body = postBody.trim();
-
     if (!title || !body) return;
 
-    setPosts((current) => [
-      {
-        id: 'post-' + Date.now(),
-        author: 'Community Authority',
-        initials: 'CA',
-        status: postStatus,
-        title,
-        body,
-        time: 'Just now',
-        official: true,
-        comments: [],
-      },
-      ...current,
-    ]);
     setPostTitle('');
     setPostBody('');
+
+    const newPostUI: ForumPostUI = {
+      id: 'post-' + Date.now(),
+      author: 'Community Authority',
+      initials: 'CA',
+      status: postStatus,
+      title,
+      body,
+      time: 'Just now',
+      official: true,
+      comments: [],
+    };
+    setPosts((current) => [newPostUI, ...current]);
+
+    try {
+      const accId = (await AsyncStorage.getItem('acc_id')) || '00000000-0000-0000-0000-000000000000';
+      await forumService.createPost({
+        acc_id: accId,
+        title,
+        body,
+        status: postStatus,
+        is_official: true,
+      });
+      loadPostsFromDb();
+    } catch (e) {
+      console.log('Local authority post created; database sync skipped.');
+    }
   };
 
-  const addReply = (postId: string) => {
+  const addReply = async (postId: string) => {
     const text = replyDrafts[postId]?.trim();
     if (!text) return;
+
+    const parentId = replyTarget[postId] || null;
+
+    setReplyDrafts((current) => ({ ...current, [postId]: '' }));
+    setReplyTarget((current) => ({ ...current, [postId]: null }));
+
+    const newCommentUI: ForumCommentUI = {
+      id: 'comment-' + Date.now(),
+      author: 'Community Authority',
+      initials: 'CA',
+      text,
+      time: 'Just now',
+      parent_comment_id: parentId,
+      official: true,
+    };
 
     setPosts((current) =>
       current.map((post) =>
         post.id === postId
           ? {
               ...post,
-              comments: [
-                ...post.comments,
-                {
-                  id: 'comment-' + Date.now(),
-                  author: 'Community Authority',
-                  initials: 'CA',
-                  text,
-                  time: 'Just now',
-                  official: true,
-                },
-              ],
+              comments: [...post.comments, newCommentUI],
             }
           : post,
       ),
     );
-    setReplyDrafts((current) => ({ ...current, [postId]: '' }));
+
+    try {
+      const accId = (await AsyncStorage.getItem('acc_id')) || '00000000-0000-0000-0000-000000000000';
+      await forumService.createComment({
+        post_id: postId,
+        acc_id: accId,
+        parent_comment_id: parentId,
+        content: text,
+        is_official: true,
+      });
+      loadPostsFromDb();
+    } catch (e) {
+      console.log('Local authority reply created; database sync skipped.');
+    }
   };
 
   const canPublish = Boolean(postTitle.trim() && postBody.trim());
@@ -183,7 +251,7 @@ export default function AuthorityForumScreen() {
               <Text style={styles.kicker}>COMMUNITY CONNECTION</Text>
               <Text style={styles.title}>Community Forum</Text>
               <Text style={styles.subtitle}>
-                Share verified updates, answer resident questions, and keep the community informed.
+                Share verified updates, answer resident questions, comment, and reply to community posts.
               </Text>
             </View>
             <View style={styles.introIcon}>
@@ -326,7 +394,14 @@ export default function AuthorityForumScreen() {
                 </View>
 
                 {post.comments.map((comment) => (
-                  <View key={comment.id} style={[styles.comment, comment.official && styles.officialComment]}>
+                  <View
+                    key={comment.id}
+                    style={[
+                      styles.comment,
+                      comment.official && styles.officialComment,
+                      comment.parent_comment_id && styles.replyComment,
+                    ]}
+                  >
                     <View style={[styles.commentAvatar, comment.official && styles.officialCommentAvatar]}>
                       <Text style={styles.commentAvatarText}>{comment.initials}</Text>
                     </View>
@@ -337,27 +412,55 @@ export default function AuthorityForumScreen() {
                         <Text style={styles.commentTime}>{comment.time}</Text>
                       </View>
                       <Text selectable style={styles.commentText}>{comment.text}</Text>
+
+                      {/* Authority reply action to specific comment */}
+                      <TouchableOpacity
+                        style={styles.replyAction}
+                        onPress={() =>
+                          setReplyTarget((current) => ({
+                            ...current,
+                            [post.id]: comment.id,
+                          }))
+                        }
+                      >
+                        <Ionicons name="return-down-forward" size={12} color="#2F6B5F" />
+                        <Text style={styles.replyActionText}>Reply to comment</Text>
+                      </TouchableOpacity>
                     </View>
                   </View>
                 ))}
 
                 <View style={styles.replyComposer}>
-                  <TextInput
-                    value={replyDrafts[post.id] ?? ''}
-                    onChangeText={(text) => setReplyDrafts((current) => ({ ...current, [post.id]: text }))}
-                    placeholder="Reply as Community Authority..."
-                    placeholderTextColor="#98A2B3"
-                    style={styles.replyInput}
-                    onSubmitEditing={() => addReply(post.id)}
-                  />
-                  <TouchableOpacity
-                    accessibilityLabel={'Reply to ' + post.title}
-                    disabled={!replyDrafts[post.id]?.trim()}
-                    onPress={() => addReply(post.id)}
-                    style={[styles.replyButton, !replyDrafts[post.id]?.trim() && styles.disabledReplyButton]}
-                  >
-                    <Ionicons name="send" size={15} color="#FFFFFF" />
-                  </TouchableOpacity>
+                  {replyTarget[post.id] && (
+                    <View style={styles.replyingBanner}>
+                      <Text style={styles.replyingText}>Replying to specific comment</Text>
+                      <TouchableOpacity
+                        onPress={() => setReplyTarget((current) => ({ ...current, [post.id]: null }))}
+                      >
+                        <Ionicons name="close-circle" size={14} color="#667085" />
+                      </TouchableOpacity>
+                    </View>
+                  )}
+                  <View style={styles.replyInputRow}>
+                    <TextInput
+                      value={replyDrafts[post.id] ?? ''}
+                      onChangeText={(text) => setReplyDrafts((current) => ({ ...current, [post.id]: text }))}
+                      placeholder={
+                        replyTarget[post.id] ? "Reply to comment..." : "Reply as Community Authority..."
+                      }
+                      placeholderTextColor="#98A2B3"
+                      style={styles.replyInput}
+                      onSubmitEditing={() => addReply(post.id)}
+                    />
+                    <TouchableOpacity
+                      accessibilityLabel={'Reply to ' + post.title}
+                      disabled={!replyDrafts[post.id]?.trim()}
+                      onPress={() => addReply(post.id)}
+                      style={[styles.replyButton, !replyDrafts[post.id]?.trim() && styles.disabledReplyButton]}
+                    >
+                      <Ionicons name="send" size={15} color="#FFFFFF" />
+                    </TouchableOpacity>
+                  </View>
                 </View>
               </View>
             ))}
@@ -399,488 +502,113 @@ function SummaryCard({
     </View>
   );
 }
+
+function getInitials(name: string): string {
+  if (!name) return 'U';
+  const parts = name.trim().split(' ');
+  if (parts.length >= 2) return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+  return name.substring(0, 2).toUpperCase();
+}
+
+function formatTimeAgo(timestamp: string): string {
+  if (!timestamp) return 'Just now';
+  const date = new Date(timestamp);
+  if (isNaN(date.getTime())) return timestamp;
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  if (diffMins < 1) return 'Just now';
+  if (diffMins < 60) return `${diffMins} min ago`;
+  const diffHours = Math.floor(diffMins / 60);
+  if (diffHours < 24) return `${diffHours} hr ago`;
+  return `${Math.floor(diffHours / 24)} days ago`;
+}
+
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: '#F7F8FA',
-  },
-  scrollContent: {
-    paddingBottom: 30,
-  },
-  contentContainer: {
-    width: '100%',
-    maxWidth: 960,
-    alignSelf: 'center',
-    padding: 16,
-    gap: 16,
-  },
-  intro: {
-    gap: 16,
-    padding: 18,
-    borderRadius: 16,
-    backgroundColor: '#23435D',
-    boxShadow: '0 5px 18px rgba(35, 67, 93, 0.14)',
-  },
-  introWide: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  introCopy: {
-    flex: 1,
-  },
-  kicker: {
-    color: '#BFD3DE',
-    fontSize: 10,
-    fontWeight: '800',
-    letterSpacing: 1,
-  },
-  title: {
-    marginTop: 5,
-    color: '#FFFFFF',
-    fontSize: 27,
-    fontWeight: '800',
-    letterSpacing: -0.4,
-  },
-  subtitle: {
-    maxWidth: 650,
-    marginTop: 6,
-    color: '#DCE8EE',
-    fontSize: 13,
-    lineHeight: 20,
-  },
-  introIcon: {
-    width: 58,
-    height: 58,
-    borderRadius: 29,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#2F6B5F',
-  },
-  summaryGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-  },
-  summaryCard: {
-    flex: 1,
-    minWidth: 150,
-    minHeight: 76,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    padding: 13,
-    borderRadius: 13,
-    borderWidth: 1,
-    borderColor: '#E2E8E5',
-    backgroundColor: '#FFFFFF',
-  },
-  summaryIcon: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#ECF5F2',
-  },
-  summaryValue: {
-    color: '#1F2937',
-    fontSize: 20,
-    fontWeight: '800',
-    fontVariant: ['tabular-nums'],
-  },
-  summaryLabel: {
-    marginTop: 1,
-    color: '#7B8491',
-    fontSize: 10,
-    fontWeight: '600',
-  },
-  composer: {
-    gap: 11,
-    padding: 17,
-    borderRadius: 15,
-    borderWidth: 1,
-    borderColor: '#D7E8E2',
-    backgroundColor: '#FFFFFF',
-    boxShadow: '0 2px 10px rgba(47, 107, 95, 0.06)',
-  },
-  composerHeading: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  composerIcon: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#ECF5F2',
-  },
-  composerHeadingCopy: {
-    flex: 1,
-  },
-  panelTitle: {
-    color: '#1F2937',
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  panelSubtitle: {
-    marginTop: 2,
-    color: '#7B8491',
-    fontSize: 10,
-  },
-  titleInput: {
-    minHeight: 44,
-    paddingHorizontal: 13,
-    borderWidth: 1,
-    borderColor: '#D5DCE1',
-    borderRadius: 10,
-    backgroundColor: '#FAFBFC',
-    color: '#1F2937',
-    fontSize: 13,
-  },
-  bodyInput: {
-    minHeight: 96,
-    padding: 13,
-    borderWidth: 1,
-    borderColor: '#D5DCE1',
-    borderRadius: 10,
-    backgroundColor: '#FAFBFC',
-    color: '#1F2937',
-    fontSize: 13,
-    lineHeight: 19,
-  },
-  composerFooter: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 12,
-  },
-  composerFooterMobile: {
-    alignItems: 'stretch',
-    flexDirection: 'column',
-  },
-  statusOptions: {
-    flex: 1,
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 7,
-  },
-  statusOption: {
-    paddingHorizontal: 10,
-    paddingVertical: 7,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#D5DCE1',
-    backgroundColor: '#FFFFFF',
-  },
-  statusOptionText: {
-    color: '#667085',
-    fontSize: 10,
-    fontWeight: '700',
-  },
-  publishButton: {
-    minHeight: 40,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 7,
-    paddingHorizontal: 15,
-    borderRadius: 20,
-    backgroundColor: '#2F6B5F',
-  },
-  disabledButton: {
-    opacity: 0.42,
-  },
-  publishText: {
-    color: '#FFFFFF',
-    fontSize: 11,
-    fontWeight: '800',
-  },
-  discussionHeading: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 12,
-    paddingTop: 2,
-  },
-  sectionTitle: {
-    color: '#1F2937',
-    fontSize: 18,
-    fontWeight: '700',
-  },
-  sectionSubtitle: {
-    marginTop: 3,
-    color: '#7B8491',
-    fontSize: 10,
-  },
-  liveBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 9,
-    paddingVertical: 6,
-    borderRadius: 14,
-    backgroundColor: '#ECF5F2',
-  },
-  liveDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#2F6B5F',
-  },
-  liveText: {
-    color: '#2F6B5F',
-    fontSize: 9,
-    fontWeight: '800',
-  },
-  filters: {
-    gap: 8,
-  },
-  filter: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 17,
-    borderWidth: 1,
-    borderColor: '#E1E5E9',
-    backgroundColor: '#FFFFFF',
-  },
-  activeFilter: {
-    borderColor: '#23435D',
-    backgroundColor: '#23435D',
-  },
-  filterText: {
-    color: '#667085',
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  activeFilterText: {
-    color: '#FFFFFF',
-  },
-  feed: {
-    gap: 12,
-  },
-  postCard: {
-    padding: 16,
-    borderRadius: 15,
-    borderWidth: 1,
-    borderColor: '#E3E7EA',
-    backgroundColor: '#FFFFFF',
-    boxShadow: '0 2px 9px rgba(0, 0, 0, 0.04)',
-  },
-  postHeader: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    gap: 10,
-  },
-  authorRow: {
-    flex: 1,
-    minWidth: 0,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 9,
-  },
-  avatar: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#E8EEF5',
-  },
-  officialAvatar: {
-    backgroundColor: '#DDEFE9',
-  },
-  avatarText: {
-    color: '#304B6B',
-    fontSize: 11,
-    fontWeight: '800',
-  },
-  officialAvatarText: {
-    color: '#2F6B5F',
-  },
-  authorCopy: {
-    flex: 1,
-    minWidth: 0,
-  },
-  authorNameRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    alignItems: 'center',
-    gap: 6,
-  },
-  author: {
-    color: '#1F2937',
-    fontSize: 12,
-    fontWeight: '800',
-  },
-  officialBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-    paddingHorizontal: 6,
-    paddingVertical: 3,
-    borderRadius: 10,
-    backgroundColor: '#ECF5F2',
-  },
-  officialText: {
-    color: '#2F6B5F',
-    fontSize: 8,
-    fontWeight: '800',
-  },
-  time: {
-    marginTop: 2,
-    color: '#98A2B3',
-    fontSize: 9,
-  },
-  statusBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 5,
-    borderRadius: 12,
-  },
-  statusText: {
-    fontSize: 9,
-    fontWeight: '800',
-  },
-  postTitle: {
-    marginTop: 14,
-    color: '#1F2937',
-    fontSize: 17,
-    fontWeight: '700',
-  },
-  postBody: {
-    marginTop: 6,
-    color: '#59616C',
-    fontSize: 12,
-    lineHeight: 19,
-  },
-  commentHeading: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    marginTop: 15,
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: '#EEF0F2',
-  },
-  commentHeadingText: {
-    color: '#667085',
-    fontSize: 10,
-    fontWeight: '700',
-  },
-  comment: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 8,
-    marginTop: 9,
-    padding: 10,
-    borderRadius: 10,
-    backgroundColor: '#F7F8FA',
-  },
-  officialComment: {
-    borderWidth: 1,
-    borderColor: '#DCEAE5',
-    backgroundColor: '#F3F8F6',
-  },
-  commentAvatar: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#E7EDF4',
-  },
-  officialCommentAvatar: {
-    backgroundColor: '#DDEFE9',
-  },
-  commentAvatarText: {
-    color: '#304B6B',
-    fontSize: 8,
-    fontWeight: '800',
-  },
-  commentCopy: {
-    flex: 1,
-    minWidth: 0,
-  },
-  commentTop: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    alignItems: 'center',
-    gap: 5,
-  },
-  commentAuthor: {
-    color: '#344054',
-    fontSize: 10,
-    fontWeight: '800',
-  },
-  commentTime: {
-    color: '#98A2B3',
-    fontSize: 8,
-  },
-  commentText: {
-    marginTop: 3,
-    color: '#59616C',
-    fontSize: 11,
-    lineHeight: 17,
-  },
-  replyComposer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginTop: 12,
-  },
-  replyInput: {
-    flex: 1,
-    minHeight: 40,
-    paddingHorizontal: 12,
-    borderWidth: 1,
-    borderColor: '#D5DCE1',
-    borderRadius: 20,
-    backgroundColor: '#FAFBFC',
-    color: '#1F2937',
-    fontSize: 11,
-  },
-  replyButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#2F6B5F',
-  },
-  disabledReplyButton: {
-    opacity: 0.38,
-  },
-  emptyState: {
-    minHeight: 190,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 24,
-    borderRadius: 15,
-    borderWidth: 1,
-    borderColor: '#E3E7EA',
-    backgroundColor: '#FFFFFF',
-  },
-  emptyIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#ECF5F2',
-  },
-  emptyTitle: {
-    marginTop: 12,
-    color: '#344054',
-    fontSize: 15,
-    fontWeight: '700',
-  },
-  emptyText: {
-    marginTop: 4,
-    color: '#7B8491',
-    fontSize: 11,
-    textAlign: 'center',
-  },
+  safeArea: { flex: 1, backgroundColor: '#F7F8FA' },
+  scrollContent: { paddingBottom: 30 },
+  contentContainer: { width: '100%', maxWidth: 960, alignSelf: 'center', padding: 16, gap: 16 },
+  intro: { gap: 16, padding: 18, borderRadius: 16, backgroundColor: '#23435D' },
+  introWide: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  introCopy: { flex: 1 },
+  kicker: { color: '#BFD3DE', fontSize: 10, fontWeight: '800', letterSpacing: 1 },
+  title: { marginTop: 5, color: '#FFFFFF', fontSize: 27, fontWeight: '800', letterSpacing: -0.4 },
+  subtitle: { maxWidth: 650, marginTop: 6, color: '#DCE8EE', fontSize: 13, lineHeight: 20 },
+  introIcon: { width: 58, height: 58, borderRadius: 29, alignItems: 'center', justifyContent: 'center', backgroundColor: '#2F6B5F' },
+  summaryGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  summaryCard: { flex: 1, minWidth: 150, minHeight: 76, flexDirection: 'row', alignItems: 'center', gap: 10, padding: 13, borderRadius: 13, borderWidth: 1, borderColor: '#E2E8E5', backgroundColor: '#FFFFFF' },
+  summaryIcon: { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center', backgroundColor: '#ECF5F2' },
+  summaryValue: { color: '#1F2937', fontSize: 20, fontWeight: '800' },
+  summaryLabel: { marginTop: 1, color: '#7B8491', fontSize: 10, fontWeight: '600' },
+  composer: { gap: 11, padding: 17, borderRadius: 15, borderWidth: 1, borderColor: '#D7E8E2', backgroundColor: '#FFFFFF' },
+  composerHeading: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  composerIcon: { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center', backgroundColor: '#ECF5F2' },
+  composerHeadingCopy: { flex: 1 },
+  panelTitle: { color: '#1F2937', fontSize: 16, fontWeight: '700' },
+  panelSubtitle: { marginTop: 2, color: '#7B8491', fontSize: 10 },
+  titleInput: { minHeight: 44, paddingHorizontal: 13, borderWidth: 1, borderColor: '#D5DCE1', borderRadius: 10, backgroundColor: '#FAFBFC', color: '#1F2937', fontSize: 13 },
+  bodyInput: { minHeight: 96, padding: 13, borderWidth: 1, borderColor: '#D5DCE1', borderRadius: 10, backgroundColor: '#FAFBFC', color: '#1F2937', fontSize: 13, lineHeight: 19 },
+  composerFooter: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
+  composerFooterMobile: { alignItems: 'stretch', flexDirection: 'column' },
+  statusOptions: { flex: 1, flexDirection: 'row', flexWrap: 'wrap', gap: 7 },
+  statusOption: { paddingHorizontal: 10, paddingVertical: 7, borderRadius: 16, borderWidth: 1, borderColor: '#D5DCE1', backgroundColor: '#FFFFFF' },
+  statusOptionText: { color: '#667085', fontSize: 10, fontWeight: '700' },
+  publishButton: { minHeight: 40, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, paddingHorizontal: 15, borderRadius: 20, backgroundColor: '#2F6B5F' },
+  disabledButton: { opacity: 0.42 },
+  publishText: { color: '#FFFFFF', fontSize: 11, fontWeight: '800' },
+  discussionHeading: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, paddingTop: 2 },
+  sectionTitle: { color: '#1F2937', fontSize: 18, fontWeight: '700' },
+  sectionSubtitle: { marginTop: 3, color: '#7B8491', fontSize: 10 },
+  liveBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 9, paddingVertical: 6, borderRadius: 14, backgroundColor: '#ECF5F2' },
+  liveDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#2F6B5F' },
+  liveText: { color: '#2F6B5F', fontSize: 9, fontWeight: '800' },
+  filters: { gap: 8 },
+  filter: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 17, borderWidth: 1, borderColor: '#E1E5E9', backgroundColor: '#FFFFFF' },
+  activeFilter: { borderColor: '#23435D', backgroundColor: '#23435D' },
+  filterText: { color: '#667085', fontSize: 11, fontWeight: '700' },
+  activeFilterText: { color: '#FFFFFF' },
+  feed: { gap: 12 },
+  postCard: { padding: 16, borderRadius: 15, borderWidth: 1, borderColor: '#E3E7EA', backgroundColor: '#FFFFFF' },
+  postHeader: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10 },
+  authorRow: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: 9 },
+  avatar: { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center', backgroundColor: '#E8EEF5' },
+  officialAvatar: { backgroundColor: '#DDEFE9' },
+  avatarText: { color: '#304B6B', fontSize: 11, fontWeight: '800' },
+  officialAvatarText: { color: '#2F6B5F' },
+  authorCopy: { flex: 1, minWidth: 0 },
+  authorNameRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 6 },
+  author: { color: '#1F2937', fontSize: 12, fontWeight: '800' },
+  officialBadge: { flexDirection: 'row', alignItems: 'center', gap: 3, paddingHorizontal: 6, paddingVertical: 3, borderRadius: 10, backgroundColor: '#ECF5F2' },
+  officialText: { color: '#2F6B5F', fontSize: 8, fontWeight: '800' },
+  time: { marginTop: 2, color: '#98A2B3', fontSize: 9 },
+  statusBadge: { paddingHorizontal: 8, paddingVertical: 5, borderRadius: 12 },
+  statusText: { fontSize: 9, fontWeight: '800' },
+  postTitle: { marginTop: 14, color: '#1F2937', fontSize: 17, fontWeight: '700' },
+  postBody: { marginTop: 6, color: '#59616C', fontSize: 12, lineHeight: 19 },
+  commentHeading: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 15, paddingTop: 12, borderTopWidth: 1, borderTopColor: '#EEF0F2' },
+  commentHeadingText: { color: '#667085', fontSize: 10, fontWeight: '700' },
+  comment: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, marginTop: 9, padding: 10, borderRadius: 10, backgroundColor: '#F7F8FA' },
+  officialComment: { borderWidth: 1, borderColor: '#DCEAE5', backgroundColor: '#F3F8F6' },
+  replyComment: { marginLeft: 20, backgroundColor: '#EFF6FF', borderLeftWidth: 2, borderLeftColor: '#2F6B5F' },
+  commentAvatar: { width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: '#E7EDF4' },
+  officialCommentAvatar: { backgroundColor: '#DDEFE9' },
+  commentAvatarText: { color: '#304B6B', fontSize: 8, fontWeight: '800' },
+  commentCopy: { flex: 1 },
+  commentTop: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  commentAuthor: { color: '#344054', fontSize: 11, fontWeight: '700' },
+  commentTime: { color: '#98A2B3', fontSize: 10 },
+  commentText: { marginTop: 3, color: '#475467', fontSize: 12, lineHeight: 17 },
+  replyAction: { flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 4 },
+  replyActionText: { color: '#2F6B5F', fontSize: 10, fontWeight: '700' },
+  replyComposer: { gap: 6, marginTop: 12 },
+  replyingBanner: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#EAF3FF', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6 },
+  replyingText: { color: '#1D4ED8', fontSize: 11, fontWeight: '600' },
+  replyInputRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  replyInput: { flex: 1, minHeight: 38, paddingHorizontal: 11, borderWidth: 1, borderColor: '#D0D5DD', borderRadius: 8, color: '#191C1E', fontSize: 12 },
+  replyButton: { width: 38, height: 38, alignItems: 'center', justifyContent: 'center', borderRadius: 8, backgroundColor: '#2F6B5F' },
+  disabledReplyButton: { opacity: 0.45 },
+  emptyState: { minHeight: 160, alignItems: 'center', justifyContent: 'center', gap: 8 },
+  emptyIcon: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#E2E8E5', alignItems: 'center', justifyContent: 'center' },
+  emptyTitle: { color: '#1F2937', fontSize: 15, fontWeight: '700' },
+  emptyText: { color: '#667085', fontSize: 13 },
 });
