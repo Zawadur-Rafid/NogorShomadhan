@@ -1,17 +1,21 @@
-import { createClient } from "@/utils/supabase/server";
-import { cookies } from "next/headers";
+import { StyleSheet, Text, View } from "react-native";
 
-export default async function Page() {
-  const cookieStore = await cookies();
-  const supabase = createClient(cookieStore);
-
-  const { data: todos } = await supabase.from("todos").select();
-
+export default function Page() {
   return (
-    <ul>
-      {todos?.map((todo) => (
-        <li key={todo.id}>{todo.name}</li>
-      ))}
-    </ul>
+    <View style={styles.container}>
+      <Text style={styles.title}>NogorShomadhan</Text>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  title: {
+    fontSize: 20,
+    fontWeight: "bold",
+  },
+});
