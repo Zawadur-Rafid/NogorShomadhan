@@ -1,21 +1,36 @@
-import React, { useState, useMemo } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import React, { useState, useMemo, useEffect } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
-import MapViewComponent from '../../components/MapView';
+import MapViewComponent, { ComplaintLocation } from '../../components/MapView';
 import TopNav from '../../components/TopNav';
 import BottomNav from '../../components/BottomNav';
-import { dummyComplaints } from '../../components/store/store_complaint';
+import { getMapComplaints } from '../../services/resident.service';
 
 export default function ResidentMap() {
   const router = useRouter();
   const [filter, setFilter] = useState('All');
+  const [complaints, setComplaints] = useState<ComplaintLocation[]>([]);
+
+  useEffect(() => {
+    async function loadComplaints() {
+      try {
+        const data = await getMapComplaints();
+        setComplaints(data);
+      } catch (error) {
+        if (error instanceof Error) {
+          Alert.alert('Error', error.message);
+        }
+      }
+    }
+    loadComplaints();
+  }, []);
 
   const filteredComplaints = useMemo(() => {
-    if (filter === 'All') return dummyComplaints;
-    return dummyComplaints.filter(c => c.status === filter.toUpperCase());
-  }, [filter]);
+    if (filter === 'All') return complaints;
+    return complaints.filter(c => c.status === filter.toUpperCase());
+  }, [filter, complaints]);
 
   const filters = ['All', 'Pending', 'In Progress', 'Resolved'];
 

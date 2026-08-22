@@ -1,7 +1,7 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Animated, { FadeInDown, FadeOut } from 'react-native-reanimated';
 import {
   Pressable,
@@ -12,10 +12,12 @@ import {
   useWindowDimensions,
   View,
   TextInput,
+  ActivityIndicator,
+  Alert
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { dummyComplaints } from '@/components/store/store_complaint';
 import MapViewComponent from '@/components/MapView';
+import { getComplaintDetails } from '@/services/resident.service';
 
 export type ComplaintDetailMode = 'pending' | 'in-progress' | 'resolved';
 
@@ -635,7 +637,23 @@ export default function ComplaintDetailScreen() {
   const { complaintId } = useLocalSearchParams<{ complaintId: string }>();
   const { width } = useWindowDimensions();
 
-  const complaint = dummyComplaints.find((item) => item.id === complaintId) || dummyComplaints[0];
+  const [complaint, setComplaint] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const data = await getComplaintDetails(complaintId);
+        setComplaint(data);
+      } catch (error) {
+        if (error instanceof Error) Alert.alert('Error', error.message);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadData();
+  }, [complaintId]);
+
   const wide = width >= 900;
   const mode = getDetailMode(complaint?.status);
   const theme = modeTheme[mode];
@@ -646,6 +664,24 @@ export default function ComplaintDetailScreen() {
   const [localFeedback, setLocalFeedback] = useState(complaint?.feedback || []);
   const [localUrgencyCount, setLocalUrgencyCount] = useState(complaint?.urgencyCount || 0);
   const [hasUpvoted, setHasUpvoted] = useState(false);
+
+  useEffect(() => {
+    if (complaint) {
+      setLocalFeedback(complaint.feedback || []);
+      setLocalUrgencyCount(complaint.urgencyCount || 0);
+    }
+  }, [complaint]);
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.notFound}>
+          <ActivityIndicator size="large" color="#23435D" />
+          <Text style={styles.notFoundTitle}>Loading complaint details...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   if (!complaint) {
     return (
@@ -724,10 +760,10 @@ export default function ComplaintDetailScreen() {
                     style={[styles.upvoteBtn, hasUpvoted && styles.upvoteBtnActive]}
                     onPress={() => {
                       if (hasUpvoted) {
-                        setLocalUrgencyCount((prev) => prev - 1);
+                        setLocalUrgencyCount((prev: number) => prev - 1);
                         setHasUpvoted(false);
                       } else {
-                        setLocalUrgencyCount((prev) => prev + 1);
+                        setLocalUrgencyCount((prev: number) => prev + 1);
                         setHasUpvoted(true);
                       }
                     }}

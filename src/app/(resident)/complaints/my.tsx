@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,10 +7,11 @@ import {
   TouchableOpacity,
   Image,
   SafeAreaView,
+  Alert
 } from 'react-native';
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { dummyComplaints } from '@/components/store/store_complaint';
+import { getMyFeedComplaints } from '@/services/resident.service';
 
 type StatusFilter = 'All' | 'Pending' | 'In Progress' | 'Resolved';
 
@@ -40,10 +41,20 @@ export default function MyComplaintsScreen() {
   const router = useRouter();
   const [activeFilter, setActiveFilter] = useState<StatusFilter>('All');
   const [upvotedComplaints, setUpvotedComplaints] = useState<Set<string>>(new Set());
+  const [myComplaints, setMyComplaints] = useState<any[]>([]);
 
-  // Filter complaints filed by resident
-  const myComplaints = useMemo(() => {
-    return dummyComplaints.filter((c) => c.isMyComplaint);
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const data = await getMyFeedComplaints();
+        setMyComplaints(data);
+      } catch (error) {
+        if (error instanceof Error) {
+          Alert.alert('Error', error.message);
+        }
+      }
+    }
+    loadData();
   }, []);
 
   const filteredComplaints = useMemo(() => {

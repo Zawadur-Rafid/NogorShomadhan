@@ -1,5 +1,4 @@
-﻿import AdminBottomNav from "@/components/AdminBottomNav";
-import { dummyComplaints } from "@/components/store/store_complaint";
+import AdminBottomNav from "@/components/AdminBottomNav";
 import { supabase } from "@/lib/supabase";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -34,6 +33,25 @@ type ReviewComplaint = {
   reporterNid: string;
   reporterPhone: string;
   evidenceImages: string[];
+};
+
+type NormalComplaint = {
+  id: string;
+  title: string;
+  description: string;
+  date: string;
+  location: string;
+  status: "PENDING" | "IN PROGRESS" | "RESOLVED";
+  category: string;
+  urgencyCount: number;
+  urgencyLevel: string;
+  evidence: string;
+  images: string[];
+  color: string;
+  icon: string;
+  lat: number;
+  lng: number;
+  image: string;
 };
 
 const theme = {
@@ -72,9 +90,7 @@ export function ComplaintsListScreen({
   const router = useRouter();
   const [activeFilter, setActiveFilter] = useState<ComplaintFilter>("All");
   const [reviewSort, setReviewSort] = useState<ReviewSort>("latest");
-  const [complaints, setComplaints] = useState<
-    Array<(typeof dummyComplaints)[number]>
-  >([]);
+  const [complaints, setComplaints] = useState<NormalComplaint[]>([]);
   const [complaintsLoading, setComplaintsLoading] = useState(false);
   const [complaintsError, setComplaintsError] = useState<string | null>(null);
   const [reviewComplaints, setReviewComplaints] = useState<ReviewComplaint[]>(
@@ -567,7 +583,7 @@ export function ComplaintsListScreen({
                   : null;
                 const normalItem = reviewMode
                   ? null
-                  : (item as (typeof dummyComplaints)[number]);
+                  : (item as NormalComplaint);
 
                 const itemId = reviewMode ? reviewItem!.compId : normalItem!.id;
                 const isBusy = actionLoadingId === itemId;
