@@ -14,6 +14,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useAuthorityComplaints } from '@/components/authority/authority-complaints-context';
+import AuthorityIssueMap from '@/components/authority/authority-issue-map';
 import {
   authorityDashboardProfile,
   type AuthorityComplaintStatus,
@@ -46,12 +47,13 @@ export default function AuthorityDashboard() {
 
   const wide = width >= 920;
 
-  const priorityComplaints = useMemo(
+  const recentComplaints = useMemo(
     () =>
-      [...complaints].sort(
-        (first, second) =>
-          second.urgency - first.urgency,
-      ),
+      [...complaints].sort((first, second) => {
+        const firstTime = Date.parse(first.timestamp ?? '') || 0;
+        const secondTime = Date.parse(second.timestamp ?? '') || 0;
+        return secondTime - firstTime;
+      }),
     [complaints],
   );
 
@@ -95,19 +97,6 @@ export default function AuthorityDashboard() {
     ],
     [complaints],
   );
-
-  const urgentCount =
-    priorityComplaints.filter(
-      (complaint) =>
-        complaint.urgency >= 25,
-    ).length;
-
-  const urgencySignals =
-    priorityComplaints.reduce(
-      (total, complaint) =>
-        total + complaint.urgency,
-      0,
-    );
 
   const openComplaint = (
     complaint: { id: string },
@@ -464,59 +453,6 @@ export default function AuthorityDashboard() {
             )}
           </View>
 
-          {/* Urgency */}
-
-          <View style={styles.urgencyCard}>
-            <View
-              style={styles.urgencyIcon}
-            >
-              <Ionicons
-                name="flame-outline"
-                size={24}
-                color="#FFFFFF"
-              />
-            </View>
-
-            <View style={styles.urgencyCopy}>
-              <Text
-                style={styles.urgencyLabel}
-              >
-                URGENCY PRIORITY
-              </Text>
-
-              <Text
-                style={styles.urgencyTitle}
-              >
-                {urgentCount} complaints
-                need urgent attention
-              </Text>
-
-              <Text
-                style={
-                  styles.urgencyDescription
-                }
-              >
-                The complaint list is
-                ordered by residents’
-                urgency count.
-              </Text>
-            </View>
-
-            <View style={styles.signalBox}>
-              <Text
-                style={styles.signalNumber}
-              >
-                {urgencySignals}
-              </Text>
-
-              <Text
-                style={styles.signalLabel}
-              >
-                signals
-              </Text>
-            </View>
-          </View>
-
           {/* Complaints + Map */}
 
           <View
@@ -540,7 +476,7 @@ export default function AuthorityDashboard() {
                   <Text
                     style={styles.sectionTitle}
                   >
-                    Priority Complaints
+                    Recent Complaints
                   </Text>
 
                   <Text
@@ -548,7 +484,7 @@ export default function AuthorityDashboard() {
                       styles.sectionSubtitle
                     }
                   >
-                    Highest urgency appears
+                    Newest submissions appear
                     first
                   </Text>
                 </View>
@@ -564,13 +500,10 @@ export default function AuthorityDashboard() {
                 </TouchableOpacity>
               </View>
 
-              {priorityComplaints
+              {recentComplaints
                 .slice(0, 4)
                 .map(
-                  (
-                    complaint,
-                    index,
-                  ) => {
+                  (complaint) => {
                     const theme =
                       statusTheme[
                         complaint.status
@@ -592,24 +525,6 @@ export default function AuthorityDashboard() {
                             styles.cardPressed,
                         ]}
                       >
-                        <View
-                          style={[
-                            styles.priorityRank,
-                            index < 3 &&
-                              styles.priorityRankHigh,
-                          ]}
-                        >
-                          <Text
-                            style={[
-                              styles.priorityRankText,
-                              index < 3 &&
-                                styles.priorityRankTextHigh,
-                            ]}
-                          >
-                            {index + 1}
-                          </Text>
-                        </View>
-
                         <View
                           style={
                             styles.complaintContent
@@ -719,28 +634,6 @@ export default function AuthorityDashboard() {
                               </Text>
                             </View>
 
-                            <View
-                              style={
-                                styles.urgencyCount
-                              }
-                            >
-                              <Ionicons
-                                name="arrow-up-circle"
-                                size={15}
-                                color="#C57C1B"
-                              />
-
-                              <Text
-                                style={
-                                  styles.urgencyCountText
-                                }
-                              >
-                                {
-                                  complaint.urgency
-                                }{' '}
-                                urgent
-                              </Text>
-                            </View>
                           </View>
                         </View>
                       </Pressable>
@@ -749,6 +642,47 @@ export default function AuthorityDashboard() {
                 )}
             </View>
 
+            <View
+              style={[
+                styles.mapSection,
+                wide && styles.mapSectionWide,
+              ]}
+            >
+              <View style={[styles.sectionHeader, styles.mapSectionHeader]}>
+                <View>
+                  <Text style={styles.sectionTitle}>Complaint Map</Text>
+                  <Text style={styles.sectionSubtitle}>
+                    Pins generated from resident address details
+                  </Text>
+                </View>
+                <Ionicons name="map-outline" size={21} color="#23435D" />
+              </View>
+
+              <View style={styles.mapCard}>
+                <AuthorityIssueMap
+                  complaints={complaints}
+                  height={330}
+                  onComplaintPress={(complaintId) =>
+                    openComplaint({ id: complaintId })
+                  }
+                />
+              </View>
+
+              <View style={styles.mapLegend}>
+                <View style={styles.legendItem}>
+                  <View style={[styles.legendDot, { backgroundColor: '#EF4444' }]} />
+                  <Text style={styles.legendText}>Pending</Text>
+                </View>
+                <View style={styles.legendItem}>
+                  <View style={[styles.legendDot, { backgroundColor: '#C67B00' }]} />
+                  <Text style={styles.legendText}>In Progress</Text>
+                </View>
+                <View style={styles.legendItem}>
+                  <View style={[styles.legendDot, { backgroundColor: '#2563EB' }]} />
+                  <Text style={styles.legendText}>Resolved</Text>
+                </View>
+              </View>
+            </View>
 
           </View>
 
@@ -1214,69 +1148,6 @@ const styles = StyleSheet.create({
     fontVariant: ['tabular-nums'],
   },
 
-  urgencyCard: {
-    minHeight: 96,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 13,
-    backgroundColor: '#FFF9F1',
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: '#F4DFC3',
-    padding: 15,
-  },
-
-  urgencyIcon: {
-    width: 45,
-    height: 45,
-    borderRadius: 23,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#C57C1B',
-  },
-
-  urgencyCopy: {
-    flex: 1,
-  },
-
-  urgencyLabel: {
-    color: '#B9854B',
-    fontSize: 9,
-    fontWeight: '800',
-    letterSpacing: 0.8,
-  },
-
-  urgencyTitle: {
-    color: '#4A341F',
-    fontSize: 15,
-    fontWeight: '700',
-    marginTop: 3,
-  },
-
-  urgencyDescription: {
-    color: '#80684F',
-    fontSize: 11,
-    marginTop: 4,
-  },
-
-  signalBox: {
-    alignItems: 'flex-end',
-    paddingLeft: 8,
-  },
-
-  signalNumber: {
-    color: '#C57C1B',
-    fontSize: 24,
-    fontWeight: '800',
-    fontVariant: ['tabular-nums'],
-  },
-
-  signalLabel: {
-    color: '#9A774F',
-    fontSize: 9,
-    fontWeight: '600',
-  },
-
   dashboardGrid: {
     gap: 18,
   },
@@ -1306,6 +1177,11 @@ const styles = StyleSheet.create({
   mapSectionWide: {
     flex: 1,
     minWidth: 340,
+  },
+
+  mapSectionHeader: {
+    paddingTop: 4,
+    paddingHorizontal: 12,
   },
 
   sectionHeader: {
@@ -1352,30 +1228,6 @@ const styles = StyleSheet.create({
     opacity: 0.78,
   },
 
-  priorityRank: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#EEF5FF',
-  },
-
-  priorityRankHigh: {
-    backgroundColor: '#FFF1E5',
-  },
-
-  priorityRankText: {
-    color: '#3B82F6',
-    fontSize: 12,
-    fontWeight: '800',
-    fontVariant: ['tabular-nums'],
-  },
-
-  priorityRankTextHigh: {
-    color: '#C57C1B',
-  },
-
   complaintContent: {
     flex: 1,
     minWidth: 0,
@@ -1419,24 +1271,6 @@ const styles = StyleSheet.create({
   infoText: {
     color: '#777777',
     fontSize: 9,
-  },
-
-  urgencyCount: {
-    marginLeft: 'auto',
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-    backgroundColor: '#FFF7E8',
-    borderRadius: 12,
-    paddingHorizontal: 7,
-    paddingVertical: 3,
-  },
-
-  urgencyCountText: {
-    color: '#A7640C',
-    fontSize: 9,
-    fontWeight: '800',
-    fontVariant: ['tabular-nums'],
   },
 
   statusBadge: {

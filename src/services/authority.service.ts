@@ -7,6 +7,7 @@ import type {
     AuthorityComplaintDetail,
     AuthorityEvidenceImage,
 } from '@/components/authority/store-authority-complaint-details';
+import { formatAuthorityAddress } from '@/components/authority/authority-location';
 
 type ComplaintStatus =
   | 'unverified'
@@ -284,8 +285,7 @@ function normalizeBangladeshPhone(value: string): string {
 }
 
 function getLocation(complaint: ComplaintRow): string {
-  const parts = [complaint.house, complaint.road, complaint.avenue, complaint.nearby_landmark].filter(Boolean);
-  return parts.length > 0 ? parts.join(', ') : 'Location not provided';
+  return formatAuthorityAddress(complaint);
 }
 
 function getWorkUpdateTitle(type: WorkUpdateType): string {
@@ -715,6 +715,7 @@ export async function getAuthorityComplaints(): Promise<
         location: getLocation(complaint),
         category: complaint.category,
         status,
+        timestamp: complaint.timestamp,
         house: complaint.house,
         road: complaint.road,
         avenue: complaint.avenue,

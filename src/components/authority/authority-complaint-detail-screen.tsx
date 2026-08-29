@@ -20,6 +20,8 @@ import Animated, { FadeIn, FadeInDown, FadeOut } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useAuthorityComplaints } from './authority-complaints-context';
+import AuthorityIssueMap from './authority-issue-map';
+import { getAuthorityLocationDetails } from './authority-location';
 import AuthorityPageHeader from './authority-page-header';
 import type {
   AuthorityApproval,
@@ -791,6 +793,11 @@ export default function AuthorityComplaintDetailScreen() {
     : params.complaintId;
   const complaint = complaints.find((item) => item.id === complaintId);
 
+  const mapComplaints = useMemo(
+    () => (complaint ? [complaint] : []),
+    [complaint],
+  );
+
   const [deadline, setDeadline] = useState('');
   const [workBudget, setWorkBudget] = useState('');
   const [initialNote, setInitialNote] = useState('');
@@ -870,6 +877,8 @@ export default function AuthorityComplaintDetailScreen() {
       </SafeAreaView>
     );
   }
+
+  const locationDetails = getAuthorityLocationDetails(complaint);
 
   const residentEvidence = hasValidImage(complaint.evidence)
     ? complaint.evidence
@@ -1199,16 +1208,66 @@ export default function AuthorityComplaintDetailScreen() {
                     value={complaint.category}
                   />
                   <DetailItem
-                    icon="location-outline"
-                    label="Location"
-                    value={complaint.location}
-                  />
-                  <DetailItem
                     icon="calendar-outline"
                     label="Submitted"
                     value={complaint.submittedAt}
                   />
                 </View>
+              </View>
+
+              <View style={styles.panel}>
+                <View style={styles.panelHeading}>
+                  <View>
+                    <Text style={styles.panelTitle}>Location Details</Text>
+                    <Text style={styles.panelSubtitle}>
+                      Address information supplied by the resident
+                    </Text>
+                  </View>
+                  <Ionicons name="location-outline" size={22} color="#23435D" />
+                </View>
+
+                <View style={styles.detailsGrid}>
+                  <DetailItem
+                    icon="navigate-outline"
+                    label="Full Address"
+                    value={complaint.location}
+                  />
+                  {locationDetails.map((item) => (
+                    <DetailItem
+                      key={item.key}
+                      icon={
+                        item.key === 'house'
+                          ? 'home-outline'
+                          : item.key === 'road'
+                            ? 'map-outline'
+                            : item.key === 'avenue'
+                              ? 'business-outline'
+                              : item.key === 'nearby_landmark'
+                                ? 'flag-outline'
+                                : 'document-text-outline'
+                      }
+                      label={item.label}
+                      value={item.value || 'Not provided'}
+                    />
+                  ))}
+                </View>
+              </View>
+
+              <View style={styles.panel}>
+                <View style={styles.panelHeading}>
+                  <View>
+                    <Text style={styles.panelTitle}>Complaint Map</Text>
+                    <Text style={styles.panelSubtitle}>
+                      Pin generated from the resident-provided address
+                    </Text>
+                  </View>
+                  <Ionicons name="map-outline" size={22} color="#23435D" />
+                </View>
+                <AuthorityIssueMap
+                  complaints={mapComplaints}
+                  selectedComplaintId={complaint.id}
+                  height={270}
+                />
               </View>
 
               <View style={styles.panel}>
@@ -1870,22 +1929,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#DC4B42',
     borderWidth: 2,
     borderColor: '#FFFFFF',
-  },
-  coordinateBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 5,
-    borderRadius: 11,
-    backgroundColor: '#EFF6FF',
-  },
-  coordinateText: { color: '#2563EB', fontSize: 8, fontWeight: '700' },
-  mapCard: {
-    height: 270,
-    overflow: 'hidden',
-    borderRadius: 12,
-    backgroundColor: '#E8EDF4',
   },
   approvalCard: {
     minHeight: 92,
