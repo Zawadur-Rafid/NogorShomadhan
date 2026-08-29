@@ -1208,11 +1208,6 @@ export default function AuthorityComplaintDetailScreen() {
                     label="Submitted"
                     value={complaint.submittedAt}
                   />
-                  <DetailItem
-                    icon="arrow-up-circle-outline"
-                    label="Urgency"
-                    value={`${complaint.urgency} resident signals`}
-                  />
                 </View>
               </View>
 

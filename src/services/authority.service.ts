@@ -34,7 +34,6 @@ type ComplaintRow = {
   category: string;
   status: ComplaintStatus;
   timestamp: string | null;
-  urgency: number;
 };
 
 type AccountRow = {
@@ -716,7 +715,6 @@ export async function getAuthorityComplaints(): Promise<
         location: getLocation(complaint),
         category: complaint.category,
         status,
-        urgency: complaint.urgency,
         house: complaint.house,
         road: complaint.road,
         avenue: complaint.avenue,

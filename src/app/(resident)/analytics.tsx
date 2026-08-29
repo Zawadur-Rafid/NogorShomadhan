@@ -79,7 +79,7 @@ export default function Analytics() {
 
   const categories = Object.keys(categoryCounts);
   const barData = {
-    labels: categories, // Use full category names
+    labels: categories,
     datasets: [
       {
         data: categories.map(c => categoryCounts[c]),
@@ -157,17 +157,23 @@ export default function Analytics() {
           <View style={[styles.statCard, { backgroundColor: '#FEF2F2' }]}>
             <Ionicons name="sad-outline" size={18} color="#EF4444" />
             <Text style={styles.statLabel}>Pending</Text>
-            <Text style={[styles.statValue, { color: '#EF4444' }]}>{pending}</Text>
+            <Text style={[styles.statValue, { color: '#EF4444' }]}>
+              {pending} <Text style={styles.statPercent}>({total > 0 ? Math.round((pending / total) * 100) : 0}%)</Text>
+            </Text>
           </View>
           <View style={[styles.statCard, { backgroundColor: '#FFFBEB' }]}>
             <Ionicons name="people-outline" size={18} color="#C67B00" />
             <Text style={styles.statLabel}>In Progress</Text>
-            <Text style={[styles.statValue, { color: '#D97706' }]}>{inProgress}</Text>
+            <Text style={[styles.statValue, { color: '#D97706' }]}>
+              {inProgress} <Text style={styles.statPercent}>({total > 0 ? Math.round((inProgress / total) * 100) : 0}%)</Text>
+            </Text>
           </View>
           <View style={[styles.statCard, { backgroundColor: '#EFF6FF' }]}>
             <Ionicons name="checkmark-circle-outline" size={18} color="#2563EB" />
             <Text style={styles.statLabel}>Resolved</Text>
-            <Text style={[styles.statValue, { color: '#3B82F6' }]}>{resolved}</Text>
+            <Text style={[styles.statValue, { color: '#3B82F6' }]}>
+              {resolved} <Text style={styles.statPercent}>({total > 0 ? Math.round((resolved / total) * 100) : 0}%)</Text>
+            </Text>
           </View>
         </View>
 
@@ -200,8 +206,8 @@ export default function Analytics() {
             <ScrollView horizontal={true} showsHorizontalScrollIndicator={false} style={{ marginHorizontal: 16 }}>
               <BarChart
                 data={barData}
-                width={Math.max(screenWidth - 32, categories.length * 80)} // Dynamic width for slider
-                height={220}
+                width={Math.max(screenWidth - 32, categories.length * 180)} // Dynamic width for slider
+                height={260}
                 yAxisLabel=""
                 yAxisSuffix=""
                 fromZero={true}
@@ -308,6 +314,11 @@ const styles = StyleSheet.create({
     fontSize: 26,
     fontWeight: '700',
     marginTop: 8,
+    fontFamily: 'Inter',
+  },
+  statPercent: {
+    fontSize: 14,
+    fontWeight: '500',
     fontFamily: 'Inter',
   },
   chartSection: {

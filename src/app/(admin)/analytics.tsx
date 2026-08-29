@@ -1,4 +1,4 @@
-﻿import Ionicons from "@expo/vector-icons/Ionicons";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import { useMemo, useState } from "react";
 import {
   Pressable,
@@ -93,7 +93,6 @@ export default function AuthorityAnalytics() {
     authorityCategoryDistribution,
     authorityResolutionPerformance,
     authorityStatusDistribution,
-    authorityUrgencyHotspots,
     authorityZoneDistribution,
   } = useMemo(() => {
     const total = complaints.length;
@@ -178,17 +177,8 @@ export default function AuthorityAnalytics() {
       resolvedComplaints.length === 0
         ? 0
         : Math.round((withinDeadline / resolvedComplaints.length) * 100);
-    const urgencyHotspots = [...complaints]
-      .sort((first, second) => second.urgency - first.urgency)
-      .slice(0, 3)
-      .map((item) => ({
-        location: item.location,
-        category: item.category,
-        signals: item.urgency,
-      }));
     const resolutionRate =
       total === 0 ? 0 : Math.round((resolvedComplaints.length / total) * 100);
-    const hotspotCount = complaints.filter((item) => item.urgency >= 25).length;
 
     return {
       authorityAnalyticsSummary: [
@@ -216,19 +206,12 @@ export default function AuthorityAnalytics() {
           color: "#C67B00",
           background: "#FFF7E8",
         },
-        {
-          label: "Urgency Hotspots",
-          value: String(hotspotCount),
-          change: "25+ resident signals",
-          icon: "flame-outline" as const,
-          color: "#E0524D",
-          background: "#FFF1F1",
-        },
+
       ],
       authorityStatusDistribution: statusDistribution,
       authorityCategoryDistribution: categoryDistribution,
       authorityZoneDistribution: zoneDistribution,
-      authorityUrgencyHotspots: urgencyHotspots,
+
       authorityResolutionPerformance: {
         resolved: resolvedComplaints.length,
         withinDeadline,
@@ -471,42 +454,7 @@ export default function AuthorityAnalytics() {
               </View>
             </View>
 
-            <View style={styles.panel}>
-              <View style={styles.panelHeader}>
-                <View>
-                  <Text style={styles.panelTitle}>Urgency Hotspots</Text>
-                  <Text style={styles.panelSubtitle}>
-                    Locations requiring faster action
-                  </Text>
-                </View>
-                <Ionicons name="flame-outline" size={21} color="#C57C1B" />
-              </View>
-              <View style={styles.hotspotList}>
-                {authorityUrgencyHotspots.map((item, index) => (
-                  <View key={item.location} style={styles.hotspotRow}>
-                    <View style={styles.hotspotRank}>
-                      <Text style={styles.hotspotRankText}>{index + 1}</Text>
-                    </View>
-                    <View style={styles.hotspotCopy}>
-                      <Text style={styles.hotspotLocation}>
-                        {item.location}
-                      </Text>
-                      <Text style={styles.hotspotCategory}>
-                        {item.category}
-                      </Text>
-                    </View>
-                    <View style={styles.signalBadge}>
-                      <Ionicons
-                        name="arrow-up-circle"
-                        size={15}
-                        color="#C57C1B"
-                      />
-                      <Text style={styles.signalText}>{item.signals}</Text>
-                    </View>
-                  </View>
-                ))}
-              </View>
-            </View>
+
           </View>
 
           <View

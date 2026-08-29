@@ -4,7 +4,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
 
 interface BottomNavProps {
-  activeRoute: 'home' | 'map' | 'complaints' | 'data' | 'forum' | 'profile';
+  activeRoute: 'home' | 'complaints' | 'data' | 'forum' | 'profile';
 }
 
 export default function BottomNav({ activeRoute }: BottomNavProps) {
@@ -34,7 +34,7 @@ export default function BottomNav({ activeRoute }: BottomNavProps) {
   return (
     <View style={styles.bottomNav}>
       {renderIcon('home', 'home', 'home', 'home-outline', 'Home', '/(resident)/dashboard')}
-      {renderIcon('map', 'map', 'map', 'map-outline', 'Map', '/(resident)/map')}
+
       {renderIcon('complaints', 'complaints', 'document-text', 'document-text-outline', 'Complaints', '/(resident)/complaints')}
       {renderIcon('data', 'data', 'bar-chart', 'bar-chart-outline', 'Data', '/(resident)/analytics')}
       {renderIcon('forum', 'forum', 'chatbubbles', 'chatbubbles-outline', 'Forum', '/(resident)/forum')}

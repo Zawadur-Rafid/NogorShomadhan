@@ -1,7 +1,7 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Animated, { FadeInDown, FadeOut } from 'react-native-reanimated';
 import {
   Pressable,
@@ -13,14 +13,21 @@ import {
   View,
   TextInput,
   ActivityIndicator,
-  Alert
+  Alert,
+  Animated as RNAnimated
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { getComplaintDetails } from '@/services/resident.service';
+import { getComplaintDetails, deleteComplaint } from '@/services/resident.service';
 
-export type ComplaintDetailMode = 'pending' | 'in-progress' | 'resolved';
+export type ComplaintDetailMode = 'unverified' | 'pending' | 'in-progress' | 'resolved';
 
 const modeTheme = {
+  unverified: {
+    label: 'UNVERIFIED',
+    color: '#6B7280',
+    background: '#F3F4F6',
+    icon: 'help-circle-outline' as const,
+  },
   pending: {
     label: 'PENDING',
     color: '#EF4444',
@@ -42,6 +49,7 @@ const modeTheme = {
 };
 
 function getDetailMode(status?: string): ComplaintDetailMode {
+  if (status === 'UNVERIFIED') return 'unverified';
   if (status === 'IN PROGRESS') return 'in-progress';
   if (status === 'RESOLVED') return 'resolved';
   return 'pending';
@@ -531,7 +539,7 @@ function ResidentFeedback({
 
 function ReporterProfile({ complaint }: { complaint: any }) {
   const [expanded, setExpanded] = useState(false);
-  const maxReporters = Math.min(complaint.urgencyCount > 1 ? complaint.urgencyCount - 1 : 0, 3);
+  const maxReporters = 3;
   const bangladeshiNames = ['Rahim Uddin', 'Karim Hasan', 'Anisur Rahman'];
   
   const otherReporters = Array.from({ length: maxReporters }).map((_, i) => {
@@ -638,6 +646,32 @@ export default function ComplaintDetailScreen() {
 
   const [complaint, setComplaint] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [deleting, setDeleting] = useState(false);
+
+  const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+  const slideAnim = useRef(new RNAnimated.Value(400)).current;
+
+  const triggerToast = (message: string, callback?: () => void) => {
+    setToastMessage(message);
+    setShowToast(true);
+    RNAnimated.sequence([
+      RNAnimated.timing(slideAnim, {
+        toValue: 0,
+        duration: 400,
+        useNativeDriver: true,
+      }),
+      RNAnimated.delay(2000),
+      RNAnimated.timing(slideAnim, {
+        toValue: 400,
+        duration: 400,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      setShowToast(false);
+      if (callback) callback();
+    });
+  };
 
   useEffect(() => {
     async function loadData() {
@@ -653,6 +687,35 @@ export default function ComplaintDetailScreen() {
     loadData();
   }, [complaintId]);
 
+  const handleDelete = () => {
+    Alert.alert(
+      'Delete Complaint',
+      'Are you sure you want to delete this complaint? This action cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              setDeleting(true);
+              await deleteComplaint(complaintId);
+              triggerToast('The complaint has been successfully deleted.', () => {
+                router.back();
+              });
+            } catch (error) {
+              if (error instanceof Error) {
+                Alert.alert('Error', error.message);
+              }
+            } finally {
+              setDeleting(false);
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const wide = width >= 900;
   const mode = getDetailMode(complaint?.status);
   const theme = modeTheme[mode];
@@ -661,13 +724,11 @@ export default function ComplaintDetailScreen() {
   const [feedbackComment, setFeedbackComment] = useState('');
   const [hasSubmittedFeedback, setHasSubmittedFeedback] = useState(false);
   const [localFeedback, setLocalFeedback] = useState(complaint?.feedback || []);
-  const [localUrgencyCount, setLocalUrgencyCount] = useState(complaint?.urgencyCount || 0);
   const [hasUpvoted, setHasUpvoted] = useState(false);
 
   useEffect(() => {
     if (complaint) {
       setLocalFeedback(complaint.feedback || []);
-      setLocalUrgencyCount(complaint.urgencyCount || 0);
     }
   }, [complaint]);
 
@@ -702,6 +763,20 @@ export default function ComplaintDetailScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
+      {showToast && (
+        <RNAnimated.View style={[styles.toastContainer, { transform: [{ translateX: slideAnim }] }]}>
+          <View style={styles.toastLeftBorder} />
+          <Ionicons name="checkmark-circle" size={24} color="#1b7a43" style={styles.toastIcon} />
+          <View style={styles.toastContent}>
+            <Text style={styles.toastTitle}>Success</Text>
+            <Text style={styles.toastText}>{toastMessage}</Text>
+          </View>
+          <TouchableOpacity onPress={() => setShowToast(false)} style={styles.toastCloseButton}>
+            <Ionicons name="close" size={18} color="#1a1a1a" />
+          </TouchableOpacity>
+        </RNAnimated.View>
+      )}
+
       <ScrollView
         contentInsetAdjustmentBehavior="automatic"
         showsVerticalScrollIndicator={false}
@@ -716,9 +791,6 @@ export default function ComplaintDetailScreen() {
                   {theme.label}
                 </Text>
               </View>
-              <Text selectable style={styles.complaintId}>
-                #{complaint.id}
-              </Text>
             </View>
             <Text selectable style={styles.title}>
               {complaint.title}
@@ -726,6 +798,22 @@ export default function ComplaintDetailScreen() {
             <Text selectable style={styles.description}>
               {complaint.description}
             </Text>
+            {mode === 'unverified' && (
+              <TouchableOpacity 
+                style={styles.deleteButton} 
+                onPress={handleDelete}
+                disabled={deleting}
+              >
+                {deleting ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <>
+                    <Ionicons name="trash-outline" size={16} color="#FFFFFF" />
+                    <Text style={styles.deleteButtonText}>Delete Complaint</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            )}
           </View>
 
           <View style={[styles.pageGrid, wide && styles.pageGridWide]}>
@@ -746,33 +834,8 @@ export default function ComplaintDetailScreen() {
                   <DetailItem icon="location-outline" label="Location" value={complaint.location} />
                   <DetailItem icon="calendar-outline" label="Submitted" value={complaint.date} />
                   <DetailItem icon="map-outline" label="Assigned Zone" value="Unassigned" />
-                  <DetailItem
-                    icon="arrow-up-circle-outline"
-                    label="Urgency"
-                    value={`${localUrgencyCount} resident signals`}
-                  />
                   <DetailItem icon="person-outline" label="Reported By" value="You" />
                 </View>
-
-                {mode === 'pending' && (
-                  <TouchableOpacity
-                    style={[styles.upvoteBtn, hasUpvoted && styles.upvoteBtnActive]}
-                    onPress={() => {
-                      if (hasUpvoted) {
-                        setLocalUrgencyCount((prev: number) => prev - 1);
-                        setHasUpvoted(false);
-                      } else {
-                        setLocalUrgencyCount((prev: number) => prev + 1);
-                        setHasUpvoted(true);
-                      }
-                    }}
-                  >
-                    <Ionicons name="arrow-up-circle" size={18} color={hasUpvoted ? "#FFFFFF" : "#C57C1B"} />
-                    <Text style={[styles.upvoteBtnText, hasUpvoted && styles.upvoteBtnTextActive]}>
-                      {hasUpvoted ? "Urgency Increased" : "I also face this issue"}
-                    </Text>
-                  </TouchableOpacity>
-                )}
               </View>
 
               <View style={styles.panel}>
@@ -896,7 +959,74 @@ export default function ComplaintDetailScreen() {
 }
 
 const styles = StyleSheet.create({
+  deleteButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: '#EF4444',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    marginTop: 16,
+    alignSelf: 'flex-start',
+  },
+  deleteButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
+  },
   safeArea: { flex: 1, backgroundColor: '#F7F8FA' },
+  toastContainer: {
+    position: 'absolute',
+    top: 50,
+    right: 20,
+    backgroundColor: '#ebf4ec',
+    borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 6,
+    zIndex: 1000,
+    minWidth: 300,
+    overflow: 'hidden',
+  },
+  toastLeftBorder: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 4,
+    backgroundColor: '#1b7a43',
+    borderTopLeftRadius: 8,
+    borderBottomLeftRadius: 8,
+  },
+  toastIcon: {
+    marginRight: 12,
+    marginLeft: 4,
+  },
+  toastContent: {
+    flex: 1,
+  },
+  toastTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#1a1a1a',
+    marginBottom: 4,
+  },
+  toastText: {
+    fontSize: 13,
+    color: '#4d4d4d',
+    lineHeight: 18,
+  },
+  toastCloseButton: {
+    padding: 4,
+    marginLeft: 8,
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',

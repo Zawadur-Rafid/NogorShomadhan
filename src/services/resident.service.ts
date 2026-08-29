@@ -124,7 +124,7 @@ export interface DashboardData {
 export async function getDashboardData(): Promise<DashboardData> {
   const { data, error } = await supabase
     .from('complaints')
-    .select('comp_id, title, description, house, road, avenue, nearby_landmark, additional_location_details, status, urgency, timestamp, category')
+    .select('comp_id, title, description, house, road, avenue, nearby_landmark, additional_location_details, status, timestamp, category')
     .order('timestamp', { ascending: false });
 
   if (error) {
@@ -169,7 +169,10 @@ export async function getDashboardData(): Promise<DashboardData> {
     return parts.length > 0 ? parts.join(', ') : 'Location not provided';
   };
 
-  const recentComplaints = complaints.slice(0, 3).map(c => {
+  const recentComplaints = complaints
+    .filter((c) => c.status.toLowerCase() !== 'unverified')
+    .slice(0, 3)
+    .map(c => {
     const d = new Date(c.timestamp || Date.now());
     const dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
     return {
@@ -179,7 +182,6 @@ export async function getDashboardData(): Promise<DashboardData> {
       date: dateStr,
       location: getAddress(c),
       status: c.status.toUpperCase(),
-      urgencyCount: c.urgency,
       color: getColorForStatus(c.status),
       icon: getIconForCategory(c.category)
     };
@@ -199,14 +201,14 @@ export async function getDashboardData(): Promise<DashboardData> {
 export async function getFeedComplaints() {
   const { data, error } = await supabase
     .from('complaints')
-    .select('comp_id, title, description, house, road, avenue, nearby_landmark, additional_location_details, status, urgency, timestamp, category')
+    .select('comp_id, title, description, house, road, avenue, nearby_landmark, additional_location_details, status, timestamp, category')
     .order('timestamp', { ascending: false });
 
   if (error) {
     throw new Error(`Failed to load feed complaints: ${error.message}`);
   }
 
-  const complaints = data || [];
+  const complaints = (data || []).filter(c => c.status?.toLowerCase() !== 'unverified');
   
   if (complaints.length === 0) return [];
   
@@ -237,7 +239,6 @@ export async function getFeedComplaints() {
       location: [c.house, c.road, c.avenue, c.nearby_landmark].filter(Boolean).join(', ') || 'Location not provided',
       status: c.status.toUpperCase(),
       category: c.category,
-      urgencyCount: c.urgency,
       image: evidenceMap.get(c.comp_id) || null
     };
   });
@@ -249,7 +250,7 @@ export async function getMyFeedComplaints() {
 
   const { data, error } = await supabase
     .from('complaints')
-    .select('comp_id, title, description, house, road, avenue, nearby_landmark, additional_location_details, status, urgency, timestamp, category')
+    .select('comp_id, title, description, house, road, avenue, nearby_landmark, additional_location_details, status, timestamp, category')
     .eq('acc_id', accId)
     .order('timestamp', { ascending: false });
 
@@ -290,7 +291,6 @@ export async function getMyFeedComplaints() {
       location: [c.house, c.road, c.avenue, c.nearby_landmark].filter(Boolean).join(', ') || 'Location not provided',
       status: c.status.toUpperCase(),
       category: c.category,
-      urgencyCount: c.urgency,
       image: images[0] || null,
       images: images
     };
@@ -300,7 +300,7 @@ export async function getMyFeedComplaints() {
 export async function getComplaintDetails(compId: string) {
   const { data, error } = await supabase
     .from('complaints')
-    .select('comp_id, title, description, house, road, avenue, nearby_landmark, additional_location_details, status, urgency, timestamp, category')
+    .select('comp_id, title, description, house, road, avenue, nearby_landmark, additional_location_details, status, timestamp, category')
     .eq('comp_id', compId)
     .single();
 
@@ -326,7 +326,6 @@ export async function getComplaintDetails(compId: string) {
     location: [data.house, data.road, data.avenue, data.nearby_landmark, data.additional_location_details].filter(Boolean).join(', ') || 'Location not provided',
     status: data.status.toUpperCase(),
     category: data.category,
-    urgencyCount: data.urgency,
     house: data.house,
     road: data.road,
     avenue: data.avenue,
@@ -338,6 +337,32 @@ export async function getComplaintDetails(compId: string) {
     feedback: [],
     approval: null,
   };
+}
+
+export async function deleteComplaint(compId: string) {
+  // Check if unverified first
+  const { data: complaint, error: checkError } = await supabase
+    .from('complaints')
+    .select('status')
+    .eq('comp_id', compId)
+    .single();
+
+  if (checkError) {
+    throw new Error(`Failed to check complaint status: ${checkError.message}`);
+  }
+
+  if (complaint.status.toLowerCase() !== 'unverified') {
+    throw new Error('Only unverified complaints can be deleted.');
+  }
+
+  const { error: deleteError } = await supabase
+    .from('complaints')
+    .delete()
+    .eq('comp_id', compId);
+
+  if (deleteError) {
+    throw new Error(`Failed to delete complaint: ${deleteError.message}`);
+  }
 }
 
 export async function getAnalyticsData() {

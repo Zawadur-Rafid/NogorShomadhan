@@ -6,14 +6,14 @@ import {
   ScrollView,
   TouchableOpacity,
   Image,
-  SafeAreaView,
   Alert
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { getMyFeedComplaints } from '@/services/resident.service';
 
-type StatusFilter = 'All' | 'Pending' | 'In Progress' | 'Resolved';
+type StatusFilter = 'All' | 'Unverified' | 'Pending' | 'In Progress' | 'Resolved';
 
 const theme = {
   background: '#f8f9fc',
@@ -40,7 +40,7 @@ const theme = {
 export default function MyComplaintsScreen() {
   const router = useRouter();
   const [activeFilter, setActiveFilter] = useState<StatusFilter>('All');
-  const [upvotedComplaints, setUpvotedComplaints] = useState<Set<string>>(new Set());
+
   const [myComplaints, setMyComplaints] = useState<any[]>([]);
 
   useEffect(() => {
@@ -92,7 +92,7 @@ export default function MyComplaintsScreen() {
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.filterContainer}
           >
-            {(['All', 'Pending', 'In Progress', 'Resolved'] as StatusFilter[]).map(
+            {(['All', 'Unverified', 'Pending', 'In Progress', 'Resolved'] as StatusFilter[]).map(
               (filter) => {
                 const isActive = activeFilter === filter;
                 return (
@@ -142,7 +142,11 @@ export default function MyComplaintsScreen() {
               let badgeBg = theme.pendingBg;
               let badgeText = theme.pendingText;
               let statusLabel = 'Pending';
-              if (item.status === 'IN PROGRESS') {
+              if (item.status === 'UNVERIFIED') {
+                badgeBg = theme.surfaceContainerLow;
+                badgeText = theme.onSurfaceVariant;
+                statusLabel = 'Unverified';
+              } else if (item.status === 'IN PROGRESS') {
                 badgeBg = theme.progressBg;
                 badgeText = theme.progressText;
                 statusLabel = 'In Progress';
@@ -226,33 +230,7 @@ export default function MyComplaintsScreen() {
                       />
                       <Text style={styles.locationText}>{item.location}</Text>
                     </View>
-                    <TouchableOpacity
-                      style={[styles.urgencyTag, upvotedComplaints.has(item.id) && { backgroundColor: '#C57C1B' }]}
-                      disabled={item.status !== "PENDING"}
-                      onPress={(e) => {
-                        e.stopPropagation();
-                        if (item.status === "PENDING") {
-                          setUpvotedComplaints(prev => {
-                            const newSet = new Set(prev);
-                            if (newSet.has(item.id)) {
-                              newSet.delete(item.id);
-                            } else {
-                              newSet.add(item.id);
-                            }
-                            return newSet;
-                          });
-                        }
-                      }}
-                    >
-                      <Ionicons
-                        name="arrow-up-circle"
-                        size={14}
-                        color={upvotedComplaints.has(item.id) ? "#FFFFFF" : "#C57C1B"}
-                      />
-                      <Text style={[styles.urgencyText, upvotedComplaints.has(item.id) && { color: "#FFFFFF" }]}>
-                        {item.urgencyCount + (upvotedComplaints.has(item.id) ? 1 : 0)} Urgency Votes
-                      </Text>
-                    </TouchableOpacity>
+
                   </View>
 
                   <View style={styles.actionRow}>
@@ -466,21 +444,7 @@ const styles = StyleSheet.create({
     color: theme.onSurfaceVariant,
     flex: 1,
   },
-  urgencyTag: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: '#FEE2E2',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 12,
-  },
-  urgencyText: {
-    fontFamily: 'Inter',
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#B91C1C',
-  },
+
   actionRow: {
     flexDirection: 'row',
   },

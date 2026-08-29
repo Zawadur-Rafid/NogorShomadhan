@@ -8,7 +8,6 @@ export type AuthorityComplaint = {
   location: string;
   category: string;
   status: AuthorityComplaintStatus;
-  urgency: number;
   house?: string;
   road?: string;
   avenue?: string;

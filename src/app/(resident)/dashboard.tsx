@@ -404,10 +404,7 @@ export default function Dashboard() {
                 <Ionicons name="location-outline" size={10} color="#777" />
                 <Text style={styles.infoText}>{item.location}</Text>
               </View>
-              <View style={styles.infoRow}>
-                <Ionicons name="arrow-up-circle" size={14} color="#C57C1B" />
-                <Text style={[styles.infoText, { color: '#C57C1B', fontWeight: 'bold' }]}>{item.urgencyCount}</Text>
-              </View>
+
             </View>
           </View>
         </View>

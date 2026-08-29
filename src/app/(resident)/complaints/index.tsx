@@ -16,13 +16,18 @@ type StatusFilter = "All" | "Pending" | "In Progress" | "Resolved";
 
 const CATEGORIES = [
   "All Categories",
+  "Road Damage",
+  "Garbage & Waste",
+  "Drainage & Waterlogging",
+  "Streetlight & Electrical",
   "Water Supply",
-  "Roads & Traffic",
-  "Streetlights",
-  "Waste Management",
-  "Parks & Recreation",
-  "Public Safety",
-  "Drainage System",
+  "Sanitation & Public Toilets",
+  "Traffic & Illegal Parking",
+  "Public Safety & Encroachment",
+  "Noise & Environmental Pollution",
+  "Parks & Public Spaces",
+  "Animal-Related Issues",
+  "Other",
 ];
 
 const theme = {
@@ -51,7 +56,7 @@ export default function ResidentAllComplaintsScreen() {
   const router = useRouter();
   const [activeStatusFilter, setActiveStatusFilter] = useState<StatusFilter>("All");
   const [activeCategoryFilter, setActiveCategoryFilter] = useState<string>("All Categories");
-  const [upvotedComplaints, setUpvotedComplaints] = useState<Set<string>>(new Set());
+
   const [complaints, setComplaints] = useState<any[]>([]);
 
   useEffect(() => {
@@ -169,13 +174,17 @@ export default function ResidentAllComplaintsScreen() {
               }
 
               let materialIcon: keyof typeof MaterialIcons.glyphMap = "report-problem";
+              if (item.category === "Road Damage") materialIcon = "construction";
+              if (item.category === "Garbage & Waste") materialIcon = "delete";
+              if (item.category === "Drainage & Waterlogging") materialIcon = "water-damage";
+              if (item.category === "Streetlight & Electrical") materialIcon = "lightbulb";
               if (item.category === "Water Supply") materialIcon = "water-drop";
-              if (item.category === "Roads & Traffic") materialIcon = "construction";
-              if (item.category === "Streetlights") materialIcon = "lightbulb";
-              if (item.category === "Waste Management") materialIcon = "delete";
-              if (item.category === "Parks & Recreation") materialIcon = "park";
-              if (item.category === "Public Safety") materialIcon = "shield";
-              if (item.category === "Drainage System") materialIcon = "water-damage";
+              if (item.category === "Sanitation & Public Toilets") materialIcon = "wc";
+              if (item.category === "Traffic & Illegal Parking") materialIcon = "traffic";
+              if (item.category === "Public Safety & Encroachment") materialIcon = "shield";
+              if (item.category === "Noise & Environmental Pollution") materialIcon = "volume-up";
+              if (item.category === "Parks & Public Spaces") materialIcon = "park";
+              if (item.category === "Animal-Related Issues") materialIcon = "pets";
 
               return (
                 <TouchableOpacity 
@@ -212,29 +221,7 @@ export default function ResidentAllComplaintsScreen() {
                       <MaterialIcons name="place" size={16} color={theme.primary} />
                       <Text style={styles.locationText}>{item.location}</Text>
                     </View>
-                    <TouchableOpacity 
-                      style={[styles.urgencyTag, upvotedComplaints.has(item.id) && { backgroundColor: '#C57C1B' }]}
-                      disabled={item.status !== "PENDING"}
-                      onPress={(e) => {
-                        e.stopPropagation();
-                        if (item.status === "PENDING") {
-                          setUpvotedComplaints(prev => {
-                            const newSet = new Set(prev);
-                            if (newSet.has(item.id)) {
-                              newSet.delete(item.id);
-                            } else {
-                              newSet.add(item.id);
-                            }
-                            return newSet;
-                          });
-                        }
-                      }}
-                    >
-                      <Ionicons name="arrow-up-circle" size={16} color={upvotedComplaints.has(item.id) ? "#FFFFFF" : "#C57C1B"} />
-                      <Text style={[styles.urgencyText, upvotedComplaints.has(item.id) && { color: "#FFFFFF" }]}>
-                        {item.urgencyCount + (upvotedComplaints.has(item.id) ? 1 : 0)} Urgency Votes
-                      </Text>
-                    </TouchableOpacity>
+
                   </View>
 
                   <View style={styles.actionRow}>
@@ -459,21 +446,7 @@ const styles = StyleSheet.create({
     color: theme.onSurfaceVariant,
     flex: 1,
   },
-  urgencyTag: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    backgroundColor: "#FEE2E2",
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 12,
-  },
-  urgencyText: {
-    fontFamily: "Inter",
-    fontSize: 11,
-    fontWeight: "700",
-    color: "#B91C1C",
-  },
+
   actionRow: {
     flexDirection: "row",
   },

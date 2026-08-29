@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Image, Alert } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Image, Alert, Modal, Animated, Platform, KeyboardAvoidingView } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
-import { categorizeComplaint } from '../../../services/ai.service';
+import { categorizeComplaint, CATEGORIES } from '../../../services/ai.service';
 import { createComplaint } from '../../../services/resident.service';
 import { ActivityIndicator } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -22,6 +22,49 @@ export default function NewComplaintForm() {
     photos: false,
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [category, setCategory] = useState<string>('');
+  const [isCategorizing, setIsCategorizing] = useState(false);
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
+
+  const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+  const slideAnim = useRef(new Animated.Value(400)).current;
+
+  const triggerToast = (message: string) => {
+    setToastMessage(message);
+    setShowToast(true);
+    Animated.sequence([
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 400,
+        useNativeDriver: true,
+      }),
+      Animated.delay(3000),
+      Animated.timing(slideAnim, {
+        toValue: 400,
+        duration: 400,
+        useNativeDriver: true,
+      }),
+    ]).start(() => setShowToast(false));
+  };
+
+  useEffect(() => {
+    const handler = setTimeout(async () => {
+      if (title.trim().length > 5 && description.trim().length > 10) {
+        setIsCategorizing(true);
+        try {
+          const suggestedCategory = await categorizeComplaint(title, description, []);
+          setCategory(suggestedCategory);
+        } catch (error) {
+          console.error("AI categorization failed", error);
+        } finally {
+          setIsCategorizing(false);
+        }
+      }
+    }, 1500); // 1.5 second debounce
+
+    return () => clearTimeout(handler);
+  }, [title, description]);
 
   const handleCamera = async () => {
     try {
@@ -95,8 +138,6 @@ export default function NewComplaintForm() {
       try {
         const base64Images = photos.map(p => p.base64);
 
-        const category = await categorizeComplaint(title, description, base64Images);
-
         const acc_id = await AsyncStorage.getItem('acc_id');
 
         await createComplaint({
@@ -107,31 +148,23 @@ export default function NewComplaintForm() {
           avenue: avenue.trim() || undefined,
           nearby_landmark: nearbyLandmark.trim() || undefined,
           additional_location_details: additionalLocationDetails.trim() || undefined,
-          category,
+          category: category || 'Other',
           images: photos,
           acc_id: acc_id || undefined,
         });
 
-        Alert.alert(
-          'Submission Successful', 
-          `Your complaint has been logged as "${category}" and queued for review.`,
-          [
-            {
-              text: 'OK',
-              onPress: () => {
-                setTitle('');
-                setDescription('');
-                setHouse('');
-                setRoad('');
-                setAvenue('');
-                setNearbyLandmark('');
-                setAdditionalLocationDetails('');
-                setPhotos([]);
-                setErrors({ title: false, description: false, location: false, photos: false });
-              }
-            }
-          ]
-        );
+        triggerToast(`Your complaint has been logged and queued for review.`);
+
+        setTitle('');
+        setDescription('');
+        setHouse('');
+        setRoad('');
+        setAvenue('');
+        setNearbyLandmark('');
+        setAdditionalLocationDetails('');
+        setCategory('');
+        setPhotos([]);
+        setErrors({ title: false, description: false, location: false, photos: false });
       } catch (error: any) {
         console.error("Submission error:", error);
         Alert.alert('Submission Failed', error.message || 'An error occurred while submitting.');
@@ -142,7 +175,32 @@ export default function NewComplaintForm() {
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer} showsVerticalScrollIndicator={false}>
+    <View style={styles.container}>
+      {showToast && (
+        <Animated.View style={[styles.toastContainer, { transform: [{ translateX: slideAnim }] }]}>
+          <View style={styles.toastLeftBorder} />
+          <MaterialIcons name="check-circle" size={24} color="#1b7a43" style={styles.toastIcon} />
+          <View style={styles.toastContent}>
+            <Text style={styles.toastTitle}>Success</Text>
+            <Text style={styles.toastText}>{toastMessage}</Text>
+          </View>
+          <TouchableOpacity onPress={() => setShowToast(false)} style={styles.toastCloseButton}>
+            <MaterialIcons name="close" size={18} color="#1a1a1a" />
+          </TouchableOpacity>
+        </Animated.View>
+      )}
+
+      <KeyboardAvoidingView 
+        style={{ flex: 1, width: '100%' }} 
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+      >
+        <ScrollView 
+          style={styles.scrollView} 
+          contentContainerStyle={styles.contentContainer} 
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
       
       {/* Title Field */}
       <View style={styles.card}>
@@ -264,6 +322,62 @@ export default function NewComplaintForm() {
         )}
       </View>
 
+      {/* Category Selection */}
+      <View style={styles.card}>
+        <Text style={styles.label}>CATEGORY</Text>
+        <TouchableOpacity 
+          style={styles.dropdownButton} 
+          onPress={() => setShowCategoryModal(true)}
+        >
+          <Text style={category ? styles.dropdownButtonText : styles.dropdownButtonPlaceholder}>
+            {category || 'Select a category'}
+          </Text>
+          <MaterialIcons name="arrow-drop-down" size={24} color="#6B7280" />
+        </TouchableOpacity>
+        
+        {isCategorizing && (
+          <View style={styles.aiSuggestionContainer}>
+            <ActivityIndicator size="small" color="#00475E" />
+            <Text style={styles.aiSuggestionText}>AI is determining the best category...</Text>
+          </View>
+        )}
+        {!isCategorizing && category ? (
+          <View style={styles.aiSuggestionContainer}>
+            <MaterialIcons name="auto-awesome" size={16} color="#00475E" />
+            <Text style={styles.aiSuggestionText}>Category suggested by AI. Tap above to change.</Text>
+          </View>
+        ) : null}
+      </View>
+
+      <Modal
+        visible={showCategoryModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowCategoryModal(false)}
+      >
+        <TouchableOpacity style={styles.modalOverlay} onPress={() => setShowCategoryModal(false)} activeOpacity={1}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Select Category</Text>
+            <ScrollView style={styles.modalList}>
+              {CATEGORIES.map((cat) => (
+                <TouchableOpacity 
+                  key={cat} 
+                  style={[styles.modalItem, category === cat && styles.modalItemSelected]}
+                  onPress={() => {
+                    setCategory(cat);
+                    setShowCategoryModal(false);
+                  }}
+                >
+                  <Text style={[styles.modalItemText, category === cat && styles.modalItemTextSelected]}>
+                    {cat}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
       {/* Submit Button */}
       <TouchableOpacity style={styles.submitButton} onPress={handleSubmit} disabled={isSubmitting}>
         {isSubmitting ? (
@@ -275,13 +389,20 @@ export default function NewComplaintForm() {
           </>
         )}
       </TouchableOpacity>
-      
-    </ScrollView>
+        
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
+    width: '100%',
+    position: 'relative',
+  },
+  scrollView: {
     flex: 1,
     width: '100%',
   },
@@ -454,5 +575,131 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontFamily: 'Inter',
     marginTop: 4,
+  },
+  dropdownButton: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 8,
+    backgroundColor: '#F9FAFB',
+  },
+  dropdownButtonText: {
+    fontSize: 16,
+    color: '#374151',
+    fontFamily: 'Inter',
+  },
+  dropdownButtonPlaceholder: {
+    fontSize: 16,
+    color: '#9CA3AF',
+    fontFamily: 'Inter',
+  },
+  aiSuggestionContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 8,
+    gap: 6,
+  },
+  aiSuggestionText: {
+    fontSize: 12,
+    color: '#4B5563',
+    fontFamily: 'Inter',
+    fontStyle: 'italic',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: '#FFF',
+    width: '85%',
+    maxHeight: '70%',
+    borderRadius: 12,
+    padding: 16,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#23435D',
+    marginBottom: 12,
+    fontFamily: 'Inter',
+  },
+  modalList: {
+    flexGrow: 0,
+  },
+  modalItem: {
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+  modalItemSelected: {
+    backgroundColor: '#F0F9FF',
+  },
+  modalItemText: {
+    fontSize: 16,
+    color: '#374151',
+    fontFamily: 'Inter',
+  },
+  modalItemTextSelected: {
+    color: '#00475E',
+    fontWeight: '600',
+  },
+  toastContainer: {
+    position: 'absolute',
+    top: Platform.OS === 'ios' ? 60 : 40,
+    right: 16,
+    width: 320,
+    backgroundColor: '#ebf4ec',
+    borderRadius: 6,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    paddingVertical: 16,
+    paddingRight: 16,
+    zIndex: 1000,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 6,
+    overflow: 'hidden',
+  },
+  toastLeftBorder: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 4,
+    backgroundColor: '#1b7a43',
+  },
+  toastIcon: {
+    marginLeft: 16,
+    marginTop: 0,
+  },
+  toastContent: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  toastTitle: {
+    fontFamily: 'Inter',
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#1a1a1a',
+    marginBottom: 4,
+  },
+  toastText: {
+    fontFamily: 'Inter',
+    fontSize: 14,
+    fontWeight: '400',
+    color: '#2a2a2a',
+    lineHeight: 20,
+  },
+  toastCloseButton: {
+    padding: 2,
+    marginLeft: 8,
   }
 });
