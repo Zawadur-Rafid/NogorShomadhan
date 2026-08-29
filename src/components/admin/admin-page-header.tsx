@@ -1,14 +1,15 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
+import { notificationService, ForumNotification } from "@/services/notification.service";
 
-const adminNotifications = [
+const initialAdminNotifications = [
   { id: "notification-1", icon: "document-text-outline", title: "New complaint submitted", message: "Broken Main Pipe is awaiting verification.", time: "5 min ago" },
   { id: "notification-2", icon: "person-add-outline", title: "New account request", message: "A resident account is awaiting approval.", time: "18 min ago" },
   { id: "notification-3", icon: "checkmark-circle-outline", title: "Complaint resolved", message: "Major Pothole was marked as resolved.", time: "1 hr ago" },
   { id: "notification-4", icon: "bar-chart-outline", title: "Weekly report ready", message: "Your community performance summary is available.", time: "Today" },
-] as const;
+];
 
 /** Shared top bar for every screen in the admin route group. */
 export default function AdminPageHeader() {
@@ -16,6 +17,22 @@ export default function AdminPageHeader() {
   const [menuVisible, setMenuVisible] = useState(false);
   const [notificationsVisible, setNotificationsVisible] = useState(false);
   const [logoutPromptVisible, setLogoutPromptVisible] = useState(false);
+  const [notifications, setNotifications] = useState<any[]>(initialAdminNotifications);
+
+  useEffect(() => {
+    async function fetchNotifs() {
+      const forumNotifs = await notificationService.fetchForumNotifications('admin');
+      const formatted = forumNotifs.map(n => ({
+        id: n.id,
+        icon: n.icon,
+        title: n.title,
+        message: n.message,
+        time: n.time
+      }));
+      setNotifications([...formatted, ...initialAdminNotifications]);
+    }
+    fetchNotifs();
+  }, []);
 
   const confirmLogout = () => {
     setMenuVisible(false);
@@ -47,7 +64,7 @@ export default function AdminPageHeader() {
         >
           <Ionicons name="notifications-outline" size={24} color="#AA3029" />
           <View style={styles.notificationCount}>
-            <Text style={styles.notificationCountText}>3</Text>
+            <Text style={styles.notificationCountText}>{notifications.length}</Text>
           </View>
         </Pressable>
         <Pressable
@@ -77,9 +94,9 @@ export default function AdminPageHeader() {
         <View style={styles.notificationsMenu}>
           <View style={styles.notificationsHeading}>
             <Text style={styles.notificationsTitle}>Notifications</Text>
-            <Text style={styles.notificationsNew}>3 new</Text>
+            <Text style={styles.notificationsNew}>{notifications.length} new</Text>
           </View>
-          {adminNotifications.map((notification) => (
+          {notifications.map((notification) => (
             <Pressable key={notification.id} style={({ pressed }) => [styles.notificationItem, pressed && styles.notificationPressed]}>
               <View style={styles.notificationIcon}>
                 <Ionicons name={notification.icon} size={17} color="#304B6B" />
@@ -137,75 +154,17 @@ export default function AdminPageHeader() {
 }
 
 const styles = StyleSheet.create({
-  header: {
-    height: 64,
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 18,
-    backgroundColor: "#F8F9FC",
-    zIndex: 10,
-  },
+  header: { height: 64, flexDirection: "row", alignItems: "center", paddingHorizontal: 18, backgroundColor: "#F8F9FC", zIndex: 10 },
   iconButton: { alignItems: "center", justifyContent: "center" },
   notificationButton: { position: "relative" },
-  notificationCount: {
-    position: "absolute",
-    top: -7,
-    right: -9,
-    minWidth: 16,
-    height: 16,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 3,
-    borderRadius: 8,
-    backgroundColor: "#D92D20",
-  },
+  notificationCount: { position: "absolute", top: -7, right: -9, minWidth: 16, height: 16, alignItems: "center", justifyContent: "center", paddingHorizontal: 3, borderRadius: 8, backgroundColor: "#D92D20" },
   notificationCountText: { color: "#FFFFFF", fontSize: 9, fontWeight: "800" },
-  brand: {
-    flex: 1,
-    marginLeft: 10,
-    color: "#304B6B",
-    fontSize: 20,
-    fontWeight: "700",
-    letterSpacing: 0.1,
-  },
+  brand: { flex: 1, marginLeft: 10, color: "#304B6B", fontSize: 20, fontWeight: "700", letterSpacing: 0.1 },
   actions: { flexDirection: "row", alignItems: "center", gap: 15 },
-  avatar: {
-    width: 34,
-    height: 34,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 17,
-    backgroundColor: "#E1EBF8",
-  },
+  avatar: { width: 34, height: 34, alignItems: "center", justifyContent: "center", borderRadius: 17, backgroundColor: "#E1EBF8" },
   avatarText: { color: "#304B6B", fontSize: 13, fontWeight: "700" },
-  accountMenu: {
-    position: "absolute",
-    top: 58,
-    right: 18,
-    minWidth: 126,
-    padding: 6,
-    borderRadius: 10,
-    backgroundColor: "#FFFFFF",
-    shadowColor: "#000000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.14,
-    shadowRadius: 10,
-    elevation: 6,
-  },
-  notificationsMenu: {
-    position: "absolute",
-    top: 58,
-    right: 16,
-    width: 320,
-    paddingVertical: 6,
-    borderRadius: 12,
-    backgroundColor: "#FFFFFF",
-    shadowColor: "#000000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.14,
-    shadowRadius: 10,
-    elevation: 6,
-  },
+  accountMenu: { position: "absolute", top: 58, right: 18, minWidth: 126, padding: 6, borderRadius: 10, backgroundColor: "#FFFFFF", shadowColor: "#000000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.14, shadowRadius: 10, elevation: 6 },
+  notificationsMenu: { position: "absolute", top: 58, right: 16, width: 320, paddingVertical: 6, borderRadius: 12, backgroundColor: "#FFFFFF", shadowColor: "#000000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.14, shadowRadius: 10, elevation: 6, maxHeight: 400 },
   notificationsHeading: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 14, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: "#EAECF0" },
   notificationsTitle: { color: "#1F2937", fontSize: 15, fontWeight: "800" },
   notificationsNew: { color: "#D92D20", fontSize: 11, fontWeight: "700" },
@@ -217,58 +176,17 @@ const styles = StyleSheet.create({
   notificationMessage: { marginTop: 2, color: "#667085", fontSize: 11, lineHeight: 15 },
   notificationTime: { marginTop: 3, color: "#98A2B3", fontSize: 10 },
   unreadDot: { width: 7, height: 7, marginTop: 5, borderRadius: 4, backgroundColor: "#D92D20" },
-  logoutButton: {
-    minHeight: 40,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 9,
-    paddingHorizontal: 12,
-    borderRadius: 7,
-  },
+  logoutButton: { minHeight: 40, flexDirection: "row", alignItems: "center", gap: 9, paddingHorizontal: 12, borderRadius: 7 },
   logoutText: { color: "#B42318", fontSize: 14, fontWeight: "700" },
   pressed: { backgroundColor: "#FFF1F0" },
-  modalOverlay: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 24,
-    backgroundColor: "rgba(15, 23, 42, 0.42)",
-  },
-  logoutDialog: {
-    width: "100%",
-    maxWidth: 360,
-    padding: 22,
-    borderRadius: 16,
-    backgroundColor: "#FFFFFF",
-  },
+  modalOverlay: { flex: 1, alignItems: "center", justifyContent: "center", padding: 24, backgroundColor: "rgba(15, 23, 42, 0.42)" },
+  logoutDialog: { width: "100%", maxWidth: 360, padding: 22, borderRadius: 16, backgroundColor: "#FFFFFF" },
   dialogTitle: { color: "#1F2937", fontSize: 20, fontWeight: "800" },
-  dialogMessage: {
-    marginTop: 8,
-    color: "#667085",
-    fontSize: 14,
-    lineHeight: 21,
-  },
-  dialogActions: {
-    flexDirection: "row",
-    justifyContent: "flex-end",
-    gap: 10,
-    marginTop: 22,
-  },
-  cancelButton: {
-    minHeight: 40,
-    justifyContent: "center",
-    paddingHorizontal: 14,
-    borderRadius: 8,
-    backgroundColor: "#F2F4F7",
-  },
+  dialogMessage: { marginTop: 8, color: "#667085", fontSize: 14, lineHeight: 21 },
+  dialogActions: { flexDirection: "row", justifyContent: "flex-end", gap: 10, marginTop: 22 },
+  cancelButton: { minHeight: 40, justifyContent: "center", paddingHorizontal: 14, borderRadius: 8, backgroundColor: "#F2F4F7" },
   cancelText: { color: "#344054", fontSize: 14, fontWeight: "700" },
-  confirmButton: {
-    minHeight: 40,
-    justifyContent: "center",
-    paddingHorizontal: 14,
-    borderRadius: 8,
-    backgroundColor: "#B42318",
-  },
+  confirmButton: { minHeight: 40, justifyContent: "center", paddingHorizontal: 14, borderRadius: 8, backgroundColor: "#B42318" },
   confirmPressed: { backgroundColor: "#8E1B12" },
   confirmText: { color: "#FFFFFF", fontSize: 14, fontWeight: "700" },
 });

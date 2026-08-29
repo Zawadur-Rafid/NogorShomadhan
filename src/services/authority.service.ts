@@ -746,6 +746,7 @@ export async function getAuthorityComplaints(): Promise<
         contractorAssignments,
         updates,
         feedback: [],
+        urgency: complaintDuplicates.length * 10 + 5,
       } satisfies AuthorityComplaintDetail;
     }),
   );

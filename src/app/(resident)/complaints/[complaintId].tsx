@@ -539,7 +539,7 @@ function ResidentFeedback({
 
 function ReporterProfile({ complaint }: { complaint: any }) {
   const [expanded, setExpanded] = useState(false);
-  const maxReporters = 3;
+  const maxReporters: number = 3;
   const bangladeshiNames = ['Rahim Uddin', 'Karim Hasan', 'Anisur Rahman'];
   
   const otherReporters = Array.from({ length: maxReporters }).map((_, i) => {

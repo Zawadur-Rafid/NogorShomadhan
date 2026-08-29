@@ -1,11 +1,26 @@
-import React, { useState } from "react";
-import { View, Text, StyleSheet, Image, TouchableOpacity, Modal, TouchableWithoutFeedback } from "react-native";
+import React, { useState, useEffect } from "react";
+import { View, Text, StyleSheet, Image, TouchableOpacity, Modal, TouchableWithoutFeedback, ScrollView } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { notificationService, ForumNotification } from "../services/notification.service";
 
 export default function TopNav() {
   const router = useRouter();
   const [menuVisible, setMenuVisible] = useState(false);
+  const [notifVisible, setNotifVisible] = useState(false);
+  const [notifications, setNotifications] = useState<ForumNotification[]>([]);
+
+  useEffect(() => {
+    async function loadNotifs() {
+      const accId = await AsyncStorage.getItem("acc_id");
+      if (accId) {
+        const notifs = await notificationService.fetchForumNotifications('resident', accId);
+        setNotifications(notifs);
+      }
+    }
+    loadNotifs();
+  }, []);
 
   return (
     <View style={styles.header}>
@@ -17,9 +32,42 @@ export default function TopNav() {
         <Text style={styles.logo}>Nogor Shomadhan</Text>
       </View>
       <View style={styles.rightSection}>
-        <TouchableOpacity>
-          <Ionicons name="notifications-outline" size={20} color="#23435D" />
-        </TouchableOpacity>
+        <View style={{ zIndex: 50 }}>
+          <TouchableOpacity onPress={() => setNotifVisible(!notifVisible)}>
+            <Ionicons name="notifications-outline" size={20} color="#23435D" />
+            {notifications.length > 0 && (
+              <View style={styles.badge}>
+                <Text style={styles.badgeText}>{notifications.length}</Text>
+              </View>
+            )}
+          </TouchableOpacity>
+          {notifVisible && (
+            <View style={styles.notifMenu}>
+              <View style={styles.notifHeader}>
+                <Text style={styles.notifTitle}>Notifications</Text>
+              </View>
+              <ScrollView style={{ maxHeight: 300 }}>
+                {notifications.length === 0 ? (
+                  <Text style={styles.emptyText}>No new notifications</Text>
+                ) : (
+                  notifications.map((n) => (
+                    <TouchableOpacity key={n.id} style={styles.notifItem} onPress={() => {
+                        setNotifVisible(false);
+                        router.push('/(resident)/forum');
+                    }}>
+                      <Ionicons name={n.icon as any} size={16} color="#23435D" />
+                      <View style={styles.notifContent}>
+                        <Text style={styles.notifItemTitle}>{n.title}</Text>
+                        <Text style={styles.notifMessage}>{n.message}</Text>
+                        <Text style={styles.notifTime}>{n.time}</Text>
+                      </View>
+                    </TouchableOpacity>
+                  ))
+                )}
+              </ScrollView>
+            </View>
+          )}
+        </View>
         
         <View style={{ zIndex: 50 }}>
           <TouchableOpacity onPress={() => setMenuVisible(!menuVisible)}>
@@ -86,6 +134,76 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     zIndex: 50,
+  },
+  badge: {
+    position: 'absolute',
+    top: -5,
+    right: -5,
+    backgroundColor: '#D92D20',
+    borderRadius: 10,
+    width: 14,
+    height: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  badgeText: {
+    color: '#fff',
+    fontSize: 8,
+    fontWeight: 'bold',
+  },
+  notifMenu: {
+    position: 'absolute',
+    top: 30,
+    right: 0,
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    width: 260,
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 5,
+    zIndex: 1000,
+  },
+  notifHeader: {
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+  },
+  notifTitle: {
+    fontWeight: '700',
+    color: '#333',
+  },
+  notifItem: {
+    flexDirection: 'row',
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+  },
+  notifContent: {
+    marginLeft: 10,
+    flex: 1,
+  },
+  notifItemTitle: {
+    fontWeight: '600',
+    fontSize: 12,
+    color: '#333',
+  },
+  notifMessage: {
+    fontSize: 11,
+    color: '#666',
+    marginTop: 2,
+  },
+  notifTime: {
+    fontSize: 9,
+    color: '#999',
+    marginTop: 4,
+  },
+  emptyText: {
+    padding: 15,
+    textAlign: 'center',
+    color: '#888',
+    fontSize: 12,
   },
   dropdownMenu: {
     position: 'absolute',
