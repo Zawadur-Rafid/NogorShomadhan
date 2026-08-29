@@ -1,14 +1,12 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import AuthorityPageHeader from '@/components/authority/authority-page-header';
-import {
-  authorityNotifications,
-  type AuthorityNotification,
-} from '@/components/authority/store-authority-account';
+import { authorityNotifications } from '@/components/authority/store-authority-account';
+import { notificationService } from '@/services/notification.service';
 
 type NotificationFilter = 'ALL' | 'UNREAD';
 
@@ -17,14 +15,31 @@ const notificationTheme = {
   urgency: { icon: 'flame-outline' as const, color: '#E0524D', background: '#FFF1F1' },
   feedback: { icon: 'chatbox-ellipses-outline' as const, color: '#B9854B', background: '#FFF7E8' },
   system: { icon: 'alarm-outline' as const, color: '#7C6BC4', background: '#F2EFFE' },
+  forum_post: { icon: 'chatbubble-ellipses-outline' as const, color: '#16845B', background: '#EAF8F1' },
+  forum_announcement: { icon: 'megaphone-outline' as const, color: '#D92D20', background: '#FFF1F0' },
+  forum_comment: { icon: 'chatbox-outline' as const, color: '#3B82F6', background: '#EEF6FF' },
 };
 
 export default function AuthorityNotifications() {
   const router = useRouter();
   const [filter, setFilter] = useState<NotificationFilter>('ALL');
-  const [notifications, setNotifications] = useState<AuthorityNotification[]>(
-    authorityNotifications,
-  );
+  const [notifications, setNotifications] = useState<any[]>(authorityNotifications);
+
+  useEffect(() => {
+    async function fetchNotifs() {
+      const forumNotifs = await notificationService.fetchForumNotifications('authority');
+      const formatted = forumNotifs.map((n) => ({
+        id: n.id,
+        title: n.title,
+        message: n.message,
+        time: n.time,
+        type: n.type,
+        read: n.read,
+      }));
+      setNotifications([...formatted, ...authorityNotifications]);
+    }
+    fetchNotifs();
+  }, []);
 
   const unreadCount = notifications.filter((item) => !item.read).length;
   const visibleNotifications = useMemo(
@@ -32,7 +47,7 @@ export default function AuthorityNotifications() {
     [filter, notifications],
   );
 
-  const openNotification = (notification: AuthorityNotification) => {
+  const openNotification = (notification: any) => {
     setNotifications((current) =>
       current.map((item) =>
         item.id === notification.id ? { ...item, read: true } : item,
@@ -102,7 +117,7 @@ export default function AuthorityNotifications() {
 
           <View style={styles.notificationList}>
             {visibleNotifications.map((notification) => {
-              const theme = notificationTheme[notification.type];
+              const theme = notificationTheme[notification.type as keyof typeof notificationTheme] || notificationTheme.system;
               return (
                 <Pressable
                   key={notification.id}

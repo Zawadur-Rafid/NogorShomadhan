@@ -13,6 +13,7 @@ export type AuthorityComplaint = {
   avenue?: string;
   nearby_landmark?: string;
   additional_location_details?: string;
+  urgency: number;
 };
 
 // Temporary dashboard data. Replace this file with backend data when the API is connected.
