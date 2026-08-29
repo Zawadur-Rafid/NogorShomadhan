@@ -21,7 +21,7 @@ export const CATEGORIES = [
 export async function categorizeComplaint(
   title: string,
   description: string,
-  imageBase64List: string[]
+  imageBase64List: string[] = []
 ): Promise<string> {
   if (!apiKey) {
     console.warn('No Gemini API key found, falling back to Other');
@@ -36,7 +36,7 @@ export async function categorizeComplaint(
     Title: "${title}"
     Description: "${description}"
 
-    Based on the title, description, and the provided images, categorize the complaint into EXACTLY ONE of the following categories:
+    Based on the title, description${imageBase64List.length > 0 ? ', and the provided images' : ''}, categorize the complaint into EXACTLY ONE of the following categories:
     ${CATEGORIES.map(c => `- ${c}`).join('\n')}
 
     Reply with ONLY the exact category name from the list above. Do not add quotes, explanation, or any other text.

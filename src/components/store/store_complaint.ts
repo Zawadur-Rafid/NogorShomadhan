@@ -6,8 +6,6 @@ export interface DummyComplaint {
   location: string;
   status: 'PENDING' | 'IN PROGRESS' | 'RESOLVED';
   category: string;
-  urgencyCount: number;
-  urgencyLevel: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
   evidence: string; // Description of evidence
   image: string; // Primary evidence picture
   images: string[]; // Multiple evidence pictures

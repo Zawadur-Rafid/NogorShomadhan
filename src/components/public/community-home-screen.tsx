@@ -58,7 +58,7 @@ const slides: HeroSlide[] = [
 
 const workflow: (Feature & { number: string })[] = [
   { number: '01', icon: 'person-add-alt-1', title: 'Create a verified account', description: 'Register once so every report has a trusted community source.' },
-  { number: '02', icon: 'add-a-photo', title: 'Report the issue', description: 'Add a photo, category, location, urgency, and a short description.' },
+  { number: '02', icon: 'add-a-photo', title: 'Report the issue', description: 'Add a photo, category, location, and a short description.' },
   { number: '03', icon: 'engineering', title: 'Follow authority updates', description: 'See status, work notes, evidence, and budget changes as they happen.' },
   { number: '04', icon: 'rate-review', title: 'Confirm and give feedback', description: 'Review completion proof and rate the response for your community.' },
 ];

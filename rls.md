@@ -15,6 +15,7 @@
   - `Enable insert for public`: Allows public users to create complaints.
   - `Enable select for public`: Allows public users to view all complaints (necessary for feed).
   - `Enable update for public`: Allows public users to update complaints (e.g., status changes).
+  - `Enable delete for public unverified`: Allows public users to delete unverified complaints.
 
 ### `evidence`
 - **RLS Enabled:** Yes

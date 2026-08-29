@@ -5,7 +5,7 @@ export type AuthorityNotification = {
   title: string;
   message: string;
   time: string;
-  type: 'complaint' | 'urgency' | 'feedback' | 'system';
+  type: 'complaint' | 'feedback' | 'system';
   read: boolean;
   complaintId?: string;
   complaintStatus?: AuthorityComplaintStatus;
@@ -22,16 +22,7 @@ export const authorityNotifications: AuthorityNotification[] = [
     complaintId: 'CMP-1048',
     complaintStatus: 'PENDING',
   },
-  {
-    id: 'NTF-500',
-    title: 'Urgency threshold reached',
-    message: 'CMP-1048 now has 47 resident urgency signals.',
-    time: '35 minutes ago',
-    type: 'urgency',
-    read: false,
-    complaintId: 'CMP-1048',
-    complaintStatus: 'PENDING',
-  },
+
   {
     id: 'NTF-498',
     title: 'Resident added feedback',

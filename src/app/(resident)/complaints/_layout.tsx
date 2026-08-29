@@ -9,15 +9,26 @@ export default function ComplaintsLayout() {
   const router = useRouter();
   const pathname = usePathname();
 
+  const [activeTab, setActiveTab] = React.useState<'create' | 'all' | 'my'>('all');
+
+  React.useEffect(() => {
+    if (pathname.endsWith('create')) {
+      setActiveTab('create');
+    } else if (pathname.endsWith('my')) {
+      setActiveTab('my');
+    } else if (pathname.endsWith('complaints') || pathname.endsWith('complaints/')) {
+      setActiveTab('all');
+    }
+  }, [pathname]);
+
   const handleTabPress = (path: string) => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     router.push(path as any);
   };
 
-  const isNew = pathname.endsWith('create');
-  const isMy = pathname.endsWith('my');
-  // If not create or my, we assume it's index (All)
-  const isAll = !isNew && !isMy;
+  const isNew = activeTab === 'create';
+  const isMy = activeTab === 'my';
+  const isAll = activeTab === 'all';
 
   return (
     <SafeAreaView style={styles.container}>

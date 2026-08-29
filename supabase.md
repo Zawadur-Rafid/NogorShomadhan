@@ -39,7 +39,6 @@
 - `category`: complaint_category (NOT NULL)
 - `status`: complaint_status (Default: 'unverified', NOT NULL)
 - `timestamp`: TIMESTAMPTZ (Default: CURRENT_TIMESTAMP)
-- `urgency`: INTEGER (Default: 0, NOT NULL)
 
 ### `evidence`
 - `ev_id`: UUID (Primary Key, Default: gen_random_uuid())
