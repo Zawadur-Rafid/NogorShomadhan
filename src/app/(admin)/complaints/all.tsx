@@ -24,8 +24,11 @@ type ReviewComplaint = {
   description: string;
   category: string;
   status: string;
-  latitude: number;
-  longitude: number;
+  house?: string;
+  road?: string;
+  avenue?: string;
+  nearby_landmark?: string;
+  additional_location_details?: string;
   timestamp: string | null;
   urgency: number;
   reporterName: string;
@@ -49,8 +52,7 @@ type NormalComplaint = {
   images: string[];
   color: string;
   icon: string;
-  lat: number;
-  lng: number;
+
   image: string;
 };
 
@@ -168,7 +170,7 @@ export function ComplaintsListScreen({
 
     const { data: complaintData, error: complaintError } = await supabase
       .from("complaints")
-      .select("comp_id,title,description,category,status,latitude,longitude,timestamp")
+      .select("comp_id,title,description,category,status,house,road,avenue,nearby_landmark,additional_location_details,timestamp")
       .in("status", ["pending", "in progress", "resolved"])
       .order("timestamp", { ascending: false });
 
@@ -180,7 +182,7 @@ export function ComplaintsListScreen({
 
     const rows = (complaintData ?? []) as Array<{
       comp_id: string; title: string; description: string; category: string;
-      status: string; latitude: number; longitude: number; timestamp: string | null;
+      status: string; house?: string; road?: string; avenue?: string; nearby_landmark?: string; additional_location_details?: string; timestamp: string | null;
     }>;
     const complaintIds = rows.map((item) => item.comp_id);
     const { data: evidenceData, error: evidenceError } = complaintIds.length
@@ -203,7 +205,7 @@ export function ComplaintsListScreen({
       title: item.title,
       description: item.description,
       date: formatComplaintDate(item.timestamp),
-      location: `${item.latitude.toFixed(4)}, ${item.longitude.toFixed(4)}`,
+      location: [item.house, item.road, item.avenue, item.nearby_landmark].filter(Boolean).join(', ') || 'Location not provided',
       status: (item.status === "in progress" ? "IN PROGRESS" : item.status.toUpperCase()) as "PENDING" | "IN PROGRESS" | "RESOLVED",
       category: item.category,
       urgencyCount: 0,
@@ -212,8 +214,7 @@ export function ComplaintsListScreen({
       images: firstEvidence.has(item.comp_id) ? [firstEvidence.get(item.comp_id)!] : [],
       color: "#60A5FA",
       icon: item.category.toLowerCase(),
-      lat: item.latitude,
-      lng: item.longitude,
+
       image: firstEvidence.get(item.comp_id) ?? "",
     })));
     setComplaintsLoading(false);
@@ -225,7 +226,7 @@ export function ComplaintsListScreen({
     const { data: complaintsData, error: complaintsError } = await supabase
       .from("complaints")
       .select(
-        "comp_id,acc_id,title,description,category,status,latitude,longitude,timestamp,urgency",
+        "comp_id,acc_id,title,description,category,status,house,road,avenue,nearby_landmark,additional_location_details,timestamp,urgency",
       )
       .eq("status", "unverified");
 
@@ -242,8 +243,11 @@ export function ComplaintsListScreen({
       description: string;
       category: string;
       status: string;
-      latitude: number;
-      longitude: number;
+      house?: string;
+      road?: string;
+      avenue?: string;
+      nearby_landmark?: string;
+      additional_location_details?: string;
       timestamp: string | null;
       urgency: number;
     }>;
@@ -313,8 +317,11 @@ export function ComplaintsListScreen({
         description: item.description,
         category: item.category,
         status: item.status,
-        latitude: item.latitude,
-        longitude: item.longitude,
+        house: item.house,
+        road: item.road,
+        avenue: item.avenue,
+        nearby_landmark: item.nearby_landmark,
+        additional_location_details: item.additional_location_details,
         timestamp: item.timestamp,
         urgency: item.urgency,
         reporterName: account?.full_name ?? "Unknown resident",

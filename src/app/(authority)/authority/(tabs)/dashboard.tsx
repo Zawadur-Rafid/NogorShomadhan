@@ -14,7 +14,6 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useAuthorityComplaints } from '@/components/authority/authority-complaints-context';
-import AuthorityMap from '@/components/authority/authority-map';
 import {
   authorityDashboardProfile,
   type AuthorityComplaintStatus,
@@ -750,115 +749,7 @@ export default function AuthorityDashboard() {
                 )}
             </View>
 
-            {/* Map */}
 
-            <View
-              style={[
-                styles.mapSection,
-                wide &&
-                  styles.mapSectionWide,
-              ]}
-            >
-              <View
-                style={styles.sectionHeader}
-              >
-                <View>
-                  <Text
-                    style={styles.sectionTitle}
-                  >
-                    Complaint Map
-                  </Text>
-
-                  <Text
-                    style={
-                      styles.sectionSubtitle
-                    }
-                  >
-                    Locations of authority
-                    complaints
-                  </Text>
-                </View>
-
-                <Ionicons
-                  name="map-outline"
-                  size={22}
-                  color="#23435D"
-                />
-              </View>
-
-              <View style={styles.mapCard}>
-                <AuthorityMap
-                  locations={complaints}
-                  onLocationPress={
-                    openComplaint
-                  }
-                />
-              </View>
-
-              <View
-                style={styles.mapLegend}
-              >
-                <View
-                  style={styles.legendItem}
-                >
-                  <View
-                    style={[
-                      styles.legendDot,
-                      {
-                        backgroundColor:
-                          '#EF4444',
-                      },
-                    ]}
-                  />
-
-                  <Text
-                    style={styles.legendText}
-                  >
-                    Pending
-                  </Text>
-                </View>
-
-                <View
-                  style={styles.legendItem}
-                >
-                  <View
-                    style={[
-                      styles.legendDot,
-                      {
-                        backgroundColor:
-                          '#C67B00',
-                      },
-                    ]}
-                  />
-
-                  <Text
-                    style={styles.legendText}
-                  >
-                    In Progress
-                  </Text>
-                </View>
-
-                <View
-                  style={styles.legendItem}
-                >
-                  <View
-                    style={[
-                      styles.legendDot,
-                      {
-                        backgroundColor:
-                          '#2563EB',
-                      },
-                    ]}
-                  />
-
-                  <Text
-                    style={styles.legendText}
-                  >
-                    Resolved
-                  </Text>
-                </View>
-              </View>
-            </View>
           </View>
 
           {/* Authority Tools */}

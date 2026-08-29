@@ -1,4 +1,4 @@
-﻿// src/services/authority.service.ts
+// src/services/authority.service.ts
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { supabase } from '@/lib/supabase';
@@ -26,8 +26,11 @@ type ComplaintRow = {
   acc_id: string | null;
   title: string;
   description: string;
-  longitude: number;
-  latitude: number;
+  house?: string;
+  road?: string;
+  avenue?: string;
+  nearby_landmark?: string;
+  additional_location_details?: string;
   category: string;
   status: ComplaintStatus;
   timestamp: string | null;
@@ -281,8 +284,9 @@ function normalizeBangladeshPhone(value: string): string {
   );
 }
 
-function getLocation(latitude: number, longitude: number): string {
-  return `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`;
+function getLocation(complaint: ComplaintRow): string {
+  const parts = [complaint.house, complaint.road, complaint.avenue, complaint.nearby_landmark].filter(Boolean);
+  return parts.length > 0 ? parts.join(', ') : 'Location not provided';
 }
 
 function getWorkUpdateTitle(type: WorkUpdateType): string {
@@ -709,12 +713,15 @@ export async function getAuthorityComplaints(): Promise<
         title: complaint.title,
         description: complaint.description,
         date: formatShortDate(complaint.timestamp),
-        location: getLocation(complaint.latitude, complaint.longitude),
+        location: getLocation(complaint),
         category: complaint.category,
         status,
         urgency: complaint.urgency,
-        lat: complaint.latitude,
-        lng: complaint.longitude,
+        house: complaint.house,
+        road: complaint.road,
+        avenue: complaint.avenue,
+        nearby_landmark: complaint.nearby_landmark,
+        additional_location_details: complaint.additional_location_details,
         reporter: reporter?.full_name ?? 'Unknown Resident',
         reporterInitials: getInitials(
           reporter?.full_name ?? 'Unknown Resident',

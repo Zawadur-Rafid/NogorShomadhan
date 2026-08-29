@@ -12,7 +12,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useRouter } from "expo-router";
-import MapViewComponent from "../../components/MapView";
+
 import TopNav from "../../components/TopNav";
 import BottomNav from "../../components/BottomNav";
 
@@ -36,7 +36,6 @@ export default function Dashboard() {
 
   const stats = data?.stats || { total: 0, pending: 0, inProgress: 0, resolved: 0 };
   const recentComplaints = data?.recentComplaints || [];
-  const mapComplaints = data?.mapComplaints || [];
 
   const styles = StyleSheet.create({
     container: {
@@ -480,37 +479,7 @@ export default function Dashboard() {
           renderItem={renderComplaint}
         />
 
-        {/* Nearby Issues */}
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Nearby Issues</Text>
-          <TouchableOpacity onPress={() => router.push('/(resident)/map')}>
-            <Text style={styles.viewAll}>Expand</Text>
-          </TouchableOpacity>
-        </View>
 
-        {/* Map */}
-        <View style={styles.mapCard}>
-          <MapViewComponent 
-            locations={mapComplaints}
-            onLocationPress={(loc) => router.push(`/(resident)/complaints/${loc.id}`)}
-          />
-        </View>
-
-        {/* Map Legend */}
-        <View style={styles.legendContainer}>
-          <View style={styles.legendItem}>
-            <View style={[styles.legendColor, { backgroundColor: '#EF4444' }]} />
-            <Text style={styles.legendText}>Pending</Text>
-          </View>
-          <View style={styles.legendItem}>
-            <View style={[styles.legendColor, { backgroundColor: '#B45309' }]} />
-            <Text style={styles.legendText}>In Progress</Text>
-          </View>
-          <View style={styles.legendItem}>
-            <View style={[styles.legendColor, { backgroundColor: '#3B82F6' }]} />
-            <Text style={styles.legendText}>Resolved</Text>
-          </View>
-        </View>
 
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Community Forum</Text>

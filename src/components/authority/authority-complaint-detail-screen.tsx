@@ -20,7 +20,6 @@ import Animated, { FadeIn, FadeInDown, FadeOut } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useAuthorityComplaints } from './authority-complaints-context';
-import AuthorityMap from './authority-map';
 import AuthorityPageHeader from './authority-page-header';
 import type {
   AuthorityApproval,
@@ -1245,23 +1244,7 @@ export default function AuthorityComplaintDetailScreen() {
                 )}
               </View>
 
-              <View style={styles.panel}>
-                <View style={styles.panelHeading}>
-                  <View>
-                    <Text style={styles.panelTitle}>Issue Location</Text>
-                    <Text style={styles.panelSubtitle}>{complaint.location}</Text>
-                  </View>
-                  <View style={styles.coordinateBadge}>
-                    <Ionicons name="navigate-outline" size={13} color="#2563EB" />
-                    <Text selectable style={styles.coordinateText}>
-                      {complaint.lat.toFixed(4)}, {complaint.lng.toFixed(4)}
-                    </Text>
-                  </View>
-                </View>
-                <View style={styles.mapCard}>
-                  <AuthorityMap locations={[complaint]} />
-                </View>
-              </View>
+
 
               {mode !== 'pending' && (
                 <ComplaintTimeline complaint={complaint} />

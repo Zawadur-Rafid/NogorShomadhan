@@ -31,8 +31,11 @@
 - `acc_id`: UUID (Foreign Key to account.acc_id)
 - `title`: TEXT (NOT NULL)
 - `description`: TEXT (NOT NULL)
-- `longitude`: DOUBLE PRECISION (NOT NULL)
-- `latitude`: DOUBLE PRECISION (NOT NULL)
+- `house`: TEXT
+- `road`: TEXT
+- `avenue`: TEXT
+- `nearby_landmark`: TEXT
+- `additional_location_details`: TEXT
 - `category`: complaint_category (NOT NULL)
 - `status`: complaint_status (Default: 'unverified', NOT NULL)
 - `timestamp`: TIMESTAMPTZ (Default: CURRENT_TIMESTAMP)

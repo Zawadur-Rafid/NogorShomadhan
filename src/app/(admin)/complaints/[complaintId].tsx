@@ -11,7 +11,6 @@ import {
 } from "react-native";
 
 import AdminBottomNav from "@/components/AdminBottomNav";
-import MapViewComponent from "@/components/MapView";
 import { supabase } from "@/lib/supabase";
 
 const statusTheme = {
@@ -40,8 +39,11 @@ type DbComplaintDetails = {
   description: string;
   category: string;
   status: "UNVERIFIED" | "PENDING" | "IN PROGRESS" | "RESOLVED";
-  latitude: number;
-  longitude: number;
+  house?: string;
+  road?: string;
+  avenue?: string;
+  nearby_landmark?: string;
+  additional_location_details?: string;
   timestamp: string | null;
   urgency: number;
   images: string[];
@@ -96,7 +98,7 @@ export default function AdminComplaintDetails() {
       const { data: complaintData, error: complaintError } = await supabase
         .from("complaints")
         .select(
-          "comp_id,acc_id,title,description,category,status,latitude,longitude,timestamp,urgency",
+          "comp_id,acc_id,title,description,category,status,house,road,avenue,nearby_landmark,additional_location_details,timestamp,urgency",
         )
         .eq("comp_id", complaintIdValue)
         .single();
@@ -114,8 +116,11 @@ export default function AdminComplaintDetails() {
         description: string;
         category: string;
         status: string;
-        latitude: number;
-        longitude: number;
+        house?: string;
+        road?: string;
+        avenue?: string;
+        nearby_landmark?: string;
+        additional_location_details?: string;
         timestamp: string | null;
         urgency: number;
       };
@@ -158,8 +163,11 @@ export default function AdminComplaintDetails() {
         description: complaintRow.description,
         category: complaintRow.category,
         status: mapStatus(complaintRow.status),
-        latitude: complaintRow.latitude,
-        longitude: complaintRow.longitude,
+        house: complaintRow.house,
+        road: complaintRow.road,
+        avenue: complaintRow.avenue,
+        nearby_landmark: complaintRow.nearby_landmark,
+        additional_location_details: complaintRow.additional_location_details,
         timestamp: complaintRow.timestamp,
         urgency: complaintRow.urgency,
         images: ((evidenceData ?? []) as Array<{ img_url: string }>).map(
@@ -193,9 +201,7 @@ export default function AdminComplaintDetails() {
         date: dbComplaint.timestamp
           ? new Date(dbComplaint.timestamp).toLocaleString()
           : "Unknown date",
-        lat: dbComplaint.latitude,
-        lng: dbComplaint.longitude,
-        location: `${dbComplaint.latitude.toFixed(4)}, ${dbComplaint.longitude.toFixed(4)}`,
+        location: [dbComplaint.house, dbComplaint.road, dbComplaint.avenue, dbComplaint.nearby_landmark, dbComplaint.additional_location_details].filter(Boolean).join(', ') || 'Location not provided',
         category: dbComplaint.category,
         icon: dbComplaint.category.toLowerCase(),
         image: dbComplaint.images[0],
@@ -331,11 +337,7 @@ export default function AdminComplaintDetails() {
               label="Submitted"
               value={complaint.date}
             />
-            <Detail
-              icon="navigate-outline"
-              label="Coordinates"
-              value={`${complaint.lat.toFixed(4)}, ${complaint.lng.toFixed(4)}`}
-            />
+
           </View>
         </View>
 
@@ -471,13 +473,7 @@ export default function AdminComplaintDetails() {
           )}
         </View>
 
-        <View style={styles.panel}>
-          <Text style={styles.panelTitle}>Map location</Text>
-          <Text style={styles.mapSubtitle}>{complaint.location}</Text>
-          <View style={styles.map}>
-            <MapViewComponent locations={[complaint]} />
-          </View>
-        </View>
+
 
         <View style={styles.panel}>
           <Text style={styles.panelTitle}>Administrative review</Text>

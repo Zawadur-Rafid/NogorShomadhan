@@ -16,7 +16,6 @@ import {
   Alert
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import MapViewComponent from '@/components/MapView';
 import { getComplaintDetails } from '@/services/resident.service';
 
 export type ComplaintDetailMode = 'pending' | 'in-progress' | 'resolved';
@@ -802,23 +801,7 @@ export default function ComplaintDetailScreen() {
                 />
               </View>
 
-              <View style={styles.panel}>
-                <View style={styles.panelHeading}>
-                  <View>
-                    <Text style={styles.panelTitle}>Issue Location</Text>
-                    <Text style={styles.panelSubtitle}>{complaint.location}</Text>
-                  </View>
-                  <View style={styles.coordinateBadge}>
-                    <Ionicons name="navigate-outline" size={13} color="#2563EB" />
-                    <Text selectable style={styles.coordinateText}>
-                      {complaint.lat.toFixed(4)}, {complaint.lng.toFixed(4)}
-                    </Text>
-                  </View>
-                </View>
-                <View style={styles.mapCard}>
-                  <MapViewComponent locations={[complaint]} />
-                </View>
-              </View>
+
 
               <ComplaintTimeline complaint={complaint} />
 
