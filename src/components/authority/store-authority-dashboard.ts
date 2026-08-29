@@ -9,8 +9,11 @@ export type AuthorityComplaint = {
   category: string;
   status: AuthorityComplaintStatus;
   urgency: number;
-  lat: number;
-  lng: number;
+  house?: string;
+  road?: string;
+  avenue?: string;
+  nearby_landmark?: string;
+  additional_location_details?: string;
 };
 
 // Temporary dashboard data. Replace this file with backend data when the API is connected.

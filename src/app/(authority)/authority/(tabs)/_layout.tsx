@@ -4,7 +4,6 @@ import type { ColorValue } from 'react-native';
 
 const tabIcons = {
   dashboard: ['home-outline', 'home'],
-  map: ['map-outline', 'map'],
   complaints: ['document-text-outline', 'document-text'],
   analytics: ['bar-chart-outline', 'bar-chart'],
   feedback: ['chatbox-ellipses-outline', 'chatbox-ellipses'],
@@ -80,19 +79,6 @@ export default function AuthorityTabsLayout() {
         }}
       />
 
-      <Tabs.Screen
-        name="map"
-        options={{
-          title: 'Map',
-          tabBarIcon: ({ focused, color }) => (
-            <TabIcon
-              route="map"
-              focused={focused}
-              color={color}
-            />
-          ),
-        }}
-      />
 
       <Tabs.Screen
         name="complaints"

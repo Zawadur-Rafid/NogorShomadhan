@@ -57,8 +57,11 @@ async function getSubmittingResidentId(explicitAccId?: string): Promise<string> 
 export async function createComplaint(complaintData: {
   title: string;
   description: string;
-  latitude: number;
-  longitude: number;
+  house?: string;
+  road?: string;
+  avenue?: string;
+  nearby_landmark?: string;
+  additional_location_details?: string;
   category: string;
   images: { uri: string; base64: string }[];
   acc_id?: string;
@@ -70,8 +73,11 @@ export async function createComplaint(complaintData: {
     .insert({
       title: complaintData.title,
       description: complaintData.description,
-      latitude: complaintData.latitude,
-      longitude: complaintData.longitude,
+      house: complaintData.house,
+      road: complaintData.road,
+      avenue: complaintData.avenue,
+      nearby_landmark: complaintData.nearby_landmark,
+      additional_location_details: complaintData.additional_location_details,
       category: complaintData.category,
       acc_id: residentAccId,
     })
@@ -104,26 +110,7 @@ export async function createComplaint(complaintData: {
   return compId;
 }
 
-export async function getMapComplaints() {
-  const { data, error } = await supabase
-    .from('complaints')
-    .select('comp_id, title, description, latitude, longitude, status, urgency');
-
-  if (error) {
-    throw new Error(`Failed to load map complaints: ${error.message}`);
-  }
-
-  return (data || []).map((item) => ({
-    id: item.comp_id,
-    lat: item.latitude,
-    lng: item.longitude,
-    title: item.title,
-    description: item.description,
-    status: item.status.toUpperCase(),
-    urgencyCount: item.urgency,
-  }));
-}
-
+// getMapComplaints removed since map is removed
 export interface DashboardData {
   stats: {
     total: number;
@@ -132,13 +119,12 @@ export interface DashboardData {
     resolved: number;
   };
   recentComplaints: any[];
-  mapComplaints: any[];
 }
 
 export async function getDashboardData(): Promise<DashboardData> {
   const { data, error } = await supabase
     .from('complaints')
-    .select('comp_id, title, description, latitude, longitude, status, urgency, timestamp, category')
+    .select('comp_id, title, description, house, road, avenue, nearby_landmark, additional_location_details, status, urgency, timestamp, category')
     .order('timestamp', { ascending: false });
 
   if (error) {
@@ -178,15 +164,10 @@ export async function getDashboardData(): Promise<DashboardData> {
     return '#6B7280';
   };
 
-  const mapComplaints = complaints.map(c => ({
-    id: c.comp_id,
-    lat: c.latitude,
-    lng: c.longitude,
-    title: c.title,
-    description: c.description,
-    status: c.status.toUpperCase(),
-    urgencyCount: c.urgency,
-  }));
+  const getAddress = (c: any) => {
+    const parts = [c.house, c.road, c.avenue, c.nearby_landmark].filter(Boolean);
+    return parts.length > 0 ? parts.join(', ') : 'Location not provided';
+  };
 
   const recentComplaints = complaints.slice(0, 3).map(c => {
     const d = new Date(c.timestamp || Date.now());
@@ -196,7 +177,7 @@ export async function getDashboardData(): Promise<DashboardData> {
       title: c.title,
       description: c.description,
       date: dateStr,
-      location: `${c.latitude.toFixed(4)}, ${c.longitude.toFixed(4)}`,
+      location: getAddress(c),
       status: c.status.toUpperCase(),
       urgencyCount: c.urgency,
       color: getColorForStatus(c.status),
@@ -211,15 +192,14 @@ export async function getDashboardData(): Promise<DashboardData> {
       inProgress,
       resolved
     },
-    recentComplaints,
-    mapComplaints
+    recentComplaints
   };
 }
 
 export async function getFeedComplaints() {
   const { data, error } = await supabase
     .from('complaints')
-    .select('comp_id, title, description, latitude, longitude, status, urgency, timestamp, category')
+    .select('comp_id, title, description, house, road, avenue, nearby_landmark, additional_location_details, status, urgency, timestamp, category')
     .order('timestamp', { ascending: false });
 
   if (error) {
@@ -254,7 +234,7 @@ export async function getFeedComplaints() {
       title: c.title,
       description: c.description,
       date: dateStr,
-      location: `${c.latitude.toFixed(4)}, ${c.longitude.toFixed(4)}`,
+      location: [c.house, c.road, c.avenue, c.nearby_landmark].filter(Boolean).join(', ') || 'Location not provided',
       status: c.status.toUpperCase(),
       category: c.category,
       urgencyCount: c.urgency,
@@ -269,7 +249,7 @@ export async function getMyFeedComplaints() {
 
   const { data, error } = await supabase
     .from('complaints')
-    .select('comp_id, title, description, latitude, longitude, status, urgency, timestamp, category')
+    .select('comp_id, title, description, house, road, avenue, nearby_landmark, additional_location_details, status, urgency, timestamp, category')
     .eq('acc_id', accId)
     .order('timestamp', { ascending: false });
 
@@ -307,7 +287,7 @@ export async function getMyFeedComplaints() {
       title: c.title,
       description: c.description,
       date: dateStr,
-      location: `${c.latitude.toFixed(4)}, ${c.longitude.toFixed(4)}`,
+      location: [c.house, c.road, c.avenue, c.nearby_landmark].filter(Boolean).join(', ') || 'Location not provided',
       status: c.status.toUpperCase(),
       category: c.category,
       urgencyCount: c.urgency,
@@ -320,7 +300,7 @@ export async function getMyFeedComplaints() {
 export async function getComplaintDetails(compId: string) {
   const { data, error } = await supabase
     .from('complaints')
-    .select('comp_id, title, description, latitude, longitude, status, urgency, timestamp, category')
+    .select('comp_id, title, description, house, road, avenue, nearby_landmark, additional_location_details, status, urgency, timestamp, category')
     .eq('comp_id', compId)
     .single();
 
@@ -343,12 +323,15 @@ export async function getComplaintDetails(compId: string) {
     title: data.title,
     description: data.description,
     date: dateStr,
-    location: `${data.latitude.toFixed(4)}, ${data.longitude.toFixed(4)}`,
+    location: [data.house, data.road, data.avenue, data.nearby_landmark, data.additional_location_details].filter(Boolean).join(', ') || 'Location not provided',
     status: data.status.toUpperCase(),
     category: data.category,
     urgencyCount: data.urgency,
-    lat: data.latitude,
-    lng: data.longitude,
+    house: data.house,
+    road: data.road,
+    avenue: data.avenue,
+    nearby_landmark: data.nearby_landmark,
+    additional_location_details: data.additional_location_details,
     images: images,
     updates: [],
     contractorAssignments: [],

@@ -13,7 +13,7 @@
 - **RLS Enabled:** Yes
 - **Policies:**
   - `Enable insert for public`: Allows public users to create complaints.
-  - `Enable select for public`: Allows public users to view all complaints (necessary for map and feed).
+  - `Enable select for public`: Allows public users to view all complaints (necessary for feed).
   - `Enable update for public`: Allows public users to update complaints (e.g., status changes).
 
 ### `evidence`

@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Image, Alert } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
-import LocationPickerMap from '../../../components/LocationPickerMap';
 import * as ImagePicker from 'expo-image-picker';
 import { categorizeComplaint } from '../../../services/ai.service';
 import { createComplaint } from '../../../services/resident.service';
@@ -10,7 +9,11 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 export default function NewComplaintForm() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [selectedLocation, setSelectedLocation] = useState<{lat: number, lng: number} | null>(null);
+  const [house, setHouse] = useState('');
+  const [road, setRoad] = useState('');
+  const [avenue, setAvenue] = useState('');
+  const [nearbyLandmark, setNearbyLandmark] = useState('');
+  const [additionalLocationDetails, setAdditionalLocationDetails] = useState('');
   const [photos, setPhotos] = useState<{uri: string, base64: string}[]>([]);
   const [errors, setErrors] = useState({
     title: false,
@@ -19,10 +22,6 @@ export default function NewComplaintForm() {
     photos: false,
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const handleClearLocation = () => {
-    setSelectedLocation(null);
-  };
 
   const handleCamera = async () => {
     try {
@@ -86,8 +85,8 @@ export default function NewComplaintForm() {
     const newErrors = {
       title: title.trim() === '',
       description: description.trim() === '',
-      location: selectedLocation === null,
-      photos: photos.length === 0,
+      location: road.trim() === '' || avenue.trim() === '', // Simple validation: require at least road and avenue
+      photos: false,
     };
     setErrors(newErrors);
 
@@ -103,8 +102,11 @@ export default function NewComplaintForm() {
         await createComplaint({
           title,
           description,
-          latitude: selectedLocation!.lat,
-          longitude: selectedLocation!.lng,
+          house: house.trim() || undefined,
+          road: road.trim() || undefined,
+          avenue: avenue.trim() || undefined,
+          nearby_landmark: nearbyLandmark.trim() || undefined,
+          additional_location_details: additionalLocationDetails.trim() || undefined,
           category,
           images: photos,
           acc_id: acc_id || undefined,
@@ -119,7 +121,11 @@ export default function NewComplaintForm() {
               onPress: () => {
                 setTitle('');
                 setDescription('');
-                setSelectedLocation(null);
+                setHouse('');
+                setRoad('');
+                setAvenue('');
+                setNearbyLandmark('');
+                setAdditionalLocationDetails('');
                 setPhotos([]);
                 setErrors({ title: false, description: false, location: false, photos: false });
               }
@@ -176,30 +182,58 @@ export default function NewComplaintForm() {
 
       {/* Location Picker */}
       <View style={styles.card}>
-        <View style={styles.locationHeader}>
-          <Text style={styles.label}>INCIDENT LOCATION</Text>
-          {selectedLocation && (
-            <TouchableOpacity style={styles.detectButton} onPress={handleClearLocation}>
-              <MaterialIcons name="clear" size={16} color="#EF4444" />
-              <Text style={[styles.detectText, { color: '#EF4444' }]}>CLEAR LOCATION</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-        <View style={styles.mapPlaceholder}>
-          <LocationPickerMap 
-            selectedLocation={selectedLocation} 
-            onLocationSelect={(loc: {lat: number, lng: number} | null) => {
-              setSelectedLocation(loc);
-              if (errors.location) setErrors(prev => ({ ...prev, location: false }));
-            }} 
-          />
-        </View>
-        {selectedLocation && (
-          <Text style={styles.coordinatesText}>
-            Lat: {selectedLocation.lat.toFixed(6)}, Lng: {selectedLocation.lng.toFixed(6)}
-          </Text>
-        )}
-        {errors.location && <Text style={styles.errorText}>This field is required</Text>}
+        <Text style={styles.label}>INCIDENT LOCATION</Text>
+        
+        <TextInput
+          style={[styles.input, styles.marginBottom]}
+          placeholder="House Number (Optional)"
+          placeholderTextColor="#9CA3AF"
+          value={house}
+          onChangeText={(text) => {
+            setHouse(text);
+            if (errors.location) setErrors(prev => ({ ...prev, location: false }));
+          }}
+        />
+        
+        <TextInput
+          style={[styles.input, styles.marginBottom]}
+          placeholder="Road Number (Required)"
+          placeholderTextColor="#9CA3AF"
+          value={road}
+          onChangeText={(text) => {
+            setRoad(text);
+            if (errors.location) setErrors(prev => ({ ...prev, location: false }));
+          }}
+        />
+
+        <TextInput
+          style={[styles.input, styles.marginBottom]}
+          placeholder="Avenue (Required)"
+          placeholderTextColor="#9CA3AF"
+          value={avenue}
+          onChangeText={(text) => {
+            setAvenue(text);
+            if (errors.location) setErrors(prev => ({ ...prev, location: false }));
+          }}
+        />
+
+        <TextInput
+          style={[styles.input, styles.marginBottom]}
+          placeholder="Nearby Landmark (Optional)"
+          placeholderTextColor="#9CA3AF"
+          value={nearbyLandmark}
+          onChangeText={setNearbyLandmark}
+        />
+
+        <TextInput
+          style={styles.input}
+          placeholder="Additional Details (Optional)"
+          placeholderTextColor="#9CA3AF"
+          value={additionalLocationDetails}
+          onChangeText={setAdditionalLocationDetails}
+        />
+
+        {errors.location && <Text style={styles.errorText}>Road Number and Avenue are required fields</Text>}
       </View>
 
       {/* Photo Upload */}
@@ -228,7 +262,6 @@ export default function NewComplaintForm() {
             ))}
           </View>
         )}
-        {errors.photos && <Text style={styles.errorText}>At least one photo attachment is required</Text>}
       </View>
 
       {/* Submit Button */}
@@ -284,6 +317,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#374151',
     fontFamily: 'Inter',
+  },
+  marginBottom: {
+    marginBottom: 12,
   },
   chipContainer: {
     flexDirection: 'row',
@@ -341,42 +377,6 @@ const styles = StyleSheet.create({
     color: '#374151',
     fontFamily: 'Inter',
     minHeight: 100,
-  },
-  locationHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  detectButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(239, 68, 68, 0.1)',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-    gap: 4,
-  },
-  detectText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#EF4444',
-    fontFamily: 'Inter',
-  },
-  mapPlaceholder: {
-    width: '100%',
-    height: 260,
-    borderRadius: 8,
-    overflow: 'hidden',
-    marginBottom: 4,
-    position: 'relative',
-  },
-  coordinatesText: {
-    fontSize: 12,
-    color: '#6B7280',
-    fontFamily: 'Inter',
-    textAlign: 'center',
-    marginTop: 8,
   },
   photoGrid: {
     flexDirection: 'row',
