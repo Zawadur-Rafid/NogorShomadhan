@@ -23,6 +23,7 @@ import { useAuthorityComplaints } from './authority-complaints-context';
 import AuthorityIssueMap from './authority-issue-map';
 import { getAuthorityLocationDetails } from './authority-location';
 import AuthorityPageHeader from './authority-page-header';
+import { confirmAction } from '@/utils/confirm';
 import type {
   AuthorityApproval,
   AuthorityComplaintDetail,
@@ -989,6 +990,9 @@ export default function AuthorityComplaintDetailScreen() {
       return;
     }
 
+    const confirmStart = await confirmAction('Are you sure you want to start work on this complaint?');
+    if (!confirmStart) return;
+
     setActionLoading(true);
     setFormMessage('');
 
@@ -1035,6 +1039,9 @@ export default function AuthorityComplaintDetailScreen() {
       return;
     }
 
+    const confirmUpdate = await confirmAction('Are you sure you want to submit this work update?');
+    if (!confirmUpdate) return;
+
     setActionLoading(true);
     setFormMessage('');
 
@@ -1077,6 +1084,9 @@ export default function AuthorityComplaintDetailScreen() {
       return;
     }
 
+    const confirmChange = await confirmAction('Are you sure you want to change the contractor for this complaint?');
+    if (!confirmChange) return;
+
     setActionLoading(true);
     setFormMessage('');
 
@@ -1109,6 +1119,9 @@ export default function AuthorityComplaintDetailScreen() {
       );
       return;
     }
+
+    const confirmResolution = await confirmAction('Are you sure you want to resolve this complaint?');
+    if (!confirmResolution) return;
 
     setActionLoading(true);
     setFormMessage('');

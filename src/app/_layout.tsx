@@ -4,6 +4,7 @@ import { useColorScheme } from "react-native";
 
 import { AnimatedSplashOverlay } from "@/components/animated-icon";
 import { AdminAccountsProvider } from "@/store/admin-accounts-store";
+import { GlobalConfirmModal } from "@/utils/confirm";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -14,6 +15,7 @@ export default function TabLayout() {
       <AdminAccountsProvider>
         <AnimatedSplashOverlay />
         <Stack screenOptions={{ headerShown: false }} />
+        <GlobalConfirmModal />
       </AdminAccountsProvider>
     </ThemeProvider>
   );

@@ -13,6 +13,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import BottomNav from "@/components/BottomNav";
 import { forumService } from "@/services/forum.service";
+import { confirmAction } from "@/utils/confirm";
 
 type ForumStatus = "Announcement" | "Update" | "Alert";
 interface ForumCommentUI {
@@ -143,6 +144,9 @@ export default function ResidentForumScreen() {
   const publishPost = async () => {
     if (!postTitle.trim() || !postBody.trim()) return;
 
+    const confirmed = await confirmAction('Are you sure you want to submit this forum post?');
+    if (!confirmed) return;
+
     const title = postTitle.trim();
     const body = postBody.trim();
     setPostTitle("");
@@ -178,6 +182,9 @@ export default function ResidentForumScreen() {
   const addComment = async (postId: string) => {
     const text = commentDrafts[postId]?.trim();
     if (!text) return;
+
+    const confirmed = await confirmAction('Are you sure you want to submit this comment?');
+    if (!confirmed) return;
 
     const parentId = replyTarget[postId] || null;
 

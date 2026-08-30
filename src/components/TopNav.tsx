@@ -4,6 +4,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { notificationService, ForumNotification } from "../services/notification.service";
+import { confirmAction } from "@/utils/confirm";
 
 export default function TopNav() {
   const router = useRouter();
@@ -93,7 +94,9 @@ export default function TopNav() {
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.dropdownItem, { borderBottomWidth: 0 }]}
-                onPress={() => {
+                onPress={async () => {
+                  const confirmed = await confirmAction('Are you sure you want to log out?');
+                  if (!confirmed) return;
                   setMenuVisible(false);
                   router.replace('/');
                 }}

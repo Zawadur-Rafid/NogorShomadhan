@@ -5,6 +5,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import AdminBottomNav from "@/components/AdminBottomNav";
 import { forumService, DbForumPost, DbForumComment } from "@/services/forum.service";
+import { confirmAction } from "@/utils/confirm";
 
 type ForumStatus = "Announcement" | "Update" | "Alert";
 
@@ -138,6 +139,9 @@ export default function AdminForumScreen() {
   const publishPost = async () => {
     if (!postTitle.trim() || !postBody.trim()) return;
 
+    const confirmed = await confirmAction('Are you sure you want to submit this announcement?');
+    if (!confirmed) return;
+
     const newTitle = postTitle.trim();
     const newBody = postBody.trim();
     setPostTitle("");
@@ -174,6 +178,9 @@ export default function AdminForumScreen() {
   const addComment = async (postId: string) => {
     const text = commentDrafts[postId]?.trim();
     if (!text) return;
+
+    const confirmed = await confirmAction('Are you sure you want to submit this comment?');
+    if (!confirmed) return;
 
     const parentId = replyTarget[postId] || null;
 
@@ -214,6 +221,13 @@ export default function AdminForumScreen() {
   };
 
   const deletePost = async (postId: string) => {
+    const targetPost = posts.find((p) => p.id === postId);
+    const question = targetPost?.official
+      ? "Are you sure you want to delete this announcement?"
+      : "Are you sure you want to delete this forum post?";
+    const confirmed = await confirmAction(question);
+    if (!confirmed) return;
+
     setPosts((current) => current.filter((post) => post.id !== postId));
     try {
       if (!postId.startsWith("post-")) {
@@ -226,6 +240,9 @@ export default function AdminForumScreen() {
 
   // Admin deletes comment directly from main database table
   const deleteComment = async (postId: string, commentId: string) => {
+    const confirmed = await confirmAction("Are you sure you want to delete this comment?");
+    if (!confirmed) return;
+
     setPosts((current) =>
       current.map((post) =>
         post.id === postId

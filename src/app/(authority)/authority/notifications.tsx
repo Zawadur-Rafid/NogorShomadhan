@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import AuthorityPageHeader from '@/components/authority/authority-page-header';
 import { authorityNotifications } from '@/components/authority/store-authority-account';
 import { notificationService } from '@/services/notification.service';
+import { confirmAction } from '@/utils/confirm';
 
 type NotificationFilter = 'ALL' | 'UNREAD';
 
@@ -103,11 +104,17 @@ export default function AuthorityNotifications() {
             </View>
             <TouchableOpacity
               disabled={unreadCount === 0}
-              onPress={() =>
-                setNotifications((current) =>
-                  current.map((item) => ({ ...item, read: true })),
-                )
-              }
+              onPress={() => {
+                confirmAction(
+                  'Are you sure you want to mark all notifications as read?',
+                  () => {
+                    setNotifications((current) =>
+                      current.map((item) => ({ ...item, read: true })),
+                    );
+                  },
+                  'Mark All Read'
+                );
+              }}
               style={[styles.markAllButton, unreadCount === 0 && styles.markAllButtonDisabled]}
             >
               <Ionicons name="checkmark-done-outline" size={16} color="#23435D" />

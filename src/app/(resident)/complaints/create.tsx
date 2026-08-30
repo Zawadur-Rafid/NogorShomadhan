@@ -6,6 +6,7 @@ import { categorizeComplaint, CATEGORIES } from '../../../services/ai.service';
 import { createComplaint } from '../../../services/resident.service';
 import { ActivityIndicator } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { confirmAction } from '@/utils/confirm';
 export default function NewComplaintForm() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -134,6 +135,9 @@ export default function NewComplaintForm() {
     setErrors(newErrors);
 
     if (!newErrors.title && !newErrors.description && !newErrors.location && !newErrors.photos) {
+      const confirmed = await confirmAction('Are you sure you want to submit this complaint?');
+      if (!confirmed) return;
+
       setIsSubmitting(true);
       try {
         const base64Images = photos.map(p => p.base64);

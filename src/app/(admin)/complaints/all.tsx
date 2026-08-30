@@ -3,6 +3,7 @@ import { supabase } from "@/lib/supabase";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
+import { confirmAction } from "@/utils/confirm";
 import {
     Alert,
     Image,
@@ -103,41 +104,6 @@ export function ComplaintsListScreen({
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
   const [actionMessage, setActionMessage] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
-
-  const confirmAction = async (
-    title: string,
-    message: string,
-    confirmLabel: string,
-  ) => {
-    if (Platform.OS === "web") {
-      if (typeof globalThis.confirm === "function") {
-        return globalThis.confirm(`${title}\n\n${message}`);
-      }
-      return true;
-    }
-
-    return new Promise<boolean>((resolve) => {
-      Alert.alert(
-        title,
-        message,
-        [
-          {
-            text: "Cancel",
-            style: "cancel",
-            onPress: () => resolve(false),
-          },
-          {
-            text: confirmLabel,
-            onPress: () => resolve(true),
-          },
-        ],
-        {
-          cancelable: true,
-          onDismiss: () => resolve(false),
-        },
-      );
-    });
-  };
 
   const getMaterialIconFromCategory = (
     category: string,
@@ -370,9 +336,9 @@ export function ComplaintsListScreen({
   const handleAcceptReviewComplaint = (complaintId: string) => {
     void (async () => {
       const confirmed = await confirmAction(
-        "Accept complaint",
-        "Move this complaint to pending status?",
-        "Accept",
+        "Are you sure you want to accept this complaint and move it to pending?",
+        undefined,
+        "Accept Complaint",
       );
 
       if (!confirmed) {
@@ -405,9 +371,9 @@ export function ComplaintsListScreen({
   const handleDeleteReviewComplaint = (complaintId: string) => {
     void (async () => {
       const confirmed = await confirmAction(
-        "Delete complaint",
-        "Delete this complaint permanently?",
-        "Delete",
+        "Are you sure you want to delete this complaint?",
+        undefined,
+        "Delete Complaint",
       );
 
       if (!confirmed) {

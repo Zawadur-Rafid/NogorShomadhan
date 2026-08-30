@@ -14,6 +14,7 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 
 import AdminBottomNav from "@/components/AdminBottomNav";
 import { AdminAccount, useAdminAccounts } from "@/store/admin-accounts-store";
+import { confirmAction } from "@/utils/confirm";
 
 const colors = {
   background: "#F5F6FA",
@@ -64,6 +65,9 @@ export default function PendingAccountsPage() {
   }, [pendingAccounts, query]);
 
   const handleApprove = async (accountId: string) => {
+    const confirmed = await confirmAction('Are you sure you want to approve this account?');
+    if (!confirmed) return;
+
     setActionLoadingId(accountId);
     await approveAccount(accountId);
     setActionLoadingId(null);
@@ -74,6 +78,9 @@ export default function PendingAccountsPage() {
   };
 
   const handleReject = async (accountId: string) => {
+    const confirmed = await confirmAction('Are you sure you want to reject this account?');
+    if (!confirmed) return;
+
     setActionLoadingId(accountId);
     await rejectAccount(accountId);
     setActionLoadingId(null);

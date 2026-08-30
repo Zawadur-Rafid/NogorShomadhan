@@ -14,6 +14,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import AuthorityPageHeader from '@/components/authority/authority-page-header';
 import { forumService } from '@/services/forum.service';
+import { confirmAction } from '@/utils/confirm';
 
 type ForumStatus = 'Announcement' | 'Update' | 'Alert';
 
@@ -157,6 +158,9 @@ export default function AuthorityForumScreen() {
     const body = postBody.trim();
     if (!title || !body) return;
 
+    const confirmed = await confirmAction('Are you sure you want to submit this announcement?');
+    if (!confirmed) return;
+
     setPostTitle('');
     setPostBody('');
 
@@ -191,6 +195,9 @@ export default function AuthorityForumScreen() {
   const addReply = async (postId: string) => {
     const text = replyDrafts[postId]?.trim();
     if (!text) return;
+
+    const confirmed = await confirmAction('Are you sure you want to submit this response?');
+    if (!confirmed) return;
 
     const parentId = replyTarget[postId] || null;
 

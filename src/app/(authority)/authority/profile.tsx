@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import AuthorityPageHeader from '@/components/authority/authority-page-header';
 import { authorityProfileDetails } from '@/components/authority/store-authority-account';
+import { confirmAction } from '@/utils/confirm';
 
 function ProfileField({
   label,
@@ -48,7 +49,13 @@ export default function AuthorityProfile() {
   const [saved, setSaved] = useState(false);
 
   const saveProfile = () => {
-    setSaved(true);
+    confirmAction(
+      'Are you sure you want to save these profile changes?',
+      () => {
+        setSaved(true);
+      },
+      'Save Profile'
+    );
   };
 
   return (

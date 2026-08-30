@@ -3,6 +3,7 @@ import { useRouter } from "expo-router";
 import { useState, useEffect } from "react";
 import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
 import { notificationService, ForumNotification } from "@/services/notification.service";
+import { confirmAction } from "@/utils/confirm";
 
 const initialAdminNotifications = [
   { id: "notification-1", icon: "document-text-outline", title: "New complaint submitted", message: "Broken Main Pipe is awaiting verification.", time: "5 min ago" },
@@ -16,7 +17,6 @@ export default function AdminPageHeader() {
   const router = useRouter();
   const [menuVisible, setMenuVisible] = useState(false);
   const [notificationsVisible, setNotificationsVisible] = useState(false);
-  const [logoutPromptVisible, setLogoutPromptVisible] = useState(false);
   const [notifications, setNotifications] = useState<any[]>(initialAdminNotifications);
 
   useEffect(() => {
@@ -36,7 +36,11 @@ export default function AdminPageHeader() {
 
   const confirmLogout = () => {
     setMenuVisible(false);
-    setLogoutPromptVisible(true);
+    confirmAction(
+      'Are you sure you want to log out of your admin account?',
+      () => router.replace('/'),
+      'Log Out'
+    );
   };
 
   return (
@@ -112,43 +116,7 @@ export default function AdminPageHeader() {
         </View>
       ) : null}
 
-      <Modal
-        transparent
-        animationType="fade"
-        visible={logoutPromptVisible}
-        onRequestClose={() => setLogoutPromptVisible(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View accessibilityViewIsModal style={styles.logoutDialog}>
-            <Text style={styles.dialogTitle}>Log out?</Text>
-            <Text style={styles.dialogMessage}>
-              Are you sure you want to log out of your admin account?
-            </Text>
-            <View style={styles.dialogActions}>
-              <Pressable
-                accessibilityRole="button"
-                onPress={() => setLogoutPromptVisible(false)}
-                style={({ pressed }) => [
-                  styles.cancelButton,
-                  pressed && styles.pressed,
-                ]}
-              >
-                <Text style={styles.cancelText}>Cancel</Text>
-              </Pressable>
-              <Pressable
-                accessibilityRole="button"
-                onPress={() => router.replace("/")}
-                style={({ pressed }) => [
-                  styles.confirmButton,
-                  pressed && styles.confirmPressed,
-                ]}
-              >
-                <Text style={styles.confirmText}>Log out</Text>
-              </Pressable>
-            </View>
-          </View>
-        </View>
-      </Modal>
+      {null}
     </View>
   );
 }
