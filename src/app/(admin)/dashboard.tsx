@@ -1,5 +1,6 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useRouter } from "expo-router";
+import { useEffect, useState } from "react";
 import {
   ScrollView,
   StyleSheet,
@@ -9,6 +10,7 @@ import {
 } from "react-native";
 
 import AdminBottomNav from "@/components/AdminBottomNav";
+import { supabase } from "@/lib/supabase";
 
 const colors = {
   background: "#F6F7FB",
@@ -26,25 +28,78 @@ const colors = {
 export default function AdminDashboard() {
   const router = useRouter();
 
+  const [pendingAccountsCount, setPendingAccountsCount] = useState<number | null>(null);
+  const [pendingComplaintsCount, setPendingComplaintsCount] = useState<number | null>(null);
+  const [totalUsersCount, setTotalUsersCount] = useState<number | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const fetchDashboardMetrics = async () => {
+    setLoading(true);
+    try {
+      const [
+        { count: pendingAccCount },
+        { count: pendingCompCount },
+        { count: totalUsers },
+      ] = await Promise.all([
+        supabase
+          .from("account")
+          .select("acc_id", { count: "exact", head: true })
+          .eq("status", "unverified"),
+        supabase
+          .from("complaints")
+          .select("comp_id", { count: "exact", head: true })
+          .eq("status", "unverified"),
+        supabase
+          .from("account")
+          .select("acc_id", { count: "exact", head: true }),
+      ]);
+
+      setPendingAccountsCount(pendingAccCount ?? 0);
+      setPendingComplaintsCount(pendingCompCount ?? 0);
+      setTotalUsersCount(totalUsers ?? 0);
+    } catch (err) {
+      console.error("Failed to fetch admin dashboard metrics:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    void fetchDashboardMetrics();
+  }, []);
+
   return (
     <View style={styles.container}>
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 30 }}
       >
-        {/* Pending Verification */}
-
-        <View style={styles.card}>
+        {/* Pending Account Verification Card */}
+        <TouchableOpacity
+          activeOpacity={0.9}
+          style={styles.card}
+          onPress={() => router.push("/(admin)/accounts/pending")}
+        >
           <View style={{ flex: 1 }}>
             <Text style={styles.cardLabel}>PENDING ACCOUNT VERIFICATIONS</Text>
 
-            <Text style={styles.bigNumber}>14</Text>
+            <Text style={styles.bigNumber}>
+              {loading ? "..." : (pendingAccountsCount ?? 0)}
+            </Text>
 
-            <View style={styles.warningRow}>
-              <Ionicons name="warning" size={12} color="#C0392B" />
-
-              <Text style={styles.warningText}>Requires Attention</Text>
-            </View>
+            {pendingAccountsCount && pendingAccountsCount > 0 ? (
+              <View style={styles.warningRow}>
+                <Ionicons name="warning" size={12} color="#C0392B" />
+                <Text style={styles.warningText}>Requires Attention</Text>
+              </View>
+            ) : (
+              <View style={styles.warningRow}>
+                <Ionicons name="checkmark-circle" size={12} color="#1E8E3E" />
+                <Text style={[styles.warningText, { color: "#1E8E3E" }]}>
+                  All Clear
+                </Text>
+              </View>
+            )}
           </View>
 
           <View style={styles.blueCircle}>
@@ -54,54 +109,70 @@ export default function AdminDashboard() {
               color="#1F63C6"
             />
           </View>
-        </View>
+        </TouchableOpacity>
 
-        {/* Pending Complaint Verification */}
-
-        <View style={styles.card}>
+        {/* Pending Complaint Verification Card */}
+        <TouchableOpacity
+          activeOpacity={0.9}
+          style={styles.card}
+          onPress={() => router.push("/(admin)/complaints/review")}
+        >
           <View style={{ flex: 1 }}>
             <Text style={styles.cardLabel}>PENDING COMPLAINT VERIFICATION</Text>
 
-            <Text style={styles.bigNumber}>25</Text>
+            <Text style={styles.bigNumber}>
+              {loading ? "..." : (pendingComplaintsCount ?? 0)}
+            </Text>
 
-            <View style={styles.warningRow}>
-              <Ionicons name="warning" size={12} color="#C0392B" />
-
-              <Text style={styles.warningText}>Requires Attention</Text>
-            </View>
+            {pendingComplaintsCount && pendingComplaintsCount > 0 ? (
+              <View style={styles.warningRow}>
+                <Ionicons name="warning" size={12} color="#C0392B" />
+                <Text style={styles.warningText}>Requires Attention</Text>
+              </View>
+            ) : (
+              <View style={styles.warningRow}>
+                <Ionicons name="checkmark-circle" size={12} color="#1E8E3E" />
+                <Text style={[styles.warningText, { color: "#1E8E3E" }]}>
+                  All Clear
+                </Text>
+              </View>
+            )}
           </View>
 
           <View style={styles.blueCircle}>
             <Ionicons
-              name="shield-checkmark-outline"
+              name="document-text-outline"
               size={28}
               color="#1F63C6"
             />
           </View>
-        </View>
+        </TouchableOpacity>
 
-        {/* Total Users */}
-
-        <View style={styles.card}>
+        {/* Total Users Card */}
+        <TouchableOpacity
+          activeOpacity={0.9}
+          style={styles.card}
+          onPress={() => router.push("/(admin)/accounts/registered")}
+        >
           <View style={{ flex: 1 }}>
             <Text style={styles.cardLabel}>TOTAL USERS</Text>
 
-            <Text style={styles.bigNumber}>12,840</Text>
+            <Text style={styles.bigNumber}>
+              {loading ? "..." : (totalUsersCount ?? 0).toLocaleString()}
+            </Text>
 
-            <Text style={styles.greenText}>↗ +12% from last month</Text>
+            <Text style={styles.greenText}>↗ Active system accounts</Text>
           </View>
 
           <View style={styles.orangeCircle}>
             <Ionicons name="people-outline" size={28} color="#8B5A14" />
           </View>
-        </View>
+        </TouchableOpacity>
 
-        {/* Administrative Actions */}
-
+        {/* Administrative Actions Title */}
         <Text style={styles.sectionTitle}>Administrative Actions</Text>
 
         {/* Verify Accounts */}
-
         <TouchableOpacity
           activeOpacity={0.85}
           style={styles.actionCard}
@@ -127,7 +198,6 @@ export default function AdminDashboard() {
         </TouchableOpacity>
 
         {/* Registered Accounts */}
-
         <TouchableOpacity
           activeOpacity={0.85}
           style={styles.actionCard}
@@ -150,7 +220,6 @@ export default function AdminDashboard() {
         </TouchableOpacity>
 
         {/* Review Complaints */}
-
         <TouchableOpacity
           activeOpacity={0.85}
           style={styles.actionCard}
@@ -164,7 +233,7 @@ export default function AdminDashboard() {
             <Text style={styles.actionTitle}>Review Complaints</Text>
 
             <Text style={styles.actionDescription}>
-              Monitor complaint progress, assign authorities and resolve cases.
+              Verify newly submitted resident reports before they enter the system.
             </Text>
           </View>
 
@@ -172,7 +241,6 @@ export default function AdminDashboard() {
         </TouchableOpacity>
 
         {/* All Complaints */}
-
         <TouchableOpacity
           activeOpacity={0.85}
           style={styles.actionCard}
@@ -186,7 +254,7 @@ export default function AdminDashboard() {
             <Text style={styles.actionTitle}>All Complaints</Text>
 
             <Text style={styles.actionDescription}>
-              Monitor complaint progress, assign authorities and resolve cases.
+              Monitor complaint progress, authority updates and resolve cases.
             </Text>
           </View>
 
@@ -194,7 +262,6 @@ export default function AdminDashboard() {
         </TouchableOpacity>
 
         {/* Community Forum */}
-
         <TouchableOpacity
           activeOpacity={0.85}
           style={styles.actionCard}
@@ -217,7 +284,6 @@ export default function AdminDashboard() {
         </TouchableOpacity>
 
         {/* View Analytics */}
-
         <TouchableOpacity
           activeOpacity={0.85}
           style={styles.actionCard}
@@ -240,11 +306,10 @@ export default function AdminDashboard() {
         </TouchableOpacity>
 
         {/* System Settings */}
-
         <TouchableOpacity
           activeOpacity={0.85}
           style={styles.actionCard}
-          onPress={() => router.push("/(admin)/dashboard")} // TODO: update to settings when built
+          onPress={() => router.push("/(admin)/settings")}
         >
           <View style={styles.actionIconGray}>
             <Ionicons name="settings-outline" size={28} color="#555" />
@@ -272,51 +337,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
-
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 18,
-    paddingTop: 15,
-    marginBottom: 15,
-  },
-
-  leftHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-
-  logo: {
-    marginLeft: 10,
-    fontSize: 20,
-    fontWeight: "700",
-    color: colors.primary,
-    // No fontFamily - uses system default (SF Pro/Roboto)
-  },
-
-  rightHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-
-  adminBadge: {
-    marginLeft: 15,
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    backgroundColor: "#D9E8F5",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-
-  adminText: {
-    fontSize: 13,
-    fontWeight: "700",
-    color: colors.primary,
-    // No fontFamily - uses system default (SF Pro/Roboto)
-  },
-
   card: {
     backgroundColor: colors.white,
     marginHorizontal: 16,
@@ -325,7 +345,6 @@ const styles = StyleSheet.create({
     padding: 18,
     flexDirection: "row",
     alignItems: "center",
-
     shadowColor: colors.shadow,
     shadowOpacity: 0.05,
     shadowRadius: 8,
@@ -333,46 +352,35 @@ const styles = StyleSheet.create({
       width: 0,
       height: 3,
     },
-
     elevation: 3,
   },
-
   cardLabel: {
     fontSize: 12,
     fontWeight: "700",
     color: "#666",
     letterSpacing: 1,
-    // No fontFamily - uses system default (SF Pro/Roboto)
   },
-
   bigNumber: {
     marginTop: 5,
     fontSize: 30,
     fontWeight: "700",
     color: "#222",
-    // No fontFamily - uses system default (SF Pro/Roboto)
   },
-
   warningRow: {
     flexDirection: "row",
     alignItems: "center",
     marginTop: 8,
   },
-
   warningText: {
     marginLeft: 5,
     fontSize: 12,
     color: "#C0392B",
-    // No fontFamily - uses system default (SF Pro/Roboto)
   },
-
   greenText: {
     marginTop: 8,
     fontSize: 12,
     color: "#1E8E3E",
-    // No fontFamily - uses system default (SF Pro/Roboto)
   },
-
   blueCircle: {
     width: 62,
     height: 62,
@@ -381,7 +389,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-
   orangeCircle: {
     width: 62,
     height: 62,
@@ -390,7 +397,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-
   sectionTitle: {
     marginHorizontal: 18,
     marginTop: 10,
@@ -398,19 +404,15 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: "700",
     color: "#1F2937",
-    // No fontFamily - uses system default (SF Pro/Roboto)
   },
-
   actionCard: {
     marginHorizontal: 16,
     marginBottom: 14,
     backgroundColor: colors.white,
     borderRadius: 16,
     padding: 16,
-
     flexDirection: "row",
     alignItems: "center",
-
     shadowColor: colors.shadow,
     shadowOpacity: 0.05,
     shadowRadius: 8,
@@ -418,31 +420,24 @@ const styles = StyleSheet.create({
       width: 0,
       height: 3,
     },
-
     elevation: 3,
   },
-
   actionContent: {
     flex: 1,
     marginLeft: 14,
     marginRight: 10,
   },
-
   actionTitle: {
     fontSize: 17,
     fontWeight: "700",
     color: "#222",
-    // No fontFamily - uses system default (SF Pro/Roboto)
   },
-
   actionDescription: {
     marginTop: 5,
     fontSize: 13,
     lineHeight: 19,
     color: "#666",
-    // No fontFamily - uses system default (SF Pro/Roboto)
   },
-
   actionIconBlue: {
     width: 54,
     height: 54,
@@ -451,7 +446,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-
   actionIconOrange: {
     width: 54,
     height: 54,
@@ -460,7 +454,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-
   actionIconGray: {
     width: 54,
     height: 54,
