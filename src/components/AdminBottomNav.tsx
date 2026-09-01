@@ -2,7 +2,13 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import { useRouter } from "expo-router";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
-type AdminRoute = "home" | "users" | "complaints" | "analytics" | "forum";
+type AdminRoute =
+  | "home"
+  | "users"
+  | "complaints"
+  | "analytics"
+  | "forum"
+  | "registered-accounts";
 
 interface AdminBottomNavProps {
   activeRoute: AdminRoute;
