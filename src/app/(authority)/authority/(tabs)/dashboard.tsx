@@ -14,7 +14,6 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useAuthorityComplaints } from '@/components/authority/authority-complaints-context';
-import AuthorityIssueMap from '@/components/authority/authority-issue-map';
 import {
   authorityDashboardProfile,
   type AuthorityComplaintStatus,
@@ -453,22 +452,10 @@ export default function AuthorityDashboard() {
             )}
           </View>
 
-          {/* Complaints + Map */}
+          {/* Recent Complaints */}
 
-          <View
-            style={[
-              styles.dashboardGrid,
-              wide &&
-                styles.dashboardGridWide,
-            ]}
-          >
-            <View
-              style={[
-                styles.complaintsSection,
-                wide &&
-                  styles.complaintsSectionWide,
-              ]}
-            >
+          <View style={styles.dashboardGrid}>
+            <View style={styles.complaintsSection}>
               <View
                 style={styles.sectionHeader}
               >
@@ -640,48 +627,6 @@ export default function AuthorityDashboard() {
                     );
                   },
                 )}
-            </View>
-
-            <View
-              style={[
-                styles.mapSection,
-                wide && styles.mapSectionWide,
-              ]}
-            >
-              <View style={[styles.sectionHeader, styles.mapSectionHeader]}>
-                <View>
-                  <Text style={styles.sectionTitle}>Complaint Map</Text>
-                  <Text style={styles.sectionSubtitle}>
-                    Pins generated from resident address details
-                  </Text>
-                </View>
-                <Ionicons name="map-outline" size={21} color="#23435D" />
-              </View>
-
-              <View style={styles.mapCard}>
-                <AuthorityIssueMap
-                  complaints={complaints}
-                  height={330}
-                  onComplaintPress={(complaintId) =>
-                    openComplaint({ id: complaintId })
-                  }
-                />
-              </View>
-
-              <View style={styles.mapLegend}>
-                <View style={styles.legendItem}>
-                  <View style={[styles.legendDot, { backgroundColor: '#EF4444' }]} />
-                  <Text style={styles.legendText}>Pending</Text>
-                </View>
-                <View style={styles.legendItem}>
-                  <View style={[styles.legendDot, { backgroundColor: '#C67B00' }]} />
-                  <Text style={styles.legendText}>In Progress</Text>
-                </View>
-                <View style={styles.legendItem}>
-                  <View style={[styles.legendDot, { backgroundColor: '#2563EB' }]} />
-                  <Text style={styles.legendText}>Resolved</Text>
-                </View>
-              </View>
             </View>
 
           </View>
@@ -1152,36 +1097,8 @@ const styles = StyleSheet.create({
     gap: 18,
   },
 
-  dashboardGridWide: {
-    flexDirection: 'row',
-    alignItems: 'stretch',
-  },
-
   complaintsSection: {
     gap: 10,
-  },
-
-  complaintsSectionWide: {
-    flex: 1.35,
-  },
-
-  mapSection: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 14,
-    paddingBottom: 12,
-    borderWidth: 1,
-    borderColor: '#ECEFF3',
-    overflow: 'hidden',
-  },
-
-  mapSectionWide: {
-    flex: 1,
-    minWidth: 340,
-  },
-
-  mapSectionHeader: {
-    paddingTop: 4,
-    paddingHorizontal: 12,
   },
 
   sectionHeader: {
@@ -1282,41 +1199,6 @@ const styles = StyleSheet.create({
   statusText: {
     fontWeight: '700',
     fontSize: 8,
-  },
-
-  mapCard: {
-    height: 330,
-    marginHorizontal: 12,
-    marginTop: 4,
-    borderRadius: 14,
-    backgroundColor: '#E8EDF4',
-    overflow: 'hidden',
-  },
-
-  mapLegend: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'center',
-    gap: 13,
-    paddingTop: 10,
-    paddingHorizontal: 12,
-  },
-
-  legendItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-  },
-
-  legendDot: {
-    width: 7,
-    height: 7,
-    borderRadius: 4,
-  },
-
-  legendText: {
-    color: '#6B7280',
-    fontSize: 9,
   },
 
   toolsSection: {

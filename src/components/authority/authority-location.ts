@@ -61,28 +61,6 @@ export function formatAuthorityAddress(
   return parts.length > 0 ? parts.join(', ') : 'Location not provided';
 }
 
-export function buildAuthorityGeocodingQueries(
-  complaint: AuthorityLocationFields,
-): string[] {
-  const house = withPrefix(clean(complaint.house), 'House', ['house', 'holding']);
-  const road = withPrefix(clean(complaint.road), 'Road', ['road', 'rd']);
-  const avenue = withPrefix(clean(complaint.avenue), 'Avenue', ['avenue', 'ave']);
-  const landmark = clean(complaint.nearby_landmark);
-  const additional = clean(complaint.additional_location_details);
-  const configuredArea = process.env.EXPO_PUBLIC_AUTHORITY_MAP_AREA?.trim();
-  const areaParts = [configuredArea, 'Bangladesh'].filter(Boolean);
-
-  const candidates = [
-    [house, road, avenue, landmark, additional, ...areaParts],
-    [road, avenue, landmark, additional, ...areaParts],
-    [landmark, additional, ...areaParts],
-  ]
-    .map((parts) => parts.filter(Boolean).join(', '))
-    .filter((value) => value && value !== 'Bangladesh');
-
-  return Array.from(new Set(candidates));
-}
-
 export function getAuthorityAreaLabel(
   complaint: AuthorityLocationFields,
 ): string {

@@ -20,7 +20,6 @@ import Animated, { FadeIn, FadeInDown, FadeOut } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useAuthorityComplaints } from './authority-complaints-context';
-import AuthorityIssueMap from './authority-issue-map';
 import { getAuthorityLocationDetails } from './authority-location';
 import AuthorityPageHeader from './authority-page-header';
 import type {
@@ -793,11 +792,6 @@ export default function AuthorityComplaintDetailScreen() {
     : params.complaintId;
   const complaint = complaints.find((item) => item.id === complaintId);
 
-  const mapComplaints = useMemo(
-    () => (complaint ? [complaint] : []),
-    [complaint],
-  );
-
   const [deadline, setDeadline] = useState('');
   const [workBudget, setWorkBudget] = useState('');
   const [initialNote, setInitialNote] = useState('');
@@ -1251,23 +1245,6 @@ export default function AuthorityComplaintDetailScreen() {
                     />
                   ))}
                 </View>
-              </View>
-
-              <View style={styles.panel}>
-                <View style={styles.panelHeading}>
-                  <View>
-                    <Text style={styles.panelTitle}>Complaint Map</Text>
-                    <Text style={styles.panelSubtitle}>
-                      Pin generated from the resident-provided address
-                    </Text>
-                  </View>
-                  <Ionicons name="map-outline" size={22} color="#23435D" />
-                </View>
-                <AuthorityIssueMap
-                  complaints={mapComplaints}
-                  selectedComplaintId={complaint.id}
-                  height={270}
-                />
               </View>
 
               <View style={styles.panel}>
