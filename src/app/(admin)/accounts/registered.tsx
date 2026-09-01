@@ -1,13 +1,13 @@
 import { useMemo, useState } from "react";
 import {
-    Modal,
-    Pressable,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 import Ionicons from "@expo/vector-icons/Ionicons";
@@ -28,10 +28,13 @@ const colors = {
   greenIcon: "#1E8E3E",
 };
 
+type AccountSortOrder = "newest" | "oldest";
+
 export default function RegisteredAccountsPage() {
   const { registeredAccounts, metrics, loading, error, refresh } =
     useAdminAccounts();
   const [query, setQuery] = useState("");
+  const [sortOrder, setSortOrder] = useState<AccountSortOrder>("newest");
   const [selectedAccount, setSelectedAccount] = useState<AdminAccount | null>(
     null,
   );
@@ -39,11 +42,8 @@ export default function RegisteredAccountsPage() {
   const filteredAccounts = useMemo(() => {
     const search = query.trim().toLowerCase();
 
-    if (!search) {
-      return registeredAccounts;
-    }
-
-    return registeredAccounts.filter((account) => {
+    let list = registeredAccounts.filter((account) => {
+      if (!search) return true;
       return (
         account.fullName.toLowerCase().includes(search) ||
         account.email.toLowerCase().includes(search) ||
@@ -51,7 +51,21 @@ export default function RegisteredAccountsPage() {
         account.role.toLowerCase().includes(search)
       );
     });
-  }, [registeredAccounts, query]);
+
+    return [...list].sort((a, b) => {
+      const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+
+      if (aTime !== bTime && aTime > 0 && bTime > 0) {
+        return sortOrder === "newest" ? bTime - aTime : aTime - bTime;
+      }
+
+      // Fallback: reverse order for newest if no timestamp available
+      const aIndex = registeredAccounts.indexOf(a);
+      const bIndex = registeredAccounts.indexOf(b);
+      return sortOrder === "newest" ? bIndex - aIndex : aIndex - bIndex;
+    });
+  }, [registeredAccounts, query, sortOrder]);
 
   return (
     <View style={styles.container}>
@@ -113,6 +127,57 @@ export default function RegisteredAccountsPage() {
             placeholderTextColor="#8A8A8A"
             style={styles.searchInput}
           />
+        </View>
+
+        {/* Sort Controls */}
+        <View style={styles.sortContainer}>
+          <View style={styles.sortOptions}>
+            <TouchableOpacity
+              style={[
+                styles.sortBtn,
+                sortOrder === "newest" && styles.activeSortBtn,
+              ]}
+              onPress={() => setSortOrder("newest")}
+              activeOpacity={0.8}
+            >
+              <Ionicons
+                name="arrow-down"
+                size={14}
+                color={sortOrder === "newest" ? "#FFFFFF" : "#555555"}
+              />
+              <Text
+                style={[
+                  styles.sortBtnText,
+                  sortOrder === "newest" && styles.activeSortBtnText,
+                ]}
+              >
+                Newest First
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.sortBtn,
+                sortOrder === "oldest" && styles.activeSortBtn,
+              ]}
+              onPress={() => setSortOrder("oldest")}
+              activeOpacity={0.8}
+            >
+              <Ionicons
+                name="arrow-up"
+                size={14}
+                color={sortOrder === "oldest" ? "#FFFFFF" : "#555555"}
+              />
+              <Text
+                style={[
+                  styles.sortBtnText,
+                  sortOrder === "oldest" && styles.activeSortBtnText,
+                ]}
+              >
+                Oldest First
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         <TouchableOpacity
@@ -251,7 +316,6 @@ export default function RegisteredAccountsPage() {
 
                 <TouchableOpacity
                   style={styles.closeButton}
-                  activeOpacity={0.85}
                   onPress={() => setSelectedAccount(null)}
                 >
                   <Text style={styles.closeButtonText}>Close</Text>
@@ -262,7 +326,7 @@ export default function RegisteredAccountsPage() {
         </Pressable>
       </Modal>
 
-      <AdminBottomNav activeRoute="users" />
+      <AdminBottomNav activeRoute="registered-accounts" />
     </View>
   );
 }
@@ -273,126 +337,175 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   content: {
+    width: "100%",
+    maxWidth: 920,
+    alignSelf: "center",
     padding: 16,
-    paddingBottom: 18,
+    paddingBottom: 104,
   },
   statsCard: {
-    backgroundColor: "#fff",
-    marginBottom: 12,
-    padding: 15,
+    backgroundColor: colors.white,
     borderRadius: 14,
+    padding: 16,
     flexDirection: "row",
     alignItems: "center",
-    shadowColor: "#000",
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 3,
-  },
-  statsTextBlock: {
-    marginLeft: 15,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: "#EFEFEF",
   },
   iconBlue: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
+    width: 44,
+    height: 44,
+    borderRadius: 10,
     backgroundColor: colors.blue,
     justifyContent: "center",
     alignItems: "center",
+    marginRight: 14,
   },
   iconOrange: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
+    width: 44,
+    height: 44,
+    borderRadius: 10,
     backgroundColor: colors.orange,
     justifyContent: "center",
     alignItems: "center",
+    marginRight: 14,
   },
   iconGreen: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
+    width: 44,
+    height: 44,
+    borderRadius: 10,
     backgroundColor: colors.green,
     justifyContent: "center",
     alignItems: "center",
+    marginRight: 14,
+  },
+  statsTextBlock: {
+    flex: 1,
   },
   smallLabel: {
-    fontSize: 10,
-    color: "#666",
+    fontSize: 11,
     fontWeight: "700",
+    color: colors.subtitle,
+    letterSpacing: 0.5,
+    marginBottom: 2,
   },
   bigText: {
-    marginTop: 2,
-    fontSize: 28,
-    color: "#222",
+    fontSize: 18,
     fontWeight: "700",
+    color: colors.text,
   },
   searchBar: {
-    marginTop: 8,
-    marginBottom: 10,
-    backgroundColor: "#ECEFF3",
-    borderRadius: 22,
-    height: 44,
     flexDirection: "row",
     alignItems: "center",
+    backgroundColor: colors.white,
+    borderRadius: 12,
     paddingHorizontal: 14,
+    paddingVertical: 10,
+    marginTop: 4,
+    marginBottom: 4,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
   },
   searchInput: {
-    marginLeft: 8,
-    color: "#1E1E1E",
-    fontSize: 13,
     flex: 1,
+    marginLeft: 10,
+    fontSize: 14,
+    color: colors.text,
+  },
+  sortContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: 6,
+    marginBottom: 10,
+    paddingHorizontal: 4,
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  sortLabel: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: colors.subtitle,
+  },
+  sortOptions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  sortBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 8,
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+  },
+  activeSortBtn: {
+    backgroundColor: "#1F4868",
+    borderColor: "#1F4868",
+  },
+  sortBtnText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#555555",
+  },
+  activeSortBtnText: {
+    color: "#FFFFFF",
   },
   refreshButton: {
     alignSelf: "flex-start",
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    marginBottom: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 14,
     backgroundColor: "#E8F2FF",
+    borderRadius: 99,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    marginBottom: 14,
   },
   refreshText: {
     color: "#1F4868",
-    fontWeight: "700",
     fontSize: 12,
+    fontWeight: "700",
+  },
+  errorText: {
+    color: "#C0392B",
+    fontSize: 13,
+    marginBottom: 10,
   },
   loadingText: {
     color: colors.subtitle,
-    marginBottom: 12,
-  },
-  errorText: {
-    color: "#B42318",
-    marginBottom: 12,
+    fontSize: 13,
+    marginBottom: 10,
   },
   emptyState: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 18,
-    padding: 20,
+    backgroundColor: colors.white,
+    borderRadius: 14,
+    padding: 24,
     alignItems: "center",
+    marginTop: 10,
   },
   emptyTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: "700",
-    color: "#1B1B1B",
+    color: colors.text,
   },
   emptySubtitle: {
-    marginTop: 8,
-    fontSize: 14,
-    color: "#666",
+    fontSize: 13,
+    color: colors.subtitle,
+    marginTop: 4,
   },
   card: {
-    backgroundColor: "#fff",
-    marginBottom: 16,
+    backgroundColor: colors.white,
     borderRadius: 16,
-    padding: 15,
-    shadowColor: "#000",
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 3,
+    padding: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: "#EFEFEF",
   },
   cardHeader: {
     flexDirection: "row",
@@ -405,15 +518,15 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   avatar: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: "#ECECEC",
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    backgroundColor: "#EEEEEE",
     justifyContent: "center",
     alignItems: "center",
+    marginRight: 12,
   },
   profileTextWrap: {
-    marginLeft: 12,
     flex: 1,
   },
   personName: {
@@ -422,29 +535,29 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
   personInfo: {
-    marginTop: 4,
-    fontSize: 13,
+    fontSize: 11,
+    fontWeight: "600",
     color: colors.subtitle,
+    marginTop: 2,
   },
   roleBadge: {
-    marginTop: 8,
     alignSelf: "flex-start",
-    borderRadius: 999,
-    backgroundColor: "#E8F2FF",
-    paddingHorizontal: 10,
-    paddingVertical: 5,
+    backgroundColor: "#EAF8EF",
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    marginTop: 6,
   },
   roleBadgeText: {
+    color: "#1E8E3E",
     fontSize: 10,
-    fontWeight: "800",
-    letterSpacing: 0.2,
-    color: "#235EA8",
+    fontWeight: "700",
   },
   pill: {
     backgroundColor: "#EAF8EF",
-    borderRadius: 999,
     paddingHorizontal: 10,
     paddingVertical: 4,
+    borderRadius: 20,
   },
   pillText: {
     color: "#1E8E3E",

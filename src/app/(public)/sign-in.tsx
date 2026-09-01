@@ -86,20 +86,43 @@ export default function SignInScreen() {
 
   const handleSignIn = async () => {
     setErrorMsg("");
-    if (!identifier.trim() || !password.trim()) {
+
+    const trimmedIdentifier = identifier.trim();
+    const trimmedPassword = password.trim();
+
+    if (!trimmedIdentifier || !trimmedPassword) {
       setErrorMsg("Invalid credentials.");
       return;
     }
 
     setIsLoading(true);
     try {
-      // Check account table for matching email or username and password
-      const { data, error } = await supabase
-        .from("account")
-        .select("*")
-        .or(`email.eq.${identifier},username.eq.${identifier}`)
-        .eq("password", password)
-        .single();
+      const runLoginQuery = async () =>
+        supabase
+          .from("account")
+          .select("*")
+          .eq("password", trimmedPassword)
+          .or(`username.eq.${trimmedIdentifier},email.eq.${trimmedIdentifier}`)
+          .limit(1);
+
+      const { data: exactMatch, error: exactError } = await runLoginQuery();
+
+      let data = exactMatch?.[0] ?? null;
+      let error = exactError;
+
+      if ((!data && !error) || (error && error.code === "PGRST116")) {
+        const caseInsensitiveQuery = await supabase
+          .from("account")
+          .select("*")
+          .eq("password", trimmedPassword)
+          .or(
+            `username.ilike.%${trimmedIdentifier.toLowerCase()}%,email.ilike.%${trimmedIdentifier.toLowerCase()}%`,
+          )
+          .limit(1);
+
+        data = caseInsensitiveQuery.data?.[0] ?? null;
+        error = caseInsensitiveQuery.error;
+      }
 
       if (error || !data) {
         setErrorMsg("Invalid credentials.");

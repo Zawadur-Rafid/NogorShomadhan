@@ -1,11 +1,12 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
-    createContext,
-    useCallback,
-    useContext,
-    useEffect,
-    useMemo,
-    useState,
-    type ReactNode,
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
 } from "react";
 
 import { supabase } from "@/lib/supabase";
@@ -76,6 +77,11 @@ const initialMetrics: AdminAccountMetrics = {
   authorityCount: 0,
 };
 
+function getTodayKey() {
+  const now = new Date();
+  return `admin_metrics_${now.getFullYear()}_${now.getMonth() + 1}_${now.getDate()}`;
+}
+
 const AdminAccountsContext = createContext<AdminAccountsContextValue | null>(
   null,
 );
@@ -93,7 +99,6 @@ function toStatus(status: string | undefined): AdminAccountStatus {
     return "verified";
   }
 
-  // Some deployments may store rejected records as "suspended".
   if (status === "rejected" || status === "suspended") {
     return "rejected";
   }
@@ -121,37 +126,6 @@ function mapRowToAccount(row: AccountRow): AdminAccount {
   };
 }
 
-function isToday(dateString: string | null): boolean {
-  if (!dateString) {
-    return false;
-  }
-
-  const value = new Date(dateString);
-
-  if (Number.isNaN(value.getTime())) {
-    return false;
-  }
-
-  const now = new Date();
-
-  return (
-    value.getFullYear() === now.getFullYear() &&
-    value.getMonth() === now.getMonth() &&
-    value.getDate() === now.getDate()
-  );
-}
-
-function getDateForStatus(
-  account: AdminAccount,
-  target: "verified" | "rejected",
-) {
-  if (target === "verified") {
-    return account.verifiedAt ?? account.updatedAt ?? account.createdAt;
-  }
-
-  return account.rejectedAt ?? account.updatedAt ?? account.createdAt;
-}
-
 export function AdminAccountsProvider({ children }: { children: ReactNode }) {
   const [pendingAccounts, setPendingAccounts] = useState<AdminAccount[]>([]);
   const [registeredAccounts, setRegisteredAccounts] = useState<AdminAccount[]>(
@@ -160,32 +134,6 @@ export function AdminAccountsProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [metrics, setMetrics] = useState<AdminAccountMetrics>(initialMetrics);
-
-  const computeMetrics = useCallback((accounts: AdminAccount[]) => {
-    const pendingCount = accounts.filter(
-      (account) => account.status === "unverified",
-    ).length;
-    const verifiedAccounts = accounts.filter(
-      (account) => account.status === "verified",
-    );
-    const rejectedAccounts = accounts.filter(
-      (account) => account.status === "rejected",
-    );
-
-    return {
-      pendingCount,
-      verifiedTodayCount: verifiedAccounts.filter((account) =>
-        isToday(getDateForStatus(account, "verified")),
-      ).length,
-      rejectedTodayCount: rejectedAccounts.filter((account) =>
-        isToday(getDateForStatus(account, "rejected")),
-      ).length,
-      registeredCount: verifiedAccounts.length,
-      authorityCount: verifiedAccounts.filter(
-        (account) => account.role === "authority",
-      ).length,
-    } satisfies AdminAccountMetrics;
-  }, []);
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -206,15 +154,53 @@ export function AdminAccountsProvider({ children }: { children: ReactNode }) {
       .map(mapRowToAccount)
       .filter((account) => Boolean(account.id));
 
-    setPendingAccounts(
-      accounts.filter((account) => account.status === "unverified"),
+    const verifiedAccounts = accounts.filter(
+      (account) => account.status === "verified",
     );
-    setRegisteredAccounts(
-      accounts.filter((account) => account.status === "verified"),
+    const pendingAccs = accounts.filter(
+      (account) => account.status === "unverified",
     );
-    setMetrics(computeMetrics(accounts));
+
+    // Read stored today actions from AsyncStorage
+    const todayKey = getTodayKey();
+    let verifiedTodayCount = 0;
+    let rejectedTodayCount = 0;
+
+    try {
+      const storedVerified = await AsyncStorage.getItem(`${todayKey}_verified`);
+      const storedRejected = await AsyncStorage.getItem(`${todayKey}_rejected`);
+
+      if (storedVerified !== null) {
+        const parsed = JSON.parse(storedVerified);
+        verifiedTodayCount = Array.isArray(parsed) ? parsed.length : 0;
+      } else {
+        // Initial default: count verified accounts in system
+        verifiedTodayCount = verifiedAccounts.length;
+      }
+
+      if (storedRejected !== null) {
+        rejectedTodayCount = parseInt(storedRejected, 10) || 0;
+      }
+    } catch (e) {
+      console.error("Error reading metrics from AsyncStorage", e);
+      verifiedTodayCount = verifiedAccounts.length;
+    }
+
+    setPendingAccounts(pendingAccs);
+    setRegisteredAccounts(verifiedAccounts);
+
+    setMetrics({
+      pendingCount: pendingAccs.length,
+      verifiedTodayCount,
+      rejectedTodayCount,
+      registeredCount: verifiedAccounts.length,
+      authorityCount: verifiedAccounts.filter(
+        (account) => account.role === "authority",
+      ).length,
+    });
+
     setLoading(false);
-  }, [computeMetrics]);
+  }, []);
 
   useEffect(() => {
     void refresh();
@@ -232,6 +218,22 @@ export function AdminAccountsProvider({ children }: { children: ReactNode }) {
         return;
       }
 
+      // Record approval for today
+      try {
+        const todayKey = getTodayKey();
+        const storedVerified = await AsyncStorage.getItem(`${todayKey}_verified`);
+        let currentList: string[] = [];
+        if (storedVerified) {
+          currentList = JSON.parse(storedVerified);
+        }
+        if (!currentList.includes(accountId)) {
+          currentList.push(accountId);
+          await AsyncStorage.setItem(`${todayKey}_verified`, JSON.stringify(currentList));
+        }
+      } catch (e) {
+        console.error("Error updating verified metrics in AsyncStorage", e);
+      }
+
       await refresh();
     },
     [refresh],
@@ -239,14 +241,24 @@ export function AdminAccountsProvider({ children }: { children: ReactNode }) {
 
   const rejectAccount = useCallback(
     async (accountId: string) => {
-      const { error: updateError } = await supabase
+      const { error: deleteError } = await supabase
         .from("account")
-        .update({ status: "suspended" })
+        .delete()
         .eq("acc_id", accountId);
 
-      if (updateError) {
-        setError(updateError.message);
+      if (deleteError) {
+        setError(deleteError.message);
         return;
+      }
+
+      // Record rejection for today
+      try {
+        const todayKey = getTodayKey();
+        const storedRejected = await AsyncStorage.getItem(`${todayKey}_rejected`);
+        const currentCount = (parseInt(storedRejected || "0", 10) || 0) + 1;
+        await AsyncStorage.setItem(`${todayKey}_rejected`, currentCount.toString());
+      } catch (e) {
+        console.error("Error updating rejected metrics in AsyncStorage", e);
       }
 
       await refresh();

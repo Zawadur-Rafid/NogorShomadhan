@@ -9,6 +9,7 @@ import { supabase } from '../../lib/supabase';
 
 import TopNav from '../../components/TopNav';
 import BottomNav from '../../components/BottomNav';
+import { confirmAction } from '@/utils/confirm';
 
 function ProfileField({
   label,
@@ -128,6 +129,9 @@ export default function Profile() {
 
   const handleEditToggle = async () => {
     if (isEditing) {
+      const confirmed = await confirmAction('Are you sure you want to save these profile changes?');
+      if (!confirmed) return;
+
       if (accId) {
         // Just updating basic contact info as it's displayed as a single string for address. 
         // We won't parse address back to house/road for this simple edit, we'll just update email and phone.

@@ -14,6 +14,15 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import AuthorityPageHeader from '@/components/authority/authority-page-header';
 import { forumService } from '@/services/forum.service';
+import { confirmAction } from '@/utils/confirm';
+import {
+  CommunityEventCreateModal,
+  CommunityEventViewerModal,
+  EventData,
+  formatDateRangeReadable,
+  formatEventBody,
+  parseEventFromBody,
+} from '@/components/CommunityEventModal';
 
 type ForumStatus = 'Announcement' | 'Update' | 'Alert';
 
@@ -40,6 +49,34 @@ type ForumPostUI = {
 };
 
 const initialPosts: ForumPostUI[] = [
+  {
+    id: 'post-event-1',
+    author: 'Community Authority',
+    initials: 'CA',
+    status: 'Announcement',
+    title: 'Community Tree Plantation & Clean-Up Drive',
+    body: '[[COMMUNITY_EVENT:{"startDate":"2026-09-12","endDate":"2026-09-14"}]]\n\nJoin hands with community neighbors and local volunteers for a 3-day greening and cleanup initiative across Ward 4. Refreshments and equipment will be provided at the Community Center.',
+    time: '2 hrs ago',
+    official: true,
+    comments: [
+      {
+        id: 'comment-ev-1',
+        author: 'Arif Hasan',
+        initials: 'AH',
+        text: 'Will saplings and tools be provided on site?',
+        time: '1 hr ago',
+      },
+      {
+        id: 'comment-ev-2',
+        author: 'Community Authority',
+        initials: 'CA',
+        text: 'Yes, diverse fruit and shade tree saplings and gloves will be distributed freely.',
+        time: '30 min ago',
+        parent_comment_id: 'comment-ev-1',
+        official: true,
+      },
+    ],
+  },
   {
     id: 'post-1',
     author: 'Nusrat Jahan',
@@ -106,6 +143,13 @@ export default function AuthorityForumScreen() {
   const [activeFilter, setActiveFilter] = useState<ForumStatus | 'All'>('All');
   const [replyDrafts, setReplyDrafts] = useState<Record<string, string>>({});
   const [replyTarget, setReplyTarget] = useState<Record<string, string | null>>({});
+  const [createEventModalVisible, setCreateEventModalVisible] = useState(false);
+  const [selectedEventPost, setSelectedEventPost] = useState<{
+    title: string;
+    event: EventData;
+    description?: string;
+    author?: string;
+  } | null>(null);
 
   const loadPostsFromDb = async () => {
     try {
@@ -157,6 +201,9 @@ export default function AuthorityForumScreen() {
     const body = postBody.trim();
     if (!title || !body) return;
 
+    const confirmed = await confirmAction('Are you sure you want to submit this announcement?');
+    if (!confirmed) return;
+
     setPostTitle('');
     setPostBody('');
 
@@ -191,6 +238,9 @@ export default function AuthorityForumScreen() {
   const addReply = async (postId: string) => {
     const text = replyDrafts[postId]?.trim();
     if (!text) return;
+
+    const confirmed = await confirmAction('Are you sure you want to submit this response?');
+    if (!confirmed) return;
 
     const parentId = replyTarget[postId] || null;
 
@@ -313,15 +363,26 @@ export default function AuthorityForumScreen() {
                 })}
               </View>
 
-              <TouchableOpacity
-                accessibilityLabel="Publish official forum post"
-                disabled={!canPublish}
-                onPress={publishPost}
-                style={[styles.publishButton, !canPublish && styles.disabledButton]}
-              >
-                <Ionicons name="send" size={16} color="#FFFFFF" />
-                <Text style={styles.publishText}>Publish post</Text>
-              </TouchableOpacity>
+              <View style={styles.composerActions}>
+                <TouchableOpacity
+                  accessibilityLabel="Create Community Event"
+                  onPress={() => setCreateEventModalVisible(true)}
+                  style={styles.createEventButton}
+                >
+                  <Ionicons name="calendar-outline" size={15} color="#23435D" />
+                  <Text style={styles.createEventButtonText}>Create Event</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  accessibilityLabel="Publish official forum post"
+                  disabled={!canPublish}
+                  onPress={publishPost}
+                  style={[styles.publishButton, !canPublish && styles.disabledButton]}
+                >
+                  <Ionicons name="send" size={16} color="#FFFFFF" />
+                  <Text style={styles.publishText}>Publish post</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
 
@@ -383,8 +444,49 @@ export default function AuthorityForumScreen() {
                   </View>
                 </View>
 
-                <Text selectable style={styles.postTitle}>{post.title}</Text>
-                <Text selectable style={styles.postBody}>{post.body}</Text>
+                {(() => {
+                  const { isEvent, event, cleanBody } = parseEventFromBody(post.body);
+                  return (
+                    <>
+                      {isEvent && event ? (
+                        <TouchableOpacity
+                          accessibilityRole="button"
+                          accessibilityLabel="View community event calendar"
+                          style={styles.eventPostBanner}
+                          onPress={() =>
+                            setSelectedEventPost({
+                              title: post.title,
+                              event,
+                              description: cleanBody,
+                              author: post.author,
+                            })
+                          }
+                        >
+                          <View style={styles.eventBannerLeft}>
+                            <View style={styles.eventBannerIcon}>
+                              <Ionicons name="calendar" size={18} color="#23435D" />
+                            </View>
+                            <View style={{ flex: 1 }}>
+                              <View style={styles.eventBannerBadge}>
+                                <Text style={styles.eventBannerBadgeText}>COMMUNITY EVENT</Text>
+                              </View>
+                              <Text style={styles.eventBannerDateText}>
+                                {formatDateRangeReadable(event.startDate, event.endDate)}
+                              </Text>
+                            </View>
+                          </View>
+                          <View style={styles.viewCalendarAction}>
+                            <Text style={styles.viewCalendarActionText}>View Calendar</Text>
+                            <Ionicons name="chevron-forward" size={13} color="#23435D" />
+                          </View>
+                        </TouchableOpacity>
+                      ) : null}
+
+                      <Text selectable style={styles.postTitle}>{post.title}</Text>
+                      {cleanBody ? <Text selectable style={styles.postBody}>{cleanBody}</Text> : null}
+                    </>
+                  );
+                })()}
 
                 <View style={styles.commentHeading}>
                   <Ionicons name="chatbubble-outline" size={15} color="#667085" />
@@ -477,6 +579,54 @@ export default function AuthorityForumScreen() {
           </View>
         </View>
       </ScrollView>
+
+      {selectedEventPost && (
+        <CommunityEventViewerModal
+          visible={Boolean(selectedEventPost)}
+          onClose={() => setSelectedEventPost(null)}
+          title={selectedEventPost.title}
+          startDate={selectedEventPost.event.startDate}
+          endDate={selectedEventPost.event.endDate}
+          description={selectedEventPost.description}
+          authorName={selectedEventPost.author}
+        />
+      )}
+
+      <CommunityEventCreateModal
+        visible={createEventModalVisible}
+        onClose={() => setCreateEventModalVisible(false)}
+        onSubmit={async ({ title, description, startDate, endDate }) => {
+          const formattedBody = formatEventBody({ startDate, endDate }, description);
+          const newPostUI: ForumPostUI = {
+            id: 'post-' + Date.now(),
+            author: 'Community Authority',
+            initials: 'CA',
+            status: 'Announcement',
+            title,
+            body: formattedBody,
+            time: 'Just now',
+            official: true,
+            comments: [],
+          };
+          setPosts((current) => [newPostUI, ...current]);
+
+          try {
+            const accId =
+              (await AsyncStorage.getItem('acc_id')) ||
+              '00000000-0000-0000-0000-000000000000';
+            await forumService.createPost({
+              acc_id: accId,
+              title,
+              body: formattedBody,
+              status: 'Announcement',
+              is_official: true,
+            });
+            loadPostsFromDb();
+          } catch (e) {
+            console.log('Local event announcement created; database sync skipped.');
+          }
+        }}
+      />
     </SafeAreaView>
   );
 }
@@ -556,6 +706,17 @@ const styles = StyleSheet.create({
   publishButton: { minHeight: 40, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, paddingHorizontal: 15, borderRadius: 20, backgroundColor: '#2F6B5F' },
   disabledButton: { opacity: 0.42 },
   publishText: { color: '#FFFFFF', fontSize: 11, fontWeight: '800' },
+  composerActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  createEventButton: { minHeight: 40, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingHorizontal: 13, borderRadius: 20, borderWidth: 1, borderColor: '#23435D', backgroundColor: '#EAF0F6' },
+  createEventButtonText: { color: '#23435D', fontSize: 11, fontWeight: '800' },
+  eventPostBanner: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#F8FAFC', borderWidth: 1, borderColor: '#D0D5DD', borderRadius: 12, padding: 10, marginTop: 10, marginBottom: 4, gap: 10 },
+  eventBannerLeft: { flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 },
+  eventBannerIcon: { width: 36, height: 36, borderRadius: 10, backgroundColor: '#EAF0F6', alignItems: 'center', justifyContent: 'center' },
+  eventBannerBadge: { alignSelf: 'flex-start', backgroundColor: '#EAF0F6', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 5, marginBottom: 2 },
+  eventBannerBadgeText: { color: '#23435D', fontSize: 8, fontWeight: '800', letterSpacing: 0.5 },
+  eventBannerDateText: { color: '#1F2937', fontSize: 12, fontWeight: '800' },
+  viewCalendarAction: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#D0D5DD', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8 },
+  viewCalendarActionText: { color: '#23435D', fontSize: 10, fontWeight: '800' },
   discussionHeading: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, paddingTop: 2 },
   sectionTitle: { color: '#1F2937', fontSize: 18, fontWeight: '700' },
   sectionSubtitle: { marginTop: 3, color: '#7B8491', fontSize: 10 },

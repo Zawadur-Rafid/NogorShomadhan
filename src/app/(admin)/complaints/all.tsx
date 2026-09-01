@@ -3,6 +3,7 @@ import { supabase } from "@/lib/supabase";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
+import { confirmAction } from "@/utils/confirm";
 import {
     Alert,
     Image,
@@ -104,41 +105,6 @@ export function ComplaintsListScreen({
   const [actionMessage, setActionMessage] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
 
-  const confirmAction = async (
-    title: string,
-    message: string,
-    confirmLabel: string,
-  ) => {
-    if (Platform.OS === "web") {
-      if (typeof globalThis.confirm === "function") {
-        return globalThis.confirm(`${title}\n\n${message}`);
-      }
-      return true;
-    }
-
-    return new Promise<boolean>((resolve) => {
-      Alert.alert(
-        title,
-        message,
-        [
-          {
-            text: "Cancel",
-            style: "cancel",
-            onPress: () => resolve(false),
-          },
-          {
-            text: confirmLabel,
-            onPress: () => resolve(true),
-          },
-        ],
-        {
-          cancelable: true,
-          onDismiss: () => resolve(false),
-        },
-      );
-    });
-  };
-
   const getMaterialIconFromCategory = (
     category: string,
   ): keyof typeof MaterialIcons.glyphMap => {
@@ -226,7 +192,7 @@ export function ComplaintsListScreen({
     const { data: complaintsData, error: complaintsError } = await supabase
       .from("complaints")
       .select(
-        "comp_id,acc_id,title,description,category,status,house,road,avenue,nearby_landmark,additional_location_details,timestamp,urgency",
+        "comp_id,acc_id,title,description,category,status,house,road,avenue,nearby_landmark,additional_location_details,timestamp",
       )
       .eq("status", "unverified");
 
@@ -249,7 +215,6 @@ export function ComplaintsListScreen({
       nearby_landmark?: string;
       additional_location_details?: string;
       timestamp: string | null;
-      urgency: number;
     }>;
 
     const accountIds = Array.from(
@@ -323,7 +288,7 @@ export function ComplaintsListScreen({
         nearby_landmark: item.nearby_landmark,
         additional_location_details: item.additional_location_details,
         timestamp: item.timestamp,
-        urgency: item.urgency,
+        urgency: 0,
         reporterName: account?.full_name ?? "Unknown resident",
         reporterEmail: account?.email ?? "",
         reporterNid: account?.nid ?? "",
@@ -370,9 +335,9 @@ export function ComplaintsListScreen({
   const handleAcceptReviewComplaint = (complaintId: string) => {
     void (async () => {
       const confirmed = await confirmAction(
-        "Accept complaint",
-        "Move this complaint to pending status?",
-        "Accept",
+        "Are you sure you want to accept this complaint and move it to pending?",
+        undefined,
+        "Accept Complaint",
       );
 
       if (!confirmed) {
@@ -405,9 +370,9 @@ export function ComplaintsListScreen({
   const handleDeleteReviewComplaint = (complaintId: string) => {
     void (async () => {
       const confirmed = await confirmAction(
-        "Delete complaint",
-        "Delete this complaint permanently?",
-        "Delete",
+        "Are you sure you want to delete this complaint?",
+        undefined,
+        "Delete Complaint",
       );
 
       if (!confirmed) {
@@ -664,12 +629,7 @@ export function ComplaintsListScreen({
                         </View>
                         <View style={styles.titleArea}>
                           <Text style={styles.cardTitle}>{itemTitle}</Text>
-                          <Text style={styles.cardMeta}>
-                            {itemDate} â€¢{" "}
-                            {reviewMode
-                              ? itemId.slice(0, 8)
-                              : `#${normalItem!.id.slice(0, 8)}`}
-                          </Text>
+                          <Text style={styles.cardMeta}>{itemDate}</Text>
                         </View>
                       </View>
                       <View
@@ -748,13 +708,7 @@ export function ComplaintsListScreen({
                             </Text>
                           </TouchableOpacity>
                         </>
-                      ) : (
-                        normalItem!.status === "IN PROGRESS" && (
-                          <TouchableOpacity style={styles.trackBtn}>
-                            <Text style={styles.trackBtnText}>Track Team</Text>
-                          </TouchableOpacity>
-                        )
-                      )}
+                      ) : null}
                       {!reviewMode && normalItem!.status === "RESOLVED" && (
                         <TouchableOpacity style={styles.closedBtn} disabled>
                           <Text style={styles.closedBtnText}>Case Closed</Text>

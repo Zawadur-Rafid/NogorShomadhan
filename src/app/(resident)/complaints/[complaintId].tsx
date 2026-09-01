@@ -18,6 +18,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { getComplaintDetails, deleteComplaint } from '@/services/resident.service';
+import { confirmAction } from '@/utils/confirm';
 
 export type ComplaintDetailMode = 'unverified' | 'pending' | 'in-progress' | 'resolved';
 
@@ -688,31 +689,24 @@ export default function ComplaintDetailScreen() {
   }, [complaintId]);
 
   const handleDelete = () => {
-    Alert.alert(
-      'Delete Complaint',
-      'Are you sure you want to delete this complaint? This action cannot be undone.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              setDeleting(true);
-              await deleteComplaint(complaintId);
-              triggerToast('The complaint has been successfully deleted.', () => {
-                router.back();
-              });
-            } catch (error) {
-              if (error instanceof Error) {
-                Alert.alert('Error', error.message);
-              }
-            } finally {
-              setDeleting(false);
-            }
-          },
-        },
-      ]
+    confirmAction(
+      'Are you sure you want to delete this complaint?',
+      async () => {
+        try {
+          setDeleting(true);
+          await deleteComplaint(complaintId);
+          triggerToast('The complaint has been successfully deleted.', () => {
+            router.back();
+          });
+        } catch (error) {
+          if (error instanceof Error) {
+            Alert.alert('Error', error.message);
+          }
+        } finally {
+          setDeleting(false);
+        }
+      },
+      'Delete Complaint'
     );
   };
 
@@ -938,15 +932,17 @@ export default function ComplaintDetailScreen() {
                   hasSubmitted={hasSubmittedFeedback}
                   onSubmit={() => {
                     if (feedbackRating === 0 || feedbackComment.trim() === '') return;
-                    setLocalFeedback([{
-                      id: Date.now().toString(),
-                      resident: 'You',
-                      residentInitials: 'YO',
-                      rating: feedbackRating,
-                      comment: feedbackComment,
-                      receivedAt: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
-                    }, ...localFeedback]);
-                    setHasSubmittedFeedback(true);
+                    confirmAction('Are you sure you want to submit this feedback?', () => {
+                      setLocalFeedback([{
+                        id: Date.now().toString(),
+                        resident: 'You',
+                        residentInitials: 'YO',
+                        rating: feedbackRating,
+                        comment: feedbackComment,
+                        receivedAt: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+                      }, ...localFeedback]);
+                      setHasSubmittedFeedback(true);
+                    }, 'Submit Feedback');
                   }}
                 />
               )}

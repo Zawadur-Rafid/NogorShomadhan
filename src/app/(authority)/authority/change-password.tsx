@@ -4,6 +4,7 @@ import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import AuthorityPageHeader from '@/components/authority/authority-page-header';
+import { confirmAction } from '@/utils/confirm';
 
 function PasswordField({
   label,
@@ -70,11 +71,17 @@ export default function AuthorityChangePassword() {
     }
 
     setError('');
-    setSaved(true);
-    setCurrentPassword('');
-    setNewPassword('');
-    setConfirmPassword('');
-    setVisibleField(null);
+    confirmAction(
+      'Are you sure you want to change your password?',
+      () => {
+        setSaved(true);
+        setCurrentPassword('');
+        setNewPassword('');
+        setConfirmPassword('');
+        setVisibleField(null);
+      },
+      'Change Password'
+    );
   };
 
   return (

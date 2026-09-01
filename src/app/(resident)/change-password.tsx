@@ -6,6 +6,7 @@ import { useRouter } from 'expo-router';
 
 import TopNav from '../../components/TopNav';
 import BottomNav from '../../components/BottomNav';
+import { confirmAction } from '@/utils/confirm';
 
 function PasswordField({
   label,
@@ -73,11 +74,17 @@ export default function ResidentChangePassword() {
     }
 
     setError('');
-    setSaved(true);
-    setCurrentPassword('');
-    setNewPassword('');
-    setConfirmPassword('');
-    setVisibleField(null);
+    confirmAction(
+      'Are you sure you want to change your password?',
+      () => {
+        setSaved(true);
+        setCurrentPassword('');
+        setNewPassword('');
+        setConfirmPassword('');
+        setVisibleField(null);
+      },
+      'Change Password'
+    );
   };
 
   return (

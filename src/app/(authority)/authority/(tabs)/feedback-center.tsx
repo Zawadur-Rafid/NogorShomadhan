@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useAuthorityComplaints } from '@/components/authority/authority-complaints-context';
 import AuthorityPageHeader from '@/components/authority/authority-page-header';
+import { confirmAction } from '@/utils/confirm';
 
 const filters = ['All Feedback', '5 Stars', '4 Stars'] as const;
 
@@ -71,21 +72,28 @@ export default function AuthorityFeedbackCenter() {
   const submitComment = (feedbackId: string) => {
     const message = drafts[feedbackId]?.trim();
     if (!message) return;
-    setComments((current) => ({
-      ...current,
-      [feedbackId]: [
-        ...(current[feedbackId] ?? []),
-        {
-          id: `CMT-${Date.now()}`,
-          author: 'Community Authority',
-          initials: 'CA',
-          message,
-          postedAt: 'Just now',
-          authority: true,
-        },
-      ],
-    }));
-    setDrafts((current) => ({ ...current, [feedbackId]: '' }));
+
+    confirmAction(
+      'Are you sure you want to submit this response?',
+      () => {
+        setComments((current) => ({
+          ...current,
+          [feedbackId]: [
+            ...(current[feedbackId] ?? []),
+            {
+              id: `CMT-${Date.now()}`,
+              author: 'Community Authority',
+              initials: 'CA',
+              message,
+              postedAt: 'Just now',
+              authority: true,
+            },
+          ],
+        }));
+        setDrafts((current) => ({ ...current, [feedbackId]: '' }));
+      },
+      'Submit Response'
+    );
   };
 
   return (
