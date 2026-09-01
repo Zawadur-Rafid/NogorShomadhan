@@ -5,55 +5,18 @@ import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
-const initialAdminNotifications = [
-  {
-    id: "notification-1",
-    icon: "document-text-outline",
-    title: "New complaint submitted",
-    message: "Broken Main Pipe is awaiting verification.",
-    time: "5 min ago",
-    route: "/(admin)/complaints/review",
-  },
-  {
-    id: "notification-2",
-    icon: "person-add-outline",
-    title: "New account request",
-    message: "A resident account is awaiting approval.",
-    time: "18 min ago",
-    route: "/(admin)/accounts/pending",
-  },
-  {
-    id: "notification-3",
-    icon: "checkmark-circle-outline",
-    title: "Complaint resolved",
-    message: "Major Pothole was marked as resolved.",
-    time: "1 hr ago",
-    route: "/(admin)/complaints/all",
-  },
-  {
-    id: "notification-4",
-    icon: "bar-chart-outline",
-    title: "Weekly report ready",
-    message: "Your community performance summary is available.",
-    time: "Today",
-    route: "/(admin)/analytics",
-  },
-];
-
-const getNotificationRoute = (notification: {
-  title?: string;
-  route?: string;
-  id?: string;
-}) => {
+const getNotificationRoute = (notification: { route?: string; title?: string }) => {
   if (notification.route) return notification.route;
 
   const title = (notification.title ?? "").toLowerCase();
 
-  if (title.includes("forum")) return "/(admin)/forum";
   if (title.includes("account")) return "/(admin)/accounts/pending";
-  if (title.includes("report") || title.includes("analytics"))
-    return "/(admin)/analytics";
-  if (title.includes("complaint")) return "/(admin)/complaints/review";
+  if (title.includes("complaint") || title.includes("review"))
+    return "/(admin)/complaints/review";
+  if (title.includes("announcement") || title.includes("forum"))
+    return "/(admin)/forum";
+  if (title.includes("status") || title.includes("progress") || title.includes("work"))
+    return "/(admin)/complaints/all";
 
   return "/(admin)/dashboard";
 };
@@ -63,24 +26,14 @@ export default function AdminPageHeader() {
   const router = useRouter();
   const [menuVisible, setMenuVisible] = useState(false);
   const [notificationsVisible, setNotificationsVisible] = useState(false);
-  const [notifications, setNotifications] = useState<any[]>(
-    initialAdminNotifications,
-  );
+  const [notifications, setNotifications] = useState<any[]>([]);
 
   useEffect(() => {
     async function fetchNotifs() {
-      const forumNotifs =
-        await notificationService.fetchForumNotifications("admin");
-      const formatted = forumNotifs.map((n) => ({
-        id: n.id,
-        icon: n.icon,
-        title: n.title,
-        message: n.message,
-        time: n.time,
-        route: "/(admin)/forum",
-      }));
-      setNotifications([...formatted, ...initialAdminNotifications]);
+      const dbNotifications = await notificationService.fetchAdminNotifications();
+      setNotifications(dbNotifications);
     }
+
     fetchNotifs();
   }, []);
 
@@ -202,9 +155,7 @@ export default function AdminPageHeader() {
                       {notification.time}
                     </Text>
                   </View>
-                  {notification.id !== "notification-4" ? (
-                    <View style={styles.unreadDot} />
-                  ) : null}
+                  <View style={styles.unreadDot} />
                 </Pressable>
               ))}
             </ScrollView>
