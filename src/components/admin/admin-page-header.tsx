@@ -5,7 +5,10 @@ import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
-const getNotificationRoute = (notification: { route?: string; title?: string }) => {
+const getNotificationRoute = (notification: {
+  route?: string;
+  title?: string;
+}) => {
   if (notification.route) return notification.route;
 
   const title = (notification.title ?? "").toLowerCase();
@@ -15,7 +18,11 @@ const getNotificationRoute = (notification: { route?: string; title?: string }) 
     return "/(admin)/complaints/review";
   if (title.includes("announcement") || title.includes("forum"))
     return "/(admin)/forum";
-  if (title.includes("status") || title.includes("progress") || title.includes("work"))
+  if (
+    title.includes("status") ||
+    title.includes("progress") ||
+    title.includes("work")
+  )
     return "/(admin)/complaints/all";
 
   return "/(admin)/dashboard";
@@ -30,7 +37,8 @@ export default function AdminPageHeader() {
 
   useEffect(() => {
     async function fetchNotifs() {
-      const dbNotifications = await notificationService.fetchAdminNotifications();
+      const dbNotifications =
+        await notificationService.fetchAdminNotifications();
       setNotifications(dbNotifications);
     }
 
