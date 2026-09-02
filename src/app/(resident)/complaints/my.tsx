@@ -1,45 +1,50 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import { getMyFeedComplaints } from "@/services/resident.service";
+import { MaterialIcons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
+import { useEffect, useMemo, useState } from "react";
 import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  Image,
-  Alert
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { MaterialIcons, Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
-import { getMyFeedComplaints } from '@/services/resident.service';
+    Alert,
+    Image,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
-type StatusFilter = 'All' | 'Unverified' | 'Pending' | 'In Progress' | 'Resolved';
+type StatusFilter =
+  | "All"
+  | "Unverified"
+  | "Pending"
+  | "In Progress"
+  | "Resolved";
 
 const theme = {
-  background: '#f8f9fc',
-  surface: '#ffffff',
-  primary: '#00475e',
-  primaryContainer: '#1a5f7a',
-  onPrimaryContainer: '#9bd7f7',
-  onSurface: '#191c1e',
-  onSurfaceVariant: '#40484d',
-  outline: '#70787d',
-  outlineVariant: '#c0c8cd',
-  surfaceContainerLow: '#f2f4f6',
-  surfaceContainer: '#eceef0',
-  pendingBg: '#FEF2F2',
-  pendingText: '#EF4444',
-  progressBg: '#FEF9C3',
-  progressText: '#C67B00',
-  resolvedBg: '#EFF6FF',
-  resolvedText: '#2563EB',
-  secondaryContainer: '#ffa454',
-  onSecondaryContainer: '#713b00',
+  background: "#f8f9fc",
+  surface: "#ffffff",
+  primary: "#00475e",
+  primaryContainer: "#1a5f7a",
+  onPrimaryContainer: "#9bd7f7",
+  onSurface: "#191c1e",
+  onSurfaceVariant: "#40484d",
+  outline: "#70787d",
+  outlineVariant: "#c0c8cd",
+  surfaceContainerLow: "#f2f4f6",
+  surfaceContainer: "#eceef0",
+  pendingBg: "#FEF2F2",
+  pendingText: "#EF4444",
+  progressBg: "#FEF9C3",
+  progressText: "#C67B00",
+  resolvedBg: "#EFF6FF",
+  resolvedText: "#2563EB",
+  secondaryContainer: "#ffa454",
+  onSecondaryContainer: "#713b00",
 };
 
 export default function MyComplaintsScreen() {
   const router = useRouter();
-  const [activeFilter, setActiveFilter] = useState<StatusFilter>('All');
+  const [activeFilter, setActiveFilter] = useState<StatusFilter>("All");
 
   const [myComplaints, setMyComplaints] = useState<any[]>([]);
 
@@ -50,7 +55,7 @@ export default function MyComplaintsScreen() {
         setMyComplaints(data);
       } catch (error) {
         if (error instanceof Error) {
-          Alert.alert('Error', error.message);
+          Alert.alert("Error", error.message);
         }
       }
     }
@@ -58,15 +63,15 @@ export default function MyComplaintsScreen() {
   }, []);
 
   const filteredComplaints = useMemo(() => {
-    if (activeFilter === 'All') return myComplaints;
+    if (activeFilter === "All") return myComplaints;
     return myComplaints.filter(
-      (c) => c.status.toUpperCase() === activeFilter.toUpperCase()
+      (c) => c.status.toUpperCase() === activeFilter.toUpperCase(),
     );
   }, [activeFilter, myComplaints]);
 
   const handleOpenDetails = (id: string) => {
     router.push({
-      pathname: '/(resident)/complaints/[complaintId]',
+      pathname: "/(resident)/complaints/[complaintId]",
       params: { complaintId: id },
     });
   };
@@ -92,33 +97,39 @@ export default function MyComplaintsScreen() {
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.filterContainer}
           >
-            {(['All', 'Unverified', 'Pending', 'In Progress', 'Resolved'] as StatusFilter[]).map(
-              (filter) => {
-                const isActive = activeFilter === filter;
-                return (
-                  <TouchableOpacity
-                    key={filter}
+            {(
+              [
+                "All",
+                "Unverified",
+                "Pending",
+                "In Progress",
+                "Resolved",
+              ] as StatusFilter[]
+            ).map((filter) => {
+              const isActive = activeFilter === filter;
+              return (
+                <TouchableOpacity
+                  key={filter}
+                  style={[
+                    styles.filterBtn,
+                    isActive ? styles.activeFilter : styles.inactiveFilter,
+                  ]}
+                  onPress={() => setActiveFilter(filter)}
+                  activeOpacity={0.8}
+                >
+                  <Text
                     style={[
-                      styles.filterBtn,
-                      isActive ? styles.activeFilter : styles.inactiveFilter,
+                      styles.filterText,
+                      isActive
+                        ? styles.activeFilterText
+                        : styles.inactiveFilterText,
                     ]}
-                    onPress={() => setActiveFilter(filter)}
-                    activeOpacity={0.8}
                   >
-                    <Text
-                      style={[
-                        styles.filterText,
-                        isActive
-                          ? styles.activeFilterText
-                          : styles.inactiveFilterText,
-                      ]}
-                    >
-                      {filter}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              }
-            )}
+                    {filter}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
           </ScrollView>
         </View>
 
@@ -141,32 +152,39 @@ export default function MyComplaintsScreen() {
             filteredComplaints.map((item) => {
               let badgeBg = theme.pendingBg;
               let badgeText = theme.pendingText;
-              let statusLabel = 'Pending';
-              if (item.status === 'UNVERIFIED') {
+              let statusLabel = "Pending";
+              if (item.status === "UNVERIFIED") {
                 badgeBg = theme.surfaceContainerLow;
                 badgeText = theme.onSurfaceVariant;
-                statusLabel = 'Unverified';
-              } else if (item.status === 'IN PROGRESS') {
+                statusLabel = "Unverified";
+              } else if (item.status === "IN PROGRESS") {
                 badgeBg = theme.progressBg;
                 badgeText = theme.progressText;
-                statusLabel = 'In Progress';
-              } else if (item.status === 'RESOLVED') {
+                statusLabel = "In Progress";
+              } else if (item.status === "RESOLVED") {
                 badgeBg = theme.resolvedBg;
                 badgeText = theme.resolvedText;
-                statusLabel = 'Resolved';
+                statusLabel = "Resolved";
               }
 
-              let categoryIcon: keyof typeof MaterialIcons.glyphMap = 'report-problem';
-              if (item.category === 'Water Supply') categoryIcon = 'water-drop';
-              if (item.category === 'Roads & Traffic') categoryIcon = 'construction';
-              if (item.category === 'Streetlights') categoryIcon = 'lightbulb';
-              if (item.category === 'Waste Management') categoryIcon = 'delete';
-              if (item.category === 'Parks & Recreation') categoryIcon = 'park';
-              if (item.category === 'Public Safety') categoryIcon = 'shield';
-              if (item.category === 'Drainage System') categoryIcon = 'water-damage';
-              if (item.category === 'Electricity') categoryIcon = 'flash-on';
+              let categoryIcon: keyof typeof MaterialIcons.glyphMap =
+                "report-problem";
+              if (item.category === "Water Supply") categoryIcon = "water-drop";
+              if (item.category === "Roads & Traffic")
+                categoryIcon = "construction";
+              if (item.category === "Streetlights") categoryIcon = "lightbulb";
+              if (item.category === "Waste Management") categoryIcon = "delete";
+              if (item.category === "Parks & Recreation") categoryIcon = "park";
+              if (item.category === "Public Safety") categoryIcon = "shield";
+              if (item.category === "Drainage System")
+                categoryIcon = "water-damage";
+              if (item.category === "Electricity") categoryIcon = "flash-on";
 
-              const imageCount = item.images ? item.images.length : (item.image ? 1 : 0);
+              const imageCount = item.images
+                ? item.images.length
+                : item.image
+                  ? 1
+                  : 0;
 
               return (
                 <TouchableOpacity
@@ -210,8 +228,14 @@ export default function MyComplaintsScreen() {
                       />
                       {imageCount > 1 && (
                         <View style={styles.photoCountBadge}>
-                          <MaterialIcons name="photo-library" size={14} color="#FFF" />
-                          <Text style={styles.photoCountText}>{imageCount} Photos</Text>
+                          <MaterialIcons
+                            name="photo-library"
+                            size={14}
+                            color="#FFF"
+                          />
+                          <Text style={styles.photoCountText}>
+                            {imageCount} Photos
+                          </Text>
                         </View>
                       )}
                     </View>
@@ -230,7 +254,6 @@ export default function MyComplaintsScreen() {
                       />
                       <Text style={styles.locationText}>{item.location}</Text>
                     </View>
-
                   </View>
 
                   <View style={styles.actionRow}>
@@ -238,7 +261,9 @@ export default function MyComplaintsScreen() {
                       style={styles.viewBtn}
                       onPress={() => handleOpenDetails(item.id)}
                     >
-                      <Text style={styles.viewBtnText}>View Details & Images</Text>
+                      <Text style={styles.viewBtnText}>
+                        View Details & Images
+                      </Text>
                       <MaterialIcons
                         name="chevron-right"
                         size={18}
@@ -256,7 +281,7 @@ export default function MyComplaintsScreen() {
       {/* Floating Action Button */}
       <TouchableOpacity
         style={styles.fab}
-        onPress={() => router.push('/(resident)/complaints/create')}
+        onPress={() => router.push("/(resident)/complaints/create")}
       >
         <MaterialIcons
           name="add"
@@ -282,15 +307,15 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   title: {
-    fontFamily: 'Inter',
+    fontFamily: "System",
     fontSize: 28,
-    fontWeight: '700',
+    fontWeight: "700",
     color: theme.primary,
     marginBottom: 4,
     letterSpacing: -0.5,
   },
   subtitle: {
-    fontFamily: 'Inter',
+    fontFamily: "System",
     fontSize: 14,
     color: theme.onSurfaceVariant,
   },
@@ -305,8 +330,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 999,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   activeFilter: {
     backgroundColor: theme.primary,
@@ -315,12 +340,12 @@ const styles = StyleSheet.create({
     backgroundColor: theme.surfaceContainer,
   },
   filterText: {
-    fontFamily: 'Inter',
+    fontFamily: "System",
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   activeFilterText: {
-    color: '#fff',
+    color: "#fff",
   },
   inactiveFilterText: {
     color: theme.onSurfaceVariant,
@@ -334,22 +359,22 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: theme.outlineVariant + '4D',
-    shadowColor: '#000',
+    borderColor: theme.outlineVariant + "4D",
+    shadowColor: "#000",
     shadowOpacity: 0.05,
     shadowRadius: 4,
     shadowOffset: { width: 0, height: 2 },
     elevation: 2,
   },
   cardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
     marginBottom: 12,
   },
   cardHeaderLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     flex: 1,
     gap: 12,
     marginRight: 8,
@@ -357,24 +382,24 @@ const styles = StyleSheet.create({
   iconCircle: {
     width: 42,
     height: 42,
-    backgroundColor: theme.primary + '1A',
+    backgroundColor: theme.primary + "1A",
     borderRadius: 21,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   titleArea: {
     flex: 1,
   },
   cardTitle: {
-    fontFamily: 'Inter',
+    fontFamily: "System",
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.onSurface,
   },
   cardCategory: {
-    fontFamily: 'Inter',
+    fontFamily: "System",
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.primary,
     marginTop: 2,
   },
@@ -384,115 +409,115 @@ const styles = StyleSheet.create({
     borderRadius: 999,
   },
   statusBadgeText: {
-    fontFamily: 'Inter',
+    fontFamily: "System",
     fontSize: 11,
-    fontWeight: '700',
+    fontWeight: "700",
   },
   imageWrapper: {
-    position: 'relative',
+    position: "relative",
     marginBottom: 12,
   },
   evidenceImage: {
-    width: '100%',
+    width: "100%",
     height: 180,
     borderRadius: 8,
     backgroundColor: theme.surfaceContainer,
   },
   photoCountBadge: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 8,
     right: 8,
-    backgroundColor: 'rgba(0, 0, 0, 0.75)',
+    backgroundColor: "rgba(0, 0, 0, 0.75)",
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 4,
   },
   photoCountText: {
-    color: '#FFF',
-    fontFamily: 'Inter',
+    color: "#FFF",
+    fontFamily: "System",
     fontSize: 11,
-    fontWeight: '700',
+    fontWeight: "700",
   },
   cardDesc: {
-    fontFamily: 'Inter',
+    fontFamily: "System",
     fontSize: 14,
     color: theme.onSurfaceVariant,
     lineHeight: 20,
     marginBottom: 12,
   },
   metaRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     paddingTop: 8,
     borderTopWidth: 1,
     borderTopColor: theme.surfaceContainer,
     marginBottom: 12,
   },
   locationTag: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 4,
     flex: 1,
   },
   locationText: {
-    fontFamily: 'Inter',
+    fontFamily: "System",
     fontSize: 12,
     color: theme.onSurfaceVariant,
     flex: 1,
   },
 
   actionRow: {
-    flexDirection: 'row',
+    flexDirection: "row",
   },
   viewBtn: {
     flex: 1,
     paddingVertical: 10,
     borderRadius: 8,
     backgroundColor: theme.surfaceContainerLow,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
     gap: 4,
   },
   viewBtnText: {
-    fontFamily: 'Inter',
+    fontFamily: "System",
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.primary,
   },
   emptyState: {
     paddingVertical: 64,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   emptyTitle: {
-    fontFamily: 'Inter',
+    fontFamily: "System",
     fontSize: 20,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.onSurface,
     marginBottom: 4,
   },
   emptyDesc: {
-    fontFamily: 'Inter',
+    fontFamily: "System",
     fontSize: 14,
     color: theme.onSurfaceVariant,
-    textAlign: 'center',
+    textAlign: "center",
   },
   fab: {
-    position: 'absolute',
+    position: "absolute",
     right: 16,
     bottom: 80,
     backgroundColor: theme.secondaryContainer,
     width: 56,
     height: 56,
     borderRadius: 28,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#000",
     shadowOpacity: 0.2,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 4 },

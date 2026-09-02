@@ -462,13 +462,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    minHeight: 64,
+    minHeight: 60,
     paddingHorizontal: 16,
     flexDirection: "row",
     alignItems: "center",
     borderBottomWidth: 1,
-    borderBottomColor: "#eef1f5",
-    backgroundColor: colors.background,
+    borderBottomColor: "#E7EEF3",
+    backgroundColor: "#FFFFFF",
   },
   headerLeft: {
     flexDirection: "row",
@@ -481,10 +481,11 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   brand: {
-    fontFamily: "Inter",
-    fontSize: 20,
+    fontFamily: "System",
+    fontSize: 18,
     fontWeight: "700",
-    color: colors.primary,
+    color: "#23435D",
+    letterSpacing: 0.1,
   },
   scrollContent: {
     padding: 16,
@@ -504,17 +505,17 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   title: {
-    fontFamily: "Inter",
-    fontSize: 24,
+    fontFamily: "System",
+    fontSize: 20,
     fontWeight: "800",
-    color: colors.primary,
+    color: "#23435D",
   },
   subtitle: {
-    fontFamily: "Inter",
-    fontSize: 15,
-    lineHeight: 21,
-    color: colors.onSurfaceVariant,
-    marginTop: -8,
+    fontFamily: "System",
+    fontSize: 13,
+    lineHeight: 18,
+    color: "#52606D",
+    marginTop: -4,
   },
   sectionHeader: {
     flexDirection: "row",
@@ -523,7 +524,7 @@ const styles = StyleSheet.create({
     paddingTop: 8,
   },
   sectionTitle: {
-    fontFamily: "Inter",
+    fontFamily: "System",
     fontSize: 12,
     fontWeight: "800",
     letterSpacing: 1.4,
@@ -534,7 +535,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   label: {
-    fontFamily: "Inter",
+    fontFamily: "System",
     fontSize: 12,
     fontWeight: "700",
     color: colors.onSurfaceVariant,
@@ -554,7 +555,7 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     paddingHorizontal: 16,
-    fontFamily: "Inter",
+    fontFamily: "System",
     fontSize: 15,
     color: colors.onSurface,
     minHeight: 48,
@@ -563,7 +564,7 @@ const styles = StyleSheet.create({
     padding: 12,
   },
   errorText: {
-    fontFamily: "Inter",
+    fontFamily: "System",
     fontSize: 12,
     color: colors.error,
     paddingLeft: 4,
@@ -591,7 +592,7 @@ const styles = StyleSheet.create({
   },
   termsText: {
     flex: 1,
-    fontFamily: "Inter",
+    fontFamily: "System",
     fontSize: 14,
     lineHeight: 20,
     color: colors.onSurfaceVariant,
@@ -611,7 +612,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   registerButtonText: {
-    fontFamily: "Inter",
+    fontFamily: "System",
     fontSize: 20,
     fontWeight: "800",
     color: colors.onPrimary,
@@ -624,12 +625,12 @@ const styles = StyleSheet.create({
     gap: 5,
   },
   accountPromptText: {
-    fontFamily: "Inter",
+    fontFamily: "System",
     fontSize: 14,
     color: colors.onSurfaceVariant,
   },
   accountPromptLink: {
-    fontFamily: "Inter",
+    fontFamily: "System",
     fontSize: 14,
     fontWeight: "800",
     color: colors.primary,
@@ -670,14 +671,14 @@ const styles = StyleSheet.create({
     marginLeft: 12,
   },
   toastTitle: {
-    fontFamily: "Inter",
+    fontFamily: "System",
     fontSize: 16,
     fontWeight: "700",
     color: "#1a1a1a",
     marginBottom: 4,
   },
   toastText: {
-    fontFamily: "Inter",
+    fontFamily: "System",
     fontSize: 14,
     fontWeight: "400",
     color: "#2a2a2a",

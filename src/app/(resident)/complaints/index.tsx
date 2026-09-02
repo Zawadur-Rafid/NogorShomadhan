@@ -1,16 +1,16 @@
-import { MaterialIcons, Ionicons } from "@expo/vector-icons";
-import { useMemo, useState, useEffect } from "react";
-import {
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-  Image,
-  Alert
-} from "react-native";
-import { useRouter } from "expo-router";
 import { getFeedComplaints } from "@/services/resident.service";
+import { MaterialIcons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
+import { useEffect, useMemo, useState } from "react";
+import {
+    Alert,
+    Image,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
+} from "react-native";
 
 type StatusFilter = "All" | "Pending" | "In Progress" | "Resolved";
 
@@ -46,7 +46,7 @@ const theme = {
   pendingText: "#EF4444",
   progressBg: "#FEF9C3",
   progressText: "#C67B00",
-  resolvedBg: "#EFF6FF", 
+  resolvedBg: "#EFF6FF",
   resolvedText: "#2563EB",
   secondaryContainer: "#ffa454",
   onSecondaryContainer: "#713b00",
@@ -54,8 +54,10 @@ const theme = {
 
 export default function ResidentAllComplaintsScreen() {
   const router = useRouter();
-  const [activeStatusFilter, setActiveStatusFilter] = useState<StatusFilter>("All");
-  const [activeCategoryFilter, setActiveCategoryFilter] = useState<string>("All Categories");
+  const [activeStatusFilter, setActiveStatusFilter] =
+    useState<StatusFilter>("All");
+  const [activeCategoryFilter, setActiveCategoryFilter] =
+    useState<string>("All Categories");
 
   const [complaints, setComplaints] = useState<any[]>([]);
 
@@ -109,17 +111,34 @@ export default function ResidentAllComplaintsScreen() {
         {/* Status Filter Tabs */}
         <View style={styles.filterSection}>
           <Text style={styles.sectionLabel}>STATUS</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterScroll} contentContainerStyle={styles.filterContainer}>
-            {(["All", "Pending", "In Progress", "Resolved"] as StatusFilter[]).map((filter) => {
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.filterScroll}
+            contentContainerStyle={styles.filterContainer}
+          >
+            {(
+              ["All", "Pending", "In Progress", "Resolved"] as StatusFilter[]
+            ).map((filter) => {
               const isActive = activeStatusFilter === filter;
               return (
                 <TouchableOpacity
                   key={filter}
-                  style={[styles.filterBtn, isActive ? styles.activeFilter : styles.inactiveFilter]}
+                  style={[
+                    styles.filterBtn,
+                    isActive ? styles.activeFilter : styles.inactiveFilter,
+                  ]}
                   onPress={() => setActiveStatusFilter(filter)}
                   activeOpacity={0.8}
                 >
-                  <Text style={[styles.filterText, isActive ? styles.activeFilterText : styles.inactiveFilterText]}>
+                  <Text
+                    style={[
+                      styles.filterText,
+                      isActive
+                        ? styles.activeFilterText
+                        : styles.inactiveFilterText,
+                    ]}
+                  >
                     {filter}
                   </Text>
                 </TouchableOpacity>
@@ -131,17 +150,32 @@ export default function ResidentAllComplaintsScreen() {
         {/* Category Filter Chips */}
         <View style={styles.filterSection}>
           <Text style={styles.sectionLabel}>CATEGORY</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterScroll} contentContainerStyle={styles.filterContainer}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.filterScroll}
+            contentContainerStyle={styles.filterContainer}
+          >
             {CATEGORIES.map((cat) => {
               const isActive = activeCategoryFilter === cat;
               return (
                 <TouchableOpacity
                   key={cat}
-                  style={[styles.chipBtn, isActive ? styles.activeChip : styles.inactiveChip]}
+                  style={[
+                    styles.chipBtn,
+                    isActive ? styles.activeChip : styles.inactiveChip,
+                  ]}
                   onPress={() => setActiveCategoryFilter(cat)}
                   activeOpacity={0.8}
                 >
-                  <Text style={[styles.chipText, isActive ? styles.activeChipText : styles.inactiveChipText]}>
+                  <Text
+                    style={[
+                      styles.chipText,
+                      isActive
+                        ? styles.activeChipText
+                        : styles.inactiveChipText,
+                    ]}
+                  >
                     {cat}
                   </Text>
                 </TouchableOpacity>
@@ -154,9 +188,16 @@ export default function ResidentAllComplaintsScreen() {
         <View style={styles.listContainer}>
           {filteredComplaints.length === 0 ? (
             <View style={styles.emptyState}>
-              <MaterialIcons name="error-outline" size={64} color={theme.outlineVariant} style={{marginBottom: 16}} />
+              <MaterialIcons
+                name="error-outline"
+                size={64}
+                color={theme.outlineVariant}
+                style={{ marginBottom: 16 }}
+              />
               <Text style={styles.emptyTitle}>No complaints found</Text>
-              <Text style={styles.emptyDesc}>There are no reports matching your active filters.</Text>
+              <Text style={styles.emptyDesc}>
+                There are no reports matching your active filters.
+              </Text>
             </View>
           ) : (
             filteredComplaints.map((item) => {
@@ -173,64 +214,96 @@ export default function ResidentAllComplaintsScreen() {
                 statusLabel = "Resolved";
               }
 
-              let materialIcon: keyof typeof MaterialIcons.glyphMap = "report-problem";
-              if (item.category === "Road Damage") materialIcon = "construction";
+              let materialIcon: keyof typeof MaterialIcons.glyphMap =
+                "report-problem";
+              if (item.category === "Road Damage")
+                materialIcon = "construction";
               if (item.category === "Garbage & Waste") materialIcon = "delete";
-              if (item.category === "Drainage & Waterlogging") materialIcon = "water-damage";
-              if (item.category === "Streetlight & Electrical") materialIcon = "lightbulb";
+              if (item.category === "Drainage & Waterlogging")
+                materialIcon = "water-damage";
+              if (item.category === "Streetlight & Electrical")
+                materialIcon = "lightbulb";
               if (item.category === "Water Supply") materialIcon = "water-drop";
-              if (item.category === "Sanitation & Public Toilets") materialIcon = "wc";
-              if (item.category === "Traffic & Illegal Parking") materialIcon = "traffic";
-              if (item.category === "Public Safety & Encroachment") materialIcon = "shield";
-              if (item.category === "Noise & Environmental Pollution") materialIcon = "volume-up";
-              if (item.category === "Parks & Public Spaces") materialIcon = "park";
-              if (item.category === "Animal-Related Issues") materialIcon = "pets";
+              if (item.category === "Sanitation & Public Toilets")
+                materialIcon = "wc";
+              if (item.category === "Traffic & Illegal Parking")
+                materialIcon = "traffic";
+              if (item.category === "Public Safety & Encroachment")
+                materialIcon = "shield";
+              if (item.category === "Noise & Environmental Pollution")
+                materialIcon = "volume-up";
+              if (item.category === "Parks & Public Spaces")
+                materialIcon = "park";
+              if (item.category === "Animal-Related Issues")
+                materialIcon = "pets";
 
               return (
-                <TouchableOpacity 
-                  key={item.id} 
-                  style={styles.card} 
+                <TouchableOpacity
+                  key={item.id}
+                  style={styles.card}
                   activeOpacity={0.9}
                   onPress={() => handleOpenDetails(item.id)}
                 >
                   <View style={styles.cardHeader}>
                     <View style={styles.cardHeaderLeft}>
                       <View style={styles.iconCircle}>
-                        <MaterialIcons name={materialIcon} size={24} color={theme.primary} />
+                        <MaterialIcons
+                          name={materialIcon}
+                          size={24}
+                          color={theme.primary}
+                        />
                       </View>
                       <View style={styles.titleArea}>
                         <Text style={styles.cardTitle}>{item.title}</Text>
-                        <Text style={styles.cardCategory}>{item.category} • {item.date}</Text>
+                        <Text style={styles.cardCategory}>
+                          {item.category} • {item.date}
+                        </Text>
                       </View>
                     </View>
-                    <View style={[styles.statusBadge, { backgroundColor: badgeBg }]}>
-                      <Text style={[styles.statusBadgeText, { color: badgeText }]}>{statusLabel}</Text>
+                    <View
+                      style={[styles.statusBadge, { backgroundColor: badgeBg }]}
+                    >
+                      <Text
+                        style={[styles.statusBadgeText, { color: badgeText }]}
+                      >
+                        {statusLabel}
+                      </Text>
                     </View>
                   </View>
-                  
+
                   {item.image && (
-                    <Image source={{ uri: item.image }} style={styles.evidenceImage} />
+                    <Image
+                      source={{ uri: item.image }}
+                      style={styles.evidenceImage}
+                    />
                   )}
 
                   <Text style={styles.cardDesc} numberOfLines={2}>
                     {item.description}
                   </Text>
-                  
+
                   <View style={styles.metaRow}>
                     <View style={styles.locationTag}>
-                      <MaterialIcons name="place" size={16} color={theme.primary} />
+                      <MaterialIcons
+                        name="place"
+                        size={16}
+                        color={theme.primary}
+                      />
                       <Text style={styles.locationText}>{item.location}</Text>
                     </View>
-
                   </View>
 
                   <View style={styles.actionRow}>
-                    <TouchableOpacity 
+                    <TouchableOpacity
                       style={styles.viewBtn}
                       onPress={() => handleOpenDetails(item.id)}
                     >
                       <Text style={styles.viewBtnText}>View Details</Text>
-                      <MaterialIcons name="chevron-right" size={18} color={theme.primary} />
+                      <MaterialIcons
+                        name="chevron-right"
+                        size={18}
+                        color={theme.primary}
+                      />
                     </TouchableOpacity>
                   </View>
                 </TouchableOpacity>
@@ -241,11 +314,15 @@ export default function ResidentAllComplaintsScreen() {
       </ScrollView>
 
       {/* Floating Action Button for New Complaint */}
-      <TouchableOpacity 
+      <TouchableOpacity
         style={styles.fab}
         onPress={() => router.push("/(resident)/complaints/create")}
       >
-        <MaterialIcons name="add" size={28} color={theme.onSecondaryContainer} />
+        <MaterialIcons
+          name="add"
+          size={28}
+          color={theme.onSecondaryContainer}
+        />
       </TouchableOpacity>
     </View>
   );
@@ -265,7 +342,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   title: {
-    fontFamily: "Inter",
+    fontFamily: "System",
     fontSize: 28,
     fontWeight: "700",
     color: theme.primary,
@@ -273,7 +350,7 @@ const styles = StyleSheet.create({
     letterSpacing: -0.5,
   },
   subtitle: {
-    fontFamily: "Inter",
+    fontFamily: "System",
     fontSize: 14,
     color: theme.onSurfaceVariant,
   },
@@ -281,7 +358,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   sectionLabel: {
-    fontFamily: "Inter",
+    fontFamily: "System",
     fontSize: 11,
     fontWeight: "700",
     color: theme.outline,
@@ -300,8 +377,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 999,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   activeFilter: {
     backgroundColor: theme.primary,
@@ -310,7 +387,7 @@ const styles = StyleSheet.create({
     backgroundColor: theme.surfaceContainer,
   },
   filterText: {
-    fontFamily: "Inter",
+    fontFamily: "System",
     fontSize: 12,
     fontWeight: "600",
   },
@@ -336,7 +413,7 @@ const styles = StyleSheet.create({
     backgroundColor: theme.surfaceContainerLow,
   },
   chipText: {
-    fontFamily: "Inter",
+    fontFamily: "System",
     fontSize: 12,
     fontWeight: "500",
   },
@@ -380,7 +457,7 @@ const styles = StyleSheet.create({
   iconCircle: {
     width: 44,
     height: 44,
-    backgroundColor: theme.primary + "1A", 
+    backgroundColor: theme.primary + "1A",
     borderRadius: 22,
     justifyContent: "center",
     alignItems: "center",
@@ -389,13 +466,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   cardTitle: {
-    fontFamily: "Inter",
+    fontFamily: "System",
     fontSize: 18,
     fontWeight: "600",
     color: theme.onSurface,
   },
   cardCategory: {
-    fontFamily: "Inter",
+    fontFamily: "System",
     fontSize: 12,
     fontWeight: "600",
     color: theme.primary,
@@ -407,7 +484,7 @@ const styles = StyleSheet.create({
     borderRadius: 999,
   },
   statusBadgeText: {
-    fontFamily: "Inter",
+    fontFamily: "System",
     fontSize: 11,
     fontWeight: "700",
   },
@@ -419,7 +496,7 @@ const styles = StyleSheet.create({
     backgroundColor: theme.surfaceContainer,
   },
   cardDesc: {
-    fontFamily: "Inter",
+    fontFamily: "System",
     fontSize: 14,
     color: theme.onSurfaceVariant,
     lineHeight: 20,
@@ -441,7 +518,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   locationText: {
-    fontFamily: "Inter",
+    fontFamily: "System",
     fontSize: 12,
     color: theme.onSurfaceVariant,
     flex: 1,
@@ -461,7 +538,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   viewBtnText: {
-    fontFamily: "Inter",
+    fontFamily: "System",
     fontSize: 13,
     fontWeight: "600",
     color: theme.primary,
@@ -472,19 +549,19 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   emptyTitle: {
-    fontFamily: "Inter",
+    fontFamily: "System",
     fontSize: 20,
     fontWeight: "600",
     color: theme.onSurface,
     marginBottom: 4,
   },
   emptyDesc: {
-    fontFamily: "Inter",
+    fontFamily: "System",
     fontSize: 14,
     color: theme.onSurfaceVariant,
   },
   fab: {
-    position: 'absolute',
+    position: "absolute",
     right: 16,
     bottom: 80,
     backgroundColor: theme.secondaryContainer,
@@ -498,5 +575,5 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 4 },
     elevation: 6,
-  }
+  },
 });

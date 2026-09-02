@@ -1,10 +1,20 @@
-import React, { useState, useEffect } from "react";
-import { View, Text, StyleSheet, Image, TouchableOpacity, Modal, TouchableWithoutFeedback, ScrollView } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { notificationService, ForumNotification } from "../services/notification.service";
 import { confirmAction } from "@/utils/confirm";
+import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useRouter } from "expo-router";
+import { useEffect, useState } from "react";
+import {
+    Image,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
+} from "react-native";
+import {
+    ForumNotification,
+    notificationService,
+} from "../services/notification.service";
 
 export default function TopNav() {
   const router = useRouter();
@@ -16,7 +26,10 @@ export default function TopNav() {
     async function loadNotifs() {
       const accId = await AsyncStorage.getItem("acc_id");
       if (accId) {
-        const notifs = await notificationService.fetchForumNotifications('resident', accId);
+        const notifs = await notificationService.fetchForumNotifications(
+          "resident",
+          accId,
+        );
         setNotifications(notifs);
       }
     }
@@ -52,11 +65,19 @@ export default function TopNav() {
                   <Text style={styles.emptyText}>No new notifications</Text>
                 ) : (
                   notifications.map((n) => (
-                    <TouchableOpacity key={n.id} style={styles.notifItem} onPress={() => {
+                    <TouchableOpacity
+                      key={n.id}
+                      style={styles.notifItem}
+                      onPress={() => {
                         setNotifVisible(false);
-                        router.push('/(resident)/forum');
-                    }}>
-                      <Ionicons name={n.icon as any} size={16} color="#23435D" />
+                        router.push("/(resident)/forum");
+                      }}
+                    >
+                      <Ionicons
+                        name={n.icon as any}
+                        size={16}
+                        color="#23435D"
+                      />
                       <View style={styles.notifContent}>
                         <Text style={styles.notifItemTitle}>{n.title}</Text>
                         <Text style={styles.notifMessage}>{n.message}</Text>
@@ -69,7 +90,7 @@ export default function TopNav() {
             </View>
           )}
         </View>
-        
+
         <View style={{ zIndex: 50 }}>
           <TouchableOpacity onPress={() => setMenuVisible(!menuVisible)}>
             <Ionicons
@@ -79,14 +100,14 @@ export default function TopNav() {
               color="#23435D"
             />
           </TouchableOpacity>
-          
+
           {menuVisible && (
             <View style={styles.dropdownMenu}>
               <TouchableOpacity
                 style={styles.dropdownItem}
                 onPress={() => {
                   setMenuVisible(false);
-                  router.push('/(resident)/profile');
+                  router.push("/(resident)/profile");
                 }}
               >
                 <Ionicons name="person-outline" size={16} color="#23435D" />
@@ -95,14 +116,18 @@ export default function TopNav() {
               <TouchableOpacity
                 style={[styles.dropdownItem, { borderBottomWidth: 0 }]}
                 onPress={async () => {
-                  const confirmed = await confirmAction('Are you sure you want to log out?');
+                  const confirmed = await confirmAction(
+                    "Are you sure you want to log out?",
+                  );
                   if (!confirmed) return;
                   setMenuVisible(false);
-                  router.replace('/');
+                  router.replace("/");
                 }}
               >
                 <Ionicons name="log-out-outline" size={16} color="#D32F2F" />
-                <Text style={[styles.dropdownText, { color: '#D32F2F' }]}>Logout</Text>
+                <Text style={[styles.dropdownText, { color: "#D32F2F" }]}>
+                  Logout
+                </Text>
               </TouchableOpacity>
             </View>
           )}
@@ -120,7 +145,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 12,
     paddingBottom: 12,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     zIndex: 10,
   },
   logoSection: {
@@ -132,6 +157,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "700",
     color: "#23435D",
+    fontFamily: "System",
   },
   rightSection: {
     flexDirection: "row",
@@ -139,26 +165,26 @@ const styles = StyleSheet.create({
     zIndex: 50,
   },
   badge: {
-    position: 'absolute',
+    position: "absolute",
     top: -5,
     right: -5,
-    backgroundColor: '#D92D20',
+    backgroundColor: "#D92D20",
     borderRadius: 10,
     width: 14,
     height: 14,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   badgeText: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 8,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   notifMenu: {
-    position: 'absolute',
+    position: "absolute",
     top: 30,
     right: 0,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     borderRadius: 8,
     width: 260,
     shadowColor: "#000",
@@ -171,48 +197,53 @@ const styles = StyleSheet.create({
   notifHeader: {
     padding: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
+    borderBottomColor: "#F0F0F0",
   },
   notifTitle: {
-    fontWeight: '700',
-    color: '#333',
+    fontWeight: "700",
+    color: "#333",
+    fontFamily: "System",
   },
   notifItem: {
-    flexDirection: 'row',
+    flexDirection: "row",
     padding: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
+    borderBottomColor: "#F0F0F0",
   },
   notifContent: {
     marginLeft: 10,
     flex: 1,
   },
   notifItemTitle: {
-    fontWeight: '600',
+    fontWeight: "600",
     fontSize: 12,
-    color: '#333',
+    color: "#333",
+    fontFamily: "System",
   },
   notifMessage: {
     fontSize: 11,
-    color: '#666',
+    color: "#666",
     marginTop: 2,
+    fontFamily: "System",
   },
   notifTime: {
     fontSize: 9,
-    color: '#999',
+    color: "#999",
     marginTop: 4,
+    fontFamily: "System",
   },
   emptyText: {
     padding: 15,
-    textAlign: 'center',
-    color: '#888',
+    textAlign: "center",
+    color: "#888",
     fontSize: 12,
+    fontFamily: "System",
   },
   dropdownMenu: {
-    position: 'absolute',
+    position: "absolute",
     top: 40,
     right: 0,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     borderRadius: 8,
     width: 150,
     shadowColor: "#000",
@@ -223,17 +254,17 @@ const styles = StyleSheet.create({
     zIndex: 1000,
   },
   dropdownItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     padding: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
+    borderBottomColor: "#F0F0F0",
   },
   dropdownText: {
     marginLeft: 10,
-    fontSize: 14,
-    color: '#333',
-    fontWeight: '500',
-    fontFamily: 'Inter',
+    fontSize: 15,
+    color: "#1F2937",
+    fontWeight: "600",
+    fontFamily: "System",
   },
 });

@@ -1,23 +1,34 @@
-import React from 'react';
-import { LayoutAnimation, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Slot, usePathname, useRouter } from 'expo-router';
-import BottomNav from '../../../components/BottomNav';
-import TopNav from '../../../components/TopNav';
+import { Slot, usePathname, useRouter } from "expo-router";
+import React from "react";
+import {
+    LayoutAnimation,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import BottomNav from "../../../components/BottomNav";
+import TopNav from "../../../components/TopNav";
 
 export default function ComplaintsLayout() {
   const router = useRouter();
   const pathname = usePathname();
 
-  const [activeTab, setActiveTab] = React.useState<'create' | 'all' | 'my'>('all');
+  const [activeTab, setActiveTab] = React.useState<"create" | "all" | "my">(
+    "all",
+  );
 
   React.useEffect(() => {
-    if (pathname.endsWith('create')) {
-      setActiveTab('create');
-    } else if (pathname.endsWith('my')) {
-      setActiveTab('my');
-    } else if (pathname.endsWith('complaints') || pathname.endsWith('complaints/')) {
-      setActiveTab('all');
+    if (pathname.endsWith("create")) {
+      setActiveTab("create");
+    } else if (pathname.endsWith("my")) {
+      setActiveTab("my");
+    } else if (
+      pathname.endsWith("complaints") ||
+      pathname.endsWith("complaints/")
+    ) {
+      setActiveTab("all");
     }
   }, [pathname]);
 
@@ -26,9 +37,9 @@ export default function ComplaintsLayout() {
     router.push(path as any);
   };
 
-  const isNew = activeTab === 'create';
-  const isMy = activeTab === 'my';
-  const isAll = activeTab === 'all';
+  const isNew = activeTab === "create";
+  const isMy = activeTab === "my";
+  const isAll = activeTab === "all";
 
   return (
     <SafeAreaView style={styles.container}>
@@ -39,7 +50,7 @@ export default function ComplaintsLayout() {
         <View style={styles.tabContainer}>
           <TouchableOpacity
             style={[styles.tabButton, isNew && styles.activeTabButton]}
-            onPress={() => handleTabPress('/(resident)/complaints/create')}
+            onPress={() => handleTabPress("/(resident)/complaints/create")}
           >
             <Text style={[styles.tabText, isNew && styles.activeTabText]}>
               New Complaint
@@ -48,7 +59,7 @@ export default function ComplaintsLayout() {
 
           <TouchableOpacity
             style={[styles.tabButton, isAll && styles.activeTabButton]}
-            onPress={() => handleTabPress('/(resident)/complaints')}
+            onPress={() => handleTabPress("/(resident)/complaints")}
           >
             <Text style={[styles.tabText, isAll && styles.activeTabText]}>
               All Complaints
@@ -57,7 +68,7 @@ export default function ComplaintsLayout() {
 
           <TouchableOpacity
             style={[styles.tabButton, isMy && styles.activeTabButton]}
-            onPress={() => handleTabPress('/(resident)/complaints/my')}
+            onPress={() => handleTabPress("/(resident)/complaints/my")}
           >
             <Text style={[styles.tabText, isMy && styles.activeTabText]}>
               My Complaints
@@ -78,40 +89,40 @@ export default function ComplaintsLayout() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F7F8FA',
+    backgroundColor: "#F7F8FA",
   },
   tabWrapper: {
     paddingHorizontal: 16,
     paddingTop: 16,
-    backgroundColor: '#F7F8FA',
+    backgroundColor: "#F7F8FA",
   },
   tabContainer: {
-    flexDirection: 'row',
-    backgroundColor: '#E8EDF4',
+    flexDirection: "row",
+    backgroundColor: "#E8EDF4",
     borderRadius: 12,
     padding: 4,
   },
   tabButton: {
     flex: 1,
     paddingVertical: 10,
-    alignItems: 'center',
+    alignItems: "center",
     borderRadius: 8,
   },
   activeTabButton: {
-    backgroundColor: '#23435D',
+    backgroundColor: "#23435D",
   },
   tabText: {
     fontSize: 11,
-    fontWeight: '700',
-    color: '#6B7280',
-    fontFamily: 'Inter',
-    textAlign: 'center',
+    fontWeight: "700",
+    color: "#6B7280",
+    fontFamily: "System",
+    textAlign: "center",
   },
   activeTabText: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
   },
   contentContainer: {
     flex: 1,
-    width: '100%',
-  }
+    width: "100%",
+  },
 });

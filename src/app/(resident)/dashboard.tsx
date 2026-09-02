@@ -1,22 +1,24 @@
-import React, { useState, useEffect } from "react";
-import {
-  FlatList,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-  Image,
-  Alert,
-} from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useRouter } from "expo-router";
+import { useEffect, useState } from "react";
+import {
+    Alert,
+    FlatList,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
-import TopNav from "../../components/TopNav";
 import BottomNav from "../../components/BottomNav";
+import TopNav from "../../components/TopNav";
 
-import { getDashboardData, DashboardData } from "../../services/resident.service";
+import {
+    DashboardData,
+    getDashboardData,
+} from "../../services/resident.service";
 
 export default function Dashboard() {
   const router = useRouter();
@@ -34,7 +36,12 @@ export default function Dashboard() {
     loadData();
   }, []);
 
-  const stats = data?.stats || { total: 0, pending: 0, inProgress: 0, resolved: 0 };
+  const stats = data?.stats || {
+    total: 0,
+    pending: 0,
+    inProgress: 0,
+    resolved: 0,
+  };
   const recentComplaints = data?.recentComplaints || [];
 
   const styles = StyleSheet.create({
@@ -58,7 +65,7 @@ export default function Dashboard() {
       fontSize: 18,
       fontWeight: "700",
       color: "#23435D",
-      fontFamily: "Inter",
+      fontFamily: "System",
     },
     rightSection: {
       flexDirection: "row",
@@ -73,14 +80,14 @@ export default function Dashboard() {
       color: "#B9854B",
       fontWeight: "700",
       letterSpacing: 0.8,
-      fontFamily: "Inter",
+      fontFamily: "System",
     },
     bigTitle: {
       fontSize: 24,
       fontWeight: "700",
       color: "#111827",
       marginTop: 2,
-      fontFamily: "Inter",
+      fontFamily: "System",
     },
     statsRow: {
       flexDirection: "row",
@@ -106,14 +113,14 @@ export default function Dashboard() {
       marginTop: 6,
       fontSize: 11,
       color: "#555",
-      fontFamily: "Inter",
+      fontFamily: "System",
     },
     cardNumber: {
       fontSize: 24,
       fontWeight: "700",
       marginTop: 4,
       color: "#222",
-      fontFamily: "Inter",
+      fontFamily: "System",
     },
     sectionHeader: {
       marginTop: 20,
@@ -126,13 +133,13 @@ export default function Dashboard() {
       fontSize: 18,
       fontWeight: "700",
       color: "#1F2937",
-      fontFamily: "Inter",
+      fontFamily: "System",
     },
     viewAll: {
       color: "#3B82F6",
       fontWeight: "600",
       fontSize: 13,
-      fontFamily: "Inter",
+      fontFamily: "System",
     },
     complaintCard: {
       backgroundColor: "#fff",
@@ -164,14 +171,14 @@ export default function Dashboard() {
       fontSize: 14,
       fontWeight: "700",
       color: "#222",
-      fontFamily: "Inter",
+      fontFamily: "System",
     },
     complaintDesc: {
       marginTop: 2,
       color: "#666",
       lineHeight: 18,
       fontSize: 12,
-      fontFamily: "Inter",
+      fontFamily: "System",
     },
     statusBadge: {
       paddingHorizontal: 6,
@@ -181,7 +188,7 @@ export default function Dashboard() {
     statusText: {
       fontWeight: "700",
       fontSize: 9,
-      fontFamily: "Inter",
+      fontFamily: "System",
     },
     bottomRow: {
       flexDirection: "row",
@@ -196,7 +203,7 @@ export default function Dashboard() {
       marginLeft: 3,
       color: "#777",
       fontSize: 10,
-      fontFamily: "Inter",
+      fontFamily: "System",
     },
     mapCard: {
       height: 250,
@@ -226,7 +233,7 @@ export default function Dashboard() {
     legendText: {
       fontSize: 12,
       color: "#6B7280",
-      fontFamily: "Inter",
+      fontFamily: "System",
       fontWeight: "500",
     },
     mapTitle: {
@@ -234,7 +241,7 @@ export default function Dashboard() {
       fontSize: 16,
       fontWeight: "700",
       color: "#374151",
-      fontFamily: "Inter",
+      fontFamily: "System",
     },
     mapSubtitle: {
       marginTop: 4,
@@ -242,7 +249,7 @@ export default function Dashboard() {
       color: "#6B7280",
       textAlign: "center",
       paddingHorizontal: 20,
-      fontFamily: "Inter",
+      fontFamily: "System",
     },
     forumCard: {
       marginHorizontal: 16,
@@ -279,14 +286,14 @@ export default function Dashboard() {
       color: "#1B1B1B",
       fontSize: 16,
       fontWeight: "700",
-      fontFamily: "Inter",
+      fontFamily: "System",
     },
     forumText: {
       marginTop: 4,
       color: "#6B7280",
       fontSize: 12,
       lineHeight: 18,
-      fontFamily: "Inter",
+      fontFamily: "System",
     },
     helpCard: {
       marginHorizontal: 16,
@@ -301,7 +308,7 @@ export default function Dashboard() {
       color: "#fff",
       fontWeight: "700",
       fontSize: 18,
-      fontFamily: "Inter",
+      fontFamily: "System",
     },
     helpText: {
       color: "#D9E4EC",
@@ -309,7 +316,7 @@ export default function Dashboard() {
       lineHeight: 18,
       width: "90%",
       fontSize: 12,
-      fontFamily: "Inter",
+      fontFamily: "System",
     },
     helpButton: {
       marginTop: 12,
@@ -323,7 +330,7 @@ export default function Dashboard() {
       color: "#23435D",
       fontWeight: "700",
       fontSize: 12,
-      fontFamily: "Inter",
+      fontFamily: "System",
     },
     plusButton: {
       width: 48,
@@ -352,18 +359,18 @@ export default function Dashboard() {
       color: "#23435D",
       fontWeight: "700",
       fontSize: 10,
-      fontFamily: "Inter",
+      fontFamily: "System",
     },
     navText: {
       marginTop: 2,
       color: "#8A8A8A",
       fontSize: 10,
-      fontFamily: "Inter",
+      fontFamily: "System",
     },
   });
 
   const renderComplaint = ({ item }: any) => (
-    <TouchableOpacity 
+    <TouchableOpacity
       activeOpacity={0.8}
       onPress={() => router.push(`/(resident)/complaints/${item.id}`)}
     >
@@ -404,7 +411,6 @@ export default function Dashboard() {
                 <Ionicons name="location-outline" size={10} color="#777" />
                 <Text style={styles.infoText}>{item.location}</Text>
               </View>
-
             </View>
           </View>
         </View>
@@ -436,7 +442,9 @@ export default function Dashboard() {
             <Text style={[styles.cardLabel, { color: "#EF4444" }]}>
               Pending
             </Text>
-            <Text style={[styles.cardNumber, { color: "#EF4444" }]}>{stats.pending}</Text>
+            <Text style={[styles.cardNumber, { color: "#EF4444" }]}>
+              {stats.pending}
+            </Text>
           </View>
         </View>
 
@@ -446,7 +454,9 @@ export default function Dashboard() {
             <Text style={[styles.cardLabel, { color: "#C67B00" }]}>
               In Progress
             </Text>
-            <Text style={[styles.cardNumber, { color: "#C67B00" }]}>{stats.inProgress}</Text>
+            <Text style={[styles.cardNumber, { color: "#C67B00" }]}>
+              {stats.inProgress}
+            </Text>
           </View>
           <View style={[styles.whiteCard, { backgroundColor: "#EEF6FF" }]}>
             <Ionicons
@@ -457,14 +467,18 @@ export default function Dashboard() {
             <Text style={[styles.cardLabel, { color: "#2563EB" }]}>
               Resolved
             </Text>
-            <Text style={[styles.cardNumber, { color: "#2563EB" }]}>{stats.resolved}</Text>
+            <Text style={[styles.cardNumber, { color: "#2563EB" }]}>
+              {stats.resolved}
+            </Text>
           </View>
         </View>
 
         {/* Recent Complaints */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Recent Complaints</Text>
-          <TouchableOpacity onPress={() => router.push('/(resident)/complaints')}>
+          <TouchableOpacity
+            onPress={() => router.push("/(resident)/complaints")}
+          >
             <Text style={styles.viewAll}>View All</Text>
           </TouchableOpacity>
         </View>
@@ -476,11 +490,9 @@ export default function Dashboard() {
           renderItem={renderComplaint}
         />
 
-
-
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Community Forum</Text>
-          <TouchableOpacity onPress={() => router.push('/(resident)/forum')}>
+          <TouchableOpacity onPress={() => router.push("/(resident)/forum")}>
             <Text style={styles.viewAll}>Open</Text>
           </TouchableOpacity>
         </View>
@@ -488,7 +500,7 @@ export default function Dashboard() {
         <TouchableOpacity
           activeOpacity={0.85}
           style={styles.forumCard}
-          onPress={() => router.push('/(resident)/forum')}
+          onPress={() => router.push("/(resident)/forum")}
         >
           <View style={styles.forumIcon}>
             <Ionicons name="chatbubbles-outline" size={22} color="#2D6CDF" />
@@ -497,7 +509,8 @@ export default function Dashboard() {
           <View style={styles.forumCopy}>
             <Text style={styles.forumTitle}>Join the resident forum</Text>
             <Text style={styles.forumText}>
-              Share updates, ask questions, and discuss neighborhood issues with other residents.
+              Share updates, ask questions, and discuss neighborhood issues with
+              other residents.
             </Text>
           </View>
 

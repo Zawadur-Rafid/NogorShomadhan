@@ -1,37 +1,38 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { MaterialIcons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { MaterialIcons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 interface LogoProps {
   onPress?: () => void;
-  size?: 'small' | 'large';
+  size?: "small" | "large";
 }
 
-export default function Logo({ onPress, size = 'large' }: LogoProps) {
+export default function Logo({ onPress, size = "large" }: LogoProps) {
   const router = useRouter();
 
   const handlePress = () => {
     if (onPress) {
       onPress();
     } else {
-      router.push('/');
+      router.push("/");
     }
   };
 
-  const isSmall = size === 'small';
+  const isSmall = size === "small";
 
   return (
-    <TouchableOpacity 
-      activeOpacity={0.8} 
+    <TouchableOpacity
+      activeOpacity={0.8}
       onPress={handlePress}
       style={styles.container}
     >
-      <View style={[styles.iconContainer, isSmall && styles.iconContainerSmall]}>
-        <MaterialIcons 
-          name="location-city" 
-          size={isSmall ? 28 : 48} 
-          color="#ffffff" 
+      <View
+        style={[styles.iconContainer, isSmall && styles.iconContainerSmall]}
+      >
+        <MaterialIcons
+          name="location-city"
+          size={isSmall ? 28 : 48}
+          color="#ffffff"
         />
       </View>
       <Text style={[styles.title, isSmall && styles.titleSmall]}>
@@ -46,17 +47,17 @@ export default function Logo({ onPress, size = 'large' }: LogoProps) {
 
 const styles = StyleSheet.create({
   container: {
-    alignItems: 'center',
+    alignItems: "center",
   },
   iconContainer: {
     width: 80,
     height: 80,
-    backgroundColor: '#1a5f7a',
+    backgroundColor: "#1a5f7a",
     borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     marginBottom: 16,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
     shadowRadius: 6,
@@ -69,22 +70,25 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   title: {
-    fontFamily: 'Inter',
-    fontSize: 28,
-    fontWeight: '700',
-    color: '#00475e',
+    fontFamily: "System",
+    fontSize: 25,
+    fontWeight: "700",
+    color: "#23435D",
     marginBottom: 8,
-    textAlign: 'center',
+    textAlign: "center",
   },
   titleSmall: {
-    fontSize: 20,
+    fontFamily: "System",
+    fontSize: 18,
+    fontWeight: "700",
     marginBottom: 0,
+    color: "#23435D",
   },
   subtitle: {
-    fontFamily: 'Inter',
-    fontSize: 16,
-    color: '#40484d',
-    textAlign: 'center',
+    fontFamily: "System",
+    fontSize: 14,
+    color: "#52606D",
+    textAlign: "center",
     maxWidth: 280,
   },
 });
