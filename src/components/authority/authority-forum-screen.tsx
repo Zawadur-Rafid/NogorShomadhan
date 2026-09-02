@@ -1,4 +1,5 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
+import { useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import {
   ScrollView,
@@ -134,6 +135,7 @@ const statusTheme: Record<ForumStatus, { background: string; color: string }> = 
 };
 
 export default function AuthorityForumScreen() {
+  const router = useRouter();
   const { width } = useWindowDimensions();
   const wide = width >= 760;
   const [posts, setPosts] = useState<ForumPostUI[]>(initialPosts);
@@ -287,7 +289,11 @@ export default function AuthorityForumScreen() {
 
   return (
     <SafeAreaView edges={['top', 'left', 'right', 'bottom']} style={styles.safeArea}>
-      <AuthorityPageHeader title="Dashboard" />
+      <AuthorityPageHeader
+        title="Home"
+        icon="home-outline"
+        onBack={() => router.navigate('/authority/dashboard' as never)}
+      />
 
       <ScrollView
         contentInsetAdjustmentBehavior="automatic"

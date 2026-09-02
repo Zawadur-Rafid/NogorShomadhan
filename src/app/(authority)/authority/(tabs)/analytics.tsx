@@ -71,7 +71,11 @@ export default function AuthorityAnalytics() {
 
   return (
     <SafeAreaView edges={['top', 'left', 'right']} style={styles.safeArea}>
-      <AuthorityPageHeader title="Analytics" icon="bar-chart-outline" onBack={() => router.navigate('/authority/dashboard' as never)} />
+      <AuthorityPageHeader
+        title="Home"
+        icon="home-outline"
+        onBack={() => router.navigate('/authority/dashboard' as never)}
+      />
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentInsetAdjustmentBehavior="automatic"
