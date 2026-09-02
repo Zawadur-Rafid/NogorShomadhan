@@ -715,7 +715,7 @@ function ReporterProfile({ complaint }: { complaint: AuthorityComplaintDetail })
           <Pressable
             accessibilityRole="button"
             accessibilityState={{ expanded }}
-            accessibilityLabel={`${expanded ? 'Hide' : 'Show'} ${reporterCount} other reporters`}
+            accessibilityLabel={`${expanded ? 'Hide' : 'Show'} other reporters`}
             onPress={() => setExpanded((current) => !current)}
             style={({ pressed }) => [
               styles.otherReportersToggle,
@@ -726,16 +726,9 @@ function ReporterProfile({ complaint }: { complaint: AuthorityComplaintDetail })
               <Ionicons name="people-outline" size={17} color="#2563EB" />
             </View>
             <View style={styles.otherReportersCopy}>
-              <View style={styles.otherReportersTitleRow}>
-                <Text style={styles.otherReportersTitle}>Others reported</Text>
-                <View style={styles.otherReportersCount}>
-                  <Text style={styles.otherReportersCountText}>{reporterCount}</Text>
-                </View>
-              </View>
+              <Text style={styles.otherReportersTitle}>Others reported</Text>
               <Text style={styles.otherReportersDescription}>
-                {reporterCount === 1
-                  ? '1 other resident reported the same issue'
-                  : `${reporterCount} other residents reported the same issue`}
+                Other residents reported the same issue
               </Text>
             </View>
             <Ionicons
@@ -2016,27 +2009,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#EAF2FD',
   },
   otherReportersCopy: { flex: 1, minWidth: 0 },
-  otherReportersTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
   otherReportersTitle: { color: '#344054', fontSize: 10, fontWeight: '800' },
-  otherReportersCount: {
-    minWidth: 20,
-    height: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 6,
-    borderRadius: 10,
-    backgroundColor: '#2563EB',
-  },
-  otherReportersCountText: {
-    color: '#FFFFFF',
-    fontSize: 7,
-    fontWeight: '900',
-    fontVariant: ['tabular-nums'],
-  },
   otherReportersDescription: { color: '#7890AB', fontSize: 7, marginTop: 2 },
   otherReportersList: {
     gap: 8,

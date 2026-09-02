@@ -13,7 +13,6 @@ type NotificationFilter = 'ALL' | 'UNREAD';
 
 const notificationTheme = {
   complaint: { icon: 'document-text-outline' as const, color: '#3B82F6', background: '#EEF6FF' },
-  urgency: { icon: 'flame-outline' as const, color: '#E0524D', background: '#FFF1F1' },
   feedback: { icon: 'chatbox-ellipses-outline' as const, color: '#B9854B', background: '#FFF7E8' },
   system: { icon: 'alarm-outline' as const, color: '#7C6BC4', background: '#F2EFFE' },
   forum_post: { icon: 'chatbubble-ellipses-outline' as const, color: '#16845B', background: '#EAF8F1' },
@@ -79,7 +78,7 @@ export default function AuthorityNotifications() {
               <Text style={styles.eyebrow}>AUTHORITY UPDATES</Text>
               <Text style={styles.title}>Notifications</Text>
               <Text style={styles.subtitle}>
-                Complaint assignments, urgency alerts, deadlines, and resident feedback.
+                Complaint assignments, work-plan deadlines, and resident feedback.
               </Text>
             </View>
             <View style={styles.unreadBadge}>

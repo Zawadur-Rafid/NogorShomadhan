@@ -190,7 +190,7 @@ export default function AuthorityAllComplaints() {
         .trim()
         .toLowerCase();
 
-      return [...complaints]
+      return complaints
         .filter(
           (complaint) =>
             filter === 'ALL' ||
@@ -201,11 +201,6 @@ export default function AuthorityAllComplaints() {
             complaint,
             keyword,
           ),
-        )
-        .sort(
-          (first, second) =>
-            second.urgency -
-            first.urgency,
         );
     }, [
       complaints,
@@ -740,26 +735,6 @@ export default function AuthorityAllComplaints() {
                       )}
                     </View>
 
-                    <View
-                      style={
-                        styles.sortBadge
-                      }
-                    >
-                      <Ionicons
-                        name="arrow-down-outline"
-                        size={13}
-                        color="#A7640C"
-                      />
-
-                      <Text
-                        style={
-                          styles.sortText
-                        }
-                      >
-                        Urgency:
-                        highest first
-                      </Text>
-                    </View>
                   </View>
 
                   {/* Status sections */}
@@ -1036,38 +1011,6 @@ export default function AuthorityAllComplaints() {
                                     </View>
                                   </View>
 
-                                  <View
-                                    style={
-                                      styles.urgencyBadge
-                                    }
-                                  >
-                                    <Ionicons
-                                      name="arrow-up-circle"
-                                      size={
-                                        17
-                                      }
-                                      color="#C57C1B"
-                                    />
-
-                                    <Text
-                                      style={
-                                        styles.urgencyValue
-                                      }
-                                    >
-                                      {
-                                        complaint.urgency
-                                      }
-                                    </Text>
-
-                                    <Text
-                                      style={
-                                        styles.urgencyLabel
-                                      }
-                                    >
-                                      urgency
-                                    </Text>
-                                  </View>
-
                                   <Ionicons
                                     name="chevron-forward"
                                     size={
@@ -1274,23 +1217,6 @@ const styles =
       fontWeight: '700',
     },
 
-    sortBadge: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 4,
-      paddingHorizontal: 9,
-      paddingVertical: 5,
-      borderRadius: 12,
-      backgroundColor:
-        '#FFF7E8',
-    },
-
-    sortText: {
-      color: '#A7640C',
-      fontSize: 9,
-      fontWeight: '700',
-    },
-
     section: {
       gap: 10,
     },
@@ -1410,30 +1336,6 @@ const styles =
     metaText: {
       color: '#7A8493',
       fontSize: 9,
-    },
-
-    urgencyBadge: {
-      alignItems: 'center',
-      minWidth: 48,
-      padding: 7,
-      borderRadius: 11,
-      backgroundColor:
-        '#FFF7E8',
-    },
-
-    urgencyValue: {
-      color: '#A7640C',
-      fontSize: 13,
-      fontWeight: '900',
-      fontVariant: [
-        'tabular-nums',
-      ],
-    },
-
-    urgencyLabel: {
-      color: '#A77C45',
-      fontSize: 7,
-      fontWeight: '700',
     },
 
     loadingState: {
