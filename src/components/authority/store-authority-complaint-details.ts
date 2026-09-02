@@ -52,10 +52,8 @@ export type AuthorityComplaintDetail = AuthorityComplaint & {
   otherReporters: AuthorityMergedReporter[];
   approvedBy?: AuthorityApproval;
   submittedAt: string;
-
-  // Kept only for compatibility with any existing screens that still read it.
-  // The complaint detail UI no longer shows Assigned Zone.
-  zone: string;
+  startedAt?: string | null;
+  resolvedAt?: string | null;
 
   evidence?: AuthorityEvidenceImage;
 

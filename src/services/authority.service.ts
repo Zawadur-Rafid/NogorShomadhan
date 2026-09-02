@@ -8,6 +8,7 @@ import type {
     AuthorityEvidenceImage,
 } from '@/components/authority/store-authority-complaint-details';
 import { formatAuthorityAddress } from '@/components/authority/authority-location';
+import type { AuthorityAccountProfile } from '@/types/authority-account';
 
 type ComplaintStatus =
   | 'unverified'
@@ -43,6 +44,12 @@ type AccountRow = {
   phone_num: string | null;
   email?: string | null;
   role?: string | null;
+};
+
+type AuthorityProfileRow = {
+  full_name: string;
+  email: string;
+  phone_num: string;
 };
 
 type EvidenceRow = {
@@ -145,6 +152,32 @@ async function getLoggedInAccountId(): Promise<string> {
   }
 
   return accId;
+}
+
+export async function getAuthorityProfile(): Promise<AuthorityAccountProfile> {
+  const accId = await getLoggedInAccountId();
+  const { data, error } = await supabase
+    .from('account')
+    .select('full_name, email, phone_num')
+    .eq('acc_id', accId)
+    .eq('role', 'authority')
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(`Failed to load authority profile: ${error.message}`);
+  }
+
+  if (!data) {
+    throw new Error('The logged-in authority account could not be found.');
+  }
+
+  const row = data as AuthorityProfileRow;
+
+  return {
+    fullName: row.full_name,
+    email: row.email,
+    phoneNumber: row.phone_num,
+  };
 }
 
 function mapStatus(
@@ -729,7 +762,8 @@ export async function getAuthorityComplaints(): Promise<
         otherReporters,
         approvedBy,
         submittedAt: formatDate(complaint.timestamp),
-        zone: '',
+        startedAt: startHistory?.changed_at ?? startUpdate?.created_at ?? null,
+        resolvedAt: resolution?.resolved_at ?? null,
         evidence: residentEvidence,
         deadline: formatDateKey(
           resolution?.final_deadline ?? latestDeadlineUpdate?.deadline,
@@ -747,7 +781,7 @@ export async function getAuthorityComplaints(): Promise<
         contractorAssignments,
         updates,
         feedback: [],
-        urgency: complaintDuplicates.length * 10 + 5,
+        duplicateReportCount: complaintDuplicates.length,
       } satisfies AuthorityComplaintDetail;
     }),
   );

@@ -14,10 +14,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useAuthorityComplaints } from '@/components/authority/authority-complaints-context';
-import {
-  authorityDashboardProfile,
-  type AuthorityComplaintStatus,
-} from '@/components/authority/store-authority-dashboard';
+import { useAuthorityProfile } from '@/components/authority/authority-profile-context';
+import type { AuthorityComplaintStatus } from '@/components/authority/store-authority-dashboard';
 
 const statusTheme: Record<
   AuthorityComplaintStatus,
@@ -41,6 +39,8 @@ export default function AuthorityDashboard() {
   const router = useRouter();
   const { width } = useWindowDimensions();
   const { complaints } = useAuthorityComplaints();
+  const { profile } = useAuthorityProfile();
+  const profileName = profile?.fullName ?? 'Community Authority';
 
   const [profileOpen, setProfileOpen] = useState(false);
 
@@ -188,7 +188,7 @@ export default function AuthorityDashboard() {
                 }
               >
                 {
-                  authorityDashboardProfile.name
+                  profileName
                 }
               </Text>
             )}
@@ -204,20 +204,18 @@ export default function AuthorityDashboard() {
             <View style={styles.profileMenu}>
               <Text style={styles.profileName}>
                 {
-                  authorityDashboardProfile.name
+                  profileName
                 }
               </Text>
 
               <Text style={styles.profileMeta}>
                 {
-                  authorityDashboardProfile.email
+                  profile?.email ?? 'Account information loading...'
                 }
               </Text>
 
               <Text style={styles.profileMeta}>
-                {
-                  authorityDashboardProfile.role
-                }
+                Community Authority
               </Text>
 
               <View style={styles.menuDivider} />
@@ -242,29 +240,6 @@ export default function AuthorityDashboard() {
                   style={styles.menuItemText}
                 >
                   Profile information
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.menuItem}
-                onPress={() => {
-                  setProfileOpen(false);
-
-                  router.push(
-                    '/authority/change-password' as never,
-                  );
-                }}
-              >
-                <Ionicons
-                  name="lock-closed-outline"
-                  size={18}
-                  color="#23435D"
-                />
-
-                <Text
-                  style={styles.menuItemText}
-                >
-                  Change password
                 </Text>
               </TouchableOpacity>
 
@@ -348,7 +323,7 @@ export default function AuthorityDashboard() {
               <Text style={styles.bigTitle}>
                 Welcome back,{' '}
                 {
-                  authorityDashboardProfile.name
+                  profileName
                 }
               </Text>
 
@@ -356,8 +331,8 @@ export default function AuthorityDashboard() {
                 style={styles.welcomeText}
               >
                 Review assigned issues and
-                act on the most urgent
-                complaints first.
+                manage community complaints
+                efficiently.
               </Text>
             </View>
 

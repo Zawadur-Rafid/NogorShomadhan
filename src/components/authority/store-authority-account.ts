@@ -55,17 +55,6 @@ export const authorityNotifications: AuthorityNotification[] = [
   },
 ];
 
-export const authorityProfileDetails = {
-  name: 'Abdul Rahman',
-  initials: 'AR',
-  email: 'rahman@nogorshomadhan.gov',
-  phone: '+880 1712-345678',
-  employeeId: 'AUTH-0074',
-  role: 'Community Authority',
-  assignedZone: 'Blocks A–E, Ward 12',
-  office: 'Ward 12 Community Service Office',
-} as const;
-
 export type AuthorityActivityType = 'Complaint' | 'Report' | 'Account';
 
 export const authorityActivityLog = [

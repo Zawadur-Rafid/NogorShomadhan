@@ -14,13 +14,5 @@ export type AuthorityComplaint = {
   avenue?: string;
   nearby_landmark?: string;
   additional_location_details?: string;
-  urgency: number;
-};
-
-// Temporary dashboard data. Replace this file with backend data when the API is connected.
-export const authorityDashboardProfile = {
-  name: 'Abdul Rahman',
-  initials: 'AR',
-  role: 'Community Authority',
-  email: 'rahman@nogorshomadhan.gov',
+  duplicateReportCount: number;
 };
