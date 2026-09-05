@@ -18,6 +18,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { getComplaintDetails, deleteComplaint } from '@/services/resident.service';
+import { feedbackService } from '@/services/feedback.service';
 import { confirmAction } from '@/utils/confirm';
 
 export type ComplaintDetailMode = 'unverified' | 'pending' | 'in-progress' | 'resolved';
@@ -431,6 +432,8 @@ function InteractiveStarRating({ rating, setRating, size = 28 }: { rating: numbe
 }
 
 function FeedbackCard({ feedback }: { feedback: any }) {
+  const replies = feedback.replies || [];
+
   return (
     <View style={styles.feedbackCard}>
       <View style={styles.feedbackAvatar}>
@@ -447,6 +450,28 @@ function FeedbackCard({ feedback }: { feedback: any }) {
         <Text selectable style={styles.feedbackComment}>
           “{feedback.comment}”
         </Text>
+
+        {replies.length > 0 && (
+          <View style={styles.repliesList}>
+            {replies.map((reply: any) => (
+              <View key={reply.id} style={styles.authorityReplyBox}>
+                <View style={styles.authorityReplyHeader}>
+                  <View style={styles.authorityBadgeRow}>
+                    <Ionicons name="shield-checkmark" size={13} color="#2F6B5F" />
+                    <Text style={styles.authorityReplyAuthor}>{reply.author}</Text>
+                    <View style={styles.officialPill}>
+                      <Text style={styles.officialPillText}>AUTHORITY</Text>
+                    </View>
+                  </View>
+                  <Text style={styles.authorityReplyTime}>{reply.postedAt}</Text>
+                </View>
+                <Text selectable style={styles.authorityReplyMessage}>
+                  {reply.message}
+                </Text>
+              </View>
+            ))}
+          </View>
+        )}
       </View>
     </View>
   );
@@ -932,16 +957,32 @@ export default function ComplaintDetailScreen() {
                   hasSubmitted={hasSubmittedFeedback}
                   onSubmit={() => {
                     if (feedbackRating === 0 || feedbackComment.trim() === '') return;
-                    confirmAction('Are you sure you want to submit this feedback?', () => {
-                      setLocalFeedback([{
-                        id: Date.now().toString(),
-                        resident: 'You',
-                        residentInitials: 'YO',
-                        rating: feedbackRating,
-                        comment: feedbackComment,
-                        receivedAt: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
-                      }, ...localFeedback]);
-                      setHasSubmittedFeedback(true);
+                    confirmAction('Are you sure you want to submit this feedback?', async () => {
+                      try {
+                        const newFb = await feedbackService.submitComplaintFeedback({
+                          compId: complaint.id,
+                          rating: feedbackRating,
+                          comment: feedbackComment,
+                        });
+
+                        const optimisticFeedback = {
+                          id: newFb?.feedback_id || Date.now().toString(),
+                          resident: newFb?.account?.full_name || 'You',
+                          residentInitials: 'YO',
+                          rating: feedbackRating,
+                          comment: feedbackComment,
+                          receivedAt: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
+                          replies: [],
+                        };
+
+                        setLocalFeedback([optimisticFeedback, ...localFeedback]);
+                        setHasSubmittedFeedback(true);
+                        setFeedbackRating(0);
+                        setFeedbackComment('');
+                        triggerToast('Your feedback has been submitted successfully.');
+                      } catch (err: any) {
+                        Alert.alert('Error', err?.message || 'Failed to submit feedback.');
+                      }
                     }, 'Submit Feedback');
                   }}
                 />
@@ -1693,4 +1734,54 @@ const styles = StyleSheet.create({
   },
   leaveFeedbackButtonText: { color: '#FFFFFF', fontSize: 10, fontWeight: '900' },
   buttonDisabled: { opacity: 0.5 },
+  repliesList: {
+    marginTop: 10,
+    gap: 6,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#EEF2F6',
+  },
+  authorityReplyBox: {
+    backgroundColor: '#F0F6FA',
+    borderRadius: 8,
+    padding: 8,
+    borderLeftWidth: 3,
+    borderLeftColor: '#23435D',
+  },
+  authorityReplyHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
+  authorityBadgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  authorityReplyAuthor: {
+    color: '#23435D',
+    fontSize: 10,
+    fontWeight: '800',
+  },
+  officialPill: {
+    backgroundColor: '#DDEFE9',
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+    borderRadius: 4,
+  },
+  officialPillText: {
+    color: '#2F6B5F',
+    fontSize: 7,
+    fontWeight: '900',
+  },
+  authorityReplyTime: {
+    color: '#8A93A1',
+    fontSize: 8,
+  },
+  authorityReplyMessage: {
+    color: '#344054',
+    fontSize: 10,
+    lineHeight: 15,
+  },
 });

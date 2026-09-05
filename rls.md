@@ -82,7 +82,24 @@
   - `Enable update for public`: Allows comment edits.
   - `Enable delete for public`: Allows comment deletion (enables admin deletion of comments from the main table).
 
+### `complaint_feedback`
+- **RLS Enabled:** Yes
+- **Policies:**
+  - `Enable select for public`: Allows all users to read feedback comments and star ratings for resolved complaints.
+  - `Enable insert for public`: Allows residents to submit feedback comments and star ratings under resolved complaints.
+  - `Enable update for public`: Allows updating feedback comments or ratings.
+  - `Enable delete for public`: Allows deleting feedback.
+
+### `feedback_replies`
+- **RLS Enabled:** Yes
+- **Policies:**
+  - `Enable select for public`: Allows all users to read authority replies to feedback comments.
+  - `Enable insert for public`: Allows community authorities to reply to resident feedback comments.
+  - `Enable update for public`: Allows editing feedback replies.
+  - `Enable delete for public`: Allows deleting feedback replies.
+
 Security hardening backlog:
 1. Migrate to Supabase Auth and map auth user to account.acc_id.
 2. Replace public policies with role-based policies for resident, admin, and authority.
 3. Restrict complaint status updates to valid transitions only.
+

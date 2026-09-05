@@ -2,6 +2,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { supabase } from '@/lib/supabase';
+import { feedbackService } from './feedback.service';
 
 import type {
     AuthorityComplaintDetail,
@@ -568,6 +569,31 @@ export async function getAuthorityComplaints(): Promise<
     accounts.map((account) => [account.acc_id, account]),
   );
 
+  let allDbFeedback: any[] = [];
+  try {
+    const { data: fbData } = await supabase
+      .from('complaint_feedback')
+      .select('*, account:account!acc_id(full_name, role)')
+      .in('comp_id', complaintIds)
+      .order('created_at', { ascending: false });
+
+    if (fbData && fbData.length > 0) {
+      const fbIds = fbData.map((f: any) => f.feedback_id);
+      const { data: repData } = await supabase
+        .from('feedback_replies')
+        .select('*, account:account!acc_id(full_name, role)')
+        .in('feedback_id', fbIds)
+        .order('created_at', { ascending: true });
+
+      allDbFeedback = fbData.map((f: any) => ({
+        ...f,
+        replies: (repData || []).filter((r: any) => r.feedback_id === f.feedback_id),
+      }));
+    }
+  } catch (e) {
+    console.warn('Could not load complaint feedback in authority service:', e);
+  }
+
   return Promise.all(
     complaints.map(async (complaint) => {
       const complaintEvidence = evidenceRows.filter(
@@ -780,11 +806,78 @@ export async function getAuthorityComplaints(): Promise<
         finalEvidence,
         contractorAssignments,
         updates,
-        feedback: [],
+        feedback: allDbFeedback
+          .filter((item) => item.comp_id === complaint.comp_id)
+          .map((item) => {
+            const name = item.account?.full_name || 'Resident';
+            const parts = name.trim().split(' ');
+            const initials =
+              parts.length >= 2
+                ? `${parts[0][0]}${parts[1][0]}`.toUpperCase()
+                : name.substring(0, 2).toUpperCase();
+
+            const createdDate = new Date(item.created_at);
+            const receivedAt = !isNaN(createdDate.getTime())
+              ? createdDate.toLocaleDateString('en-GB', {
+                  day: '2-digit',
+                  month: 'short',
+                  year: 'numeric',
+                })
+              : 'Recently';
+
+            const replies = (item.replies || []).map((r: any) => {
+              const authName =
+                r.account?.full_name ||
+                (r.account?.role === 'authority'
+                  ? 'Community Authority'
+                  : 'Authority');
+              const authParts = authName.trim().split(' ');
+              const authInitials =
+                authParts.length >= 2
+                  ? `${authParts[0][0]}${authParts[1][0]}`.toUpperCase()
+                  : authName.substring(0, 2).toUpperCase();
+
+              const replyDate = new Date(r.created_at);
+              const postedAt = !isNaN(replyDate.getTime())
+                ? replyDate.toLocaleDateString('en-GB', {
+                    day: '2-digit',
+                    month: 'short',
+                    year: 'numeric',
+                  })
+                : 'Recently';
+
+              return {
+                id: r.reply_id,
+                author: authName,
+                initials: authInitials,
+                message: r.message,
+                postedAt,
+                authority: true,
+              };
+            });
+
+            return {
+              id: item.feedback_id,
+              complaintId: complaint.comp_id,
+              resident: name,
+              residentInitials: initials,
+              rating: item.rating,
+              comment: item.comment,
+              receivedAt,
+              replies,
+            };
+          }),
         duplicateReportCount: complaintDuplicates.length,
       } satisfies AuthorityComplaintDetail;
     }),
   );
+}
+
+export async function submitAuthorityFeedbackReply(
+  feedbackId: string,
+  message: string,
+) {
+  return feedbackService.submitFeedbackReply({ feedbackId, message });
 }
 
 export async function startAuthorityComplaint(

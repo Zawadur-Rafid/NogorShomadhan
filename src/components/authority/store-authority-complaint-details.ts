@@ -36,13 +36,24 @@ export type AuthorityWorkUpdate = {
   contractorAssignmentId?: string;
 };
 
+export type AuthorityFeedbackReply = {
+  id: string;
+  author: string;
+  initials: string;
+  message: string;
+  postedAt: string;
+  authority?: boolean;
+};
+
 export type AuthorityResidentFeedback = {
   id: string;
+  complaintId?: string;
   resident: string;
   residentInitials: string;
   rating: number;
   comment: string;
   receivedAt: string;
+  replies?: AuthorityFeedbackReply[];
 };
 
 export type AuthorityComplaintDetail = AuthorityComplaint & {

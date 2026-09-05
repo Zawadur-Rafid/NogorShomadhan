@@ -6,6 +6,7 @@ import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   Modal,
   Pressable,
   ScrollView,
@@ -23,6 +24,7 @@ import { useAuthorityComplaints } from './authority-complaints-context';
 import { getAuthorityLocationDetails } from './authority-location';
 import AuthorityPageHeader from './authority-page-header';
 import { confirmAction } from '@/utils/confirm';
+import { feedbackService } from '@/services/feedback.service';
 import type {
   AuthorityApproval,
   AuthorityComplaintDetail,
@@ -584,7 +586,38 @@ function StarRating({ rating, size = 15 }: { rating: number; size?: number }) {
   );
 }
 
-function FeedbackCard({ feedback }: { feedback: AuthorityResidentFeedback }) {
+function FeedbackCard({
+  feedback,
+  onReply,
+}: {
+  feedback: AuthorityResidentFeedback;
+  onReply: (feedbackId: string, message: string) => Promise<void>;
+}) {
+  const [replying, setReplying] = useState(false);
+  const [replyText, setReplyText] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const replies = feedback.replies || [];
+
+  const handleSendReply = () => {
+    if (!replyText.trim()) return;
+    confirmAction(
+      'Are you sure you want to submit this response?',
+      async () => {
+        try {
+          setSubmitting(true);
+          await onReply(feedback.id, replyText.trim());
+          setReplyText('');
+          setReplying(false);
+        } catch (e: any) {
+          Alert.alert('Error', e?.message || 'Failed to submit reply');
+        } finally {
+          setSubmitting(false);
+        }
+      },
+      'Submit Response'
+    );
+  };
+
   return (
     <View style={styles.feedbackCard}>
       <View style={styles.feedbackAvatar}>
@@ -601,17 +634,120 @@ function FeedbackCard({ feedback }: { feedback: AuthorityResidentFeedback }) {
         <Text selectable style={styles.feedbackComment}>
           “{feedback.comment}”
         </Text>
+
+        {replies.length > 0 && (
+          <View style={styles.repliesList}>
+            {replies.map((reply) => (
+              <View key={reply.id} style={styles.authorityReplyBox}>
+                <View style={styles.authorityReplyHeader}>
+                  <View style={styles.authorityBadgeRow}>
+                    <Ionicons name="shield-checkmark" size={13} color="#2F6B5F" />
+                    <Text style={styles.authorityReplyAuthor}>{reply.author}</Text>
+                    <View style={styles.officialPill}>
+                      <Text style={styles.officialPillText}>AUTHORITY</Text>
+                    </View>
+                  </View>
+                  <Text style={styles.authorityReplyTime}>{reply.postedAt}</Text>
+                </View>
+                <Text selectable style={styles.authorityReplyMessage}>
+                  {reply.message}
+                </Text>
+              </View>
+            ))}
+          </View>
+        )}
+
+        {/* Reply Action / Input */}
+        {!replying ? (
+          <TouchableOpacity
+            style={styles.replyTriggerBtn}
+            onPress={() => setReplying(true)}
+          >
+            <Ionicons name="return-down-forward" size={13} color="#23435D" />
+            <Text style={styles.replyTriggerText}>Reply to Feedback</Text>
+          </TouchableOpacity>
+        ) : (
+          <View style={styles.inlineReplyComposer}>
+            <TextInput
+              value={replyText}
+              onChangeText={setReplyText}
+              placeholder="Write an official response..."
+              placeholderTextColor="#9AA2AE"
+              multiline
+              style={styles.inlineReplyInput}
+            />
+            <View style={styles.inlineReplyActions}>
+              <TouchableOpacity
+                onPress={() => {
+                  setReplying(false);
+                  setReplyText('');
+                }}
+                style={styles.inlineReplyCancelBtn}
+              >
+                <Text style={styles.inlineReplyCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={handleSendReply}
+                disabled={submitting || !replyText.trim()}
+                style={[
+                  styles.inlineReplySendBtn,
+                  (!replyText.trim() || submitting) && styles.buttonDisabled,
+                ]}
+              >
+                <Ionicons name="send" size={12} color="#FFFFFF" />
+                <Text style={styles.inlineReplySendText}>
+                  {submitting ? 'Sending...' : 'Send'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
       </View>
     </View>
   );
 }
 
-function ResidentFeedback({ complaint }: { complaint: AuthorityComplaintDetail }) {
+function ResidentFeedback({
+  complaint,
+  onRefresh,
+}: {
+  complaint: AuthorityComplaintDetail;
+  onRefresh?: () => void;
+}) {
+  const [feedbacks, setFeedbacks] = useState<AuthorityResidentFeedback[]>(
+    complaint.feedback || [],
+  );
+
+  useEffect(() => {
+    setFeedbacks(complaint.feedback || []);
+  }, [complaint.feedback]);
+
+  const handleReply = async (feedbackId: string, message: string) => {
+    const result = await feedbackService.submitFeedbackReply({ feedbackId, message });
+    const newReply = {
+      id: result?.reply_id || `rep-${Date.now()}`,
+      author: result?.account?.full_name || 'Community Authority',
+      initials: 'CA',
+      message,
+      postedAt: 'Just now',
+      authority: true,
+    };
+
+    setFeedbacks((current) =>
+      current.map((fb) =>
+        fb.id === feedbackId
+          ? { ...fb, replies: [...(fb.replies || []), newReply] }
+          : fb,
+      ),
+    );
+    if (onRefresh) onRefresh();
+  };
+
   const average =
-    complaint.feedback.length === 0
+    feedbacks.length === 0
       ? 0
-      : complaint.feedback.reduce((total, item) => total + item.rating, 0) /
-        complaint.feedback.length;
+      : feedbacks.reduce((total, item) => total + item.rating, 0) /
+        feedbacks.length;
 
   return (
     <View style={styles.panel}>
@@ -625,7 +761,7 @@ function ResidentFeedback({ complaint }: { complaint: AuthorityComplaintDetail }
         <Ionicons name="chatbox-ellipses-outline" size={21} color="#23435D" />
       </View>
 
-      {complaint.feedback.length === 0 ? (
+      {feedbacks.length === 0 ? (
         <View style={styles.emptyFeedback}>
           <Ionicons name="hourglass-outline" size={23} color="#98A2B3" />
           <Text style={styles.emptyFeedbackTitle}>No feedback received yet</Text>
@@ -640,14 +776,14 @@ function ResidentFeedback({ complaint }: { complaint: AuthorityComplaintDetail }
             <View>
               <StarRating rating={average} size={17} />
               <Text style={styles.feedbackCount}>
-                Based on {complaint.feedback.length}{' '}
-                {complaint.feedback.length === 1 ? 'response' : 'responses'}
+                Based on {feedbacks.length}{' '}
+                {feedbacks.length === 1 ? 'response' : 'responses'}
               </Text>
             </View>
           </View>
           <View style={styles.feedbackList}>
-            {complaint.feedback.map((item) => (
-              <FeedbackCard key={item.id} feedback={item} />
+            {feedbacks.map((item) => (
+              <FeedbackCard key={item.id} feedback={item} onReply={handleReply} />
             ))}
           </View>
         </>
@@ -2617,6 +2753,118 @@ const styles = StyleSheet.create({
   emptyFeedback: { alignItems: 'center', paddingVertical: 20 },
   emptyFeedbackTitle: { color: '#475467', fontSize: 11, fontWeight: '800', marginTop: 7 },
   emptyFeedbackText: { color: '#98A2B3', fontSize: 8, marginTop: 3 },
+  repliesList: {
+    marginTop: 10,
+    gap: 6,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#EEF2F6',
+  },
+  authorityReplyBox: {
+    backgroundColor: '#F0F6FA',
+    borderRadius: 8,
+    padding: 8,
+    borderLeftWidth: 3,
+    borderLeftColor: '#23435D',
+  },
+  authorityReplyHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
+  authorityBadgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  authorityReplyAuthor: {
+    color: '#23435D',
+    fontSize: 10,
+    fontWeight: '800',
+  },
+  officialPill: {
+    backgroundColor: '#DDEFE9',
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+    borderRadius: 4,
+  },
+  officialPillText: {
+    color: '#2F6B5F',
+    fontSize: 7,
+    fontWeight: '900',
+  },
+  authorityReplyTime: {
+    color: '#8A93A1',
+    fontSize: 8,
+  },
+  authorityReplyMessage: {
+    color: '#344054',
+    fontSize: 10,
+    lineHeight: 15,
+  },
+  replyTriggerBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    marginTop: 8,
+    alignSelf: 'flex-start',
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 6,
+    backgroundColor: '#EBF1F6',
+  },
+  replyTriggerText: {
+    color: '#23435D',
+    fontSize: 9,
+    fontWeight: '800',
+  },
+  inlineReplyComposer: {
+    marginTop: 10,
+    padding: 8,
+    borderRadius: 8,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#D8DFE7',
+  },
+  inlineReplyInput: {
+    minHeight: 48,
+    color: '#344054',
+    fontSize: 10,
+    textAlignVertical: 'top',
+    padding: 4,
+  },
+  inlineReplyActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 8,
+    marginTop: 6,
+  },
+  inlineReplyCancelBtn: {
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    borderRadius: 6,
+    backgroundColor: '#F2F4F7',
+  },
+  inlineReplyCancelText: {
+    color: '#475467',
+    fontSize: 9,
+    fontWeight: '700',
+  },
+  inlineReplySendBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    borderRadius: 6,
+    backgroundColor: '#23435D',
+  },
+  inlineReplySendText: {
+    color: '#FFFFFF',
+    fontSize: 9,
+    fontWeight: '800',
+  },
   loadingState: {
     flex: 1,
     alignItems: 'center',

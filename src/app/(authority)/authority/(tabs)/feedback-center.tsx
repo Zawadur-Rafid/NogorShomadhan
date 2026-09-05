@@ -1,12 +1,13 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useAuthorityComplaints } from '@/components/authority/authority-complaints-context';
 import AuthorityPageHeader from '@/components/authority/authority-page-header';
 import { confirmAction } from '@/utils/confirm';
+import { feedbackService } from '@/services/feedback.service';
 
 const filters = ['All Feedback', '5 Stars', '4 Stars'] as const;
 
@@ -44,10 +45,29 @@ export default function AuthorityFeedbackCenter() {
           receivedAt: feedback.receivedAt,
           location: complaint.location,
           image: complaint.finalEvidence ?? complaint.evidence,
+          replies: feedback.replies || [],
         })),
       ),
     [complaints],
   );
+
+  useEffect(() => {
+    const initialComments: Record<string, DiscussionComment[]> = {};
+    authorityFeedback.forEach((item) => {
+      if (item.replies && item.replies.length > 0) {
+        initialComments[item.id] = item.replies.map((r) => ({
+          id: r.id,
+          author: r.author,
+          initials: r.initials,
+          message: r.message,
+          postedAt: r.postedAt,
+          authority: r.authority ?? true,
+        }));
+      }
+    });
+    setComments((prev) => ({ ...initialComments, ...prev }));
+  }, [authorityFeedback]);
+
   const authorityFeedbackSummary = useMemo(() => {
     const totalFeedback = authorityFeedback.length;
     const averageRating =
@@ -75,22 +95,31 @@ export default function AuthorityFeedbackCenter() {
 
     confirmAction(
       'Are you sure you want to submit this response?',
-      () => {
-        setComments((current) => ({
-          ...current,
-          [feedbackId]: [
-            ...(current[feedbackId] ?? []),
-            {
-              id: `CMT-${Date.now()}`,
-              author: 'Community Authority',
-              initials: 'CA',
-              message,
-              postedAt: 'Just now',
-              authority: true,
-            },
-          ],
-        }));
-        setDrafts((current) => ({ ...current, [feedbackId]: '' }));
+      async () => {
+        try {
+          const res = await feedbackService.submitFeedbackReply({
+            feedbackId,
+            message,
+          });
+
+          setComments((current) => ({
+            ...current,
+            [feedbackId]: [
+              ...(current[feedbackId] ?? []),
+              {
+                id: res?.reply_id ?? `CMT-${Date.now()}`,
+                author: res?.account?.full_name ?? 'Community Authority',
+                initials: 'CA',
+                message,
+                postedAt: 'Just now',
+                authority: true,
+              },
+            ],
+          }));
+          setDrafts((current) => ({ ...current, [feedbackId]: '' }));
+        } catch (err) {
+          console.warn('Error submitting reply:', err);
+        }
       },
       'Submit Response'
     );

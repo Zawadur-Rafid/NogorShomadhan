@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { decode } from 'base64-arraybuffer';
 
 import { supabase } from '../lib/supabase';
+import { feedbackService } from './feedback.service';
 
 export async function uploadEvidenceImage(base64: string): Promise<string> {
   const fileName = `complaint_${Date.now()}_${Math.random()
@@ -318,6 +319,71 @@ export async function getComplaintDetails(compId: string) {
   const d = new Date(data.timestamp || Date.now());
   const dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
+  let feedbackList: any[] = [];
+  try {
+    const dbFeedback = await feedbackService.fetchFeedbackForComplaint(compId);
+    if (dbFeedback && dbFeedback.length > 0) {
+      feedbackList = dbFeedback.map((f) => {
+        const name = f.account?.full_name || 'Resident';
+        const parts = name.trim().split(' ');
+        const initials =
+          parts.length >= 2
+            ? `${parts[0][0]}${parts[1][0]}`.toUpperCase()
+            : name.substring(0, 2).toUpperCase();
+
+        const createdDate = new Date(f.created_at);
+        const receivedAt = !isNaN(createdDate.getTime())
+          ? createdDate.toLocaleDateString('en-GB', {
+              day: '2-digit',
+              month: 'short',
+              year: 'numeric',
+            })
+          : 'Recently';
+
+        const replies = (f.replies || []).map((r) => {
+          const authName =
+            r.account?.full_name ||
+            (r.account?.role === 'authority' ? 'Community Authority' : 'Authority');
+          const authParts = authName.trim().split(' ');
+          const authInitials =
+            authParts.length >= 2
+              ? `${authParts[0][0]}${authParts[1][0]}`.toUpperCase()
+              : authName.substring(0, 2).toUpperCase();
+
+          const replyDate = new Date(r.created_at);
+          const postedAt = !isNaN(replyDate.getTime())
+            ? replyDate.toLocaleDateString('en-GB', {
+                day: '2-digit',
+                month: 'short',
+                year: 'numeric',
+              })
+            : 'Recently';
+
+          return {
+            id: r.reply_id,
+            author: authName,
+            initials: authInitials,
+            message: r.message,
+            postedAt,
+            authority: true,
+          };
+        });
+
+        return {
+          id: f.feedback_id,
+          resident: name,
+          residentInitials: initials,
+          rating: f.rating,
+          comment: f.comment,
+          receivedAt,
+          replies,
+        };
+      });
+    }
+  } catch (err) {
+    console.warn('Could not load feedback from Supabase:', err);
+  }
+
   return {
     id: data.comp_id,
     title: data.title,
@@ -334,7 +400,7 @@ export async function getComplaintDetails(compId: string) {
     images: images,
     updates: [],
     contractorAssignments: [],
-    feedback: [],
+    feedback: feedbackList,
     approval: null,
   };
 }

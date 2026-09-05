@@ -134,3 +134,25 @@ Purpose:
 Purpose:
 - Stores comments on forum posts and direct replies to specific comments. Supports admin moderation/deletion.
 
+### `complaint_feedback`
+- `feedback_id`: UUID (Primary Key, Default: gen_random_uuid())
+- `comp_id`: UUID (Foreign Key to complaints.comp_id, ON DELETE CASCADE, NOT NULL)
+- `acc_id`: UUID (Foreign Key to account.acc_id, ON DELETE CASCADE, NOT NULL)
+- `rating`: INTEGER (NOT NULL, CHECK: rating >= 1 AND rating <= 5)
+- `comment`: TEXT (NOT NULL)
+- `created_at`: TIMESTAMPTZ (Default: CURRENT_TIMESTAMP, NOT NULL)
+
+Purpose:
+- Stores feedback comments and star ratings (1 to 5 stars) left by residents under resolved complaints.
+
+### `feedback_replies`
+- `reply_id`: UUID (Primary Key, Default: gen_random_uuid())
+- `feedback_id`: UUID (Foreign Key to complaint_feedback.feedback_id, ON DELETE CASCADE, NOT NULL)
+- `acc_id`: UUID (Foreign Key to account.acc_id, ON DELETE CASCADE, NOT NULL)
+- `message`: TEXT (NOT NULL)
+- `created_at`: TIMESTAMPTZ (Default: CURRENT_TIMESTAMP, NOT NULL)
+
+Purpose:
+- Stores responses from community authority to resident feedback comments.
+
+
