@@ -1,13 +1,17 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
+import * as Print from "expo-print";
+import * as Sharing from "expo-sharing";
 import { useMemo, useState } from "react";
 import {
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  useWindowDimensions,
-  View,
+    Alert,
+    Platform,
+    Pressable,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    useWindowDimensions,
+    View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -33,6 +37,19 @@ const parseAuthorityDate = (value?: string) => {
   if (!value) return Number.NaN;
   return Date.parse(value.replace(",", ""));
 };
+
+const escapeHtml = (value: string) =>
+  value.replace(
+    /[&<>'"]/g,
+    (character) =>
+      ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        "'": "&#39;",
+        '"': "&quot;",
+      })[character] ?? character,
+  );
 
 function buildTrendData(
   period: (typeof periods)[number],
@@ -87,6 +104,7 @@ export default function AuthorityAnalytics() {
   const { complaints } = useAuthorityComplaints();
   const [period, setPeriod] = useState<(typeof periods)[number]>("30 Days");
   const [reportGenerated, setReportGenerated] = useState(false);
+  const [isGeneratingReport, setIsGeneratingReport] = useState(false);
   const wide = width >= 900;
   const {
     authorityAnalyticsSummary,
@@ -206,7 +224,6 @@ export default function AuthorityAnalytics() {
           color: "#C67B00",
           background: "#FFF7E8",
         },
-
       ],
       authorityStatusDistribution: statusDistribution,
       authorityCategoryDistribution: categoryDistribution,
@@ -237,6 +254,98 @@ export default function AuthorityAnalytics() {
         ? "Weekly Complaint Trend"
         : "Monthly Complaint Trend";
 
+  const handleGenerateReport = async () => {
+    setIsGeneratingReport(true);
+
+    const summaryRows = authorityAnalyticsSummary
+      .map(
+        (item) =>
+          `<tr><td>${escapeHtml(item.label)}</td><td>${escapeHtml(item.value)}</td><td>${escapeHtml(item.change)}</td></tr>`,
+      )
+      .join("");
+    const statusRows = authorityStatusDistribution
+      .map(
+        (item) =>
+          `<tr><td>${escapeHtml(item.label)}</td><td>${item.value}</td><td>${item.percent}%</td></tr>`,
+      )
+      .join("");
+    const categoryRows = authorityCategoryDistribution
+      .map(
+        (item) =>
+          `<tr><td>${escapeHtml(item.label)}</td><td>${item.value}</td></tr>`,
+      )
+      .join("");
+    const zoneRows = authorityZoneDistribution
+      .map(
+        (item) =>
+          `<tr><td>${escapeHtml(item.label)}</td><td>${item.value}</td></tr>`,
+      )
+      .join("");
+    const trendRows = trendData
+      .map(
+        (item) =>
+          `<tr><td>${escapeHtml(item.label)}</td><td>${item.value}</td></tr>`,
+      )
+      .join("");
+
+    const html = `<!doctype html>
+      <html><head><meta charset="utf-8" /><style>
+        @page { margin: 28px; }
+        body { font-family: Arial, sans-serif; color: #1F2937; }
+        h1 { color: #23435D; margin-bottom: 4px; }
+        h2 { color: #23435D; margin: 24px 0 8px; font-size: 18px; }
+        p { color: #667085; margin-top: 4px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+        th { background: #23435D; color: white; text-align: left; }
+        th, td { border: 1px solid #D0D5DD; padding: 8px; font-size: 12px; }
+        .meta { color: #667085; font-size: 12px; }
+      </style></head><body>
+        <h1>Nogor Shomadhan Analytics Report</h1>
+        <p class="meta">Authority performance report | Period: ${escapeHtml(period)} | Generated: ${escapeHtml(new Date().toLocaleString())}</p>
+        <h2>Summary</h2>
+        <table><tr><th>Metric</th><th>Value</th><th>Details</th></tr>${summaryRows}</table>
+        <h2>Status Distribution</h2>
+        <table><tr><th>Status</th><th>Complaints</th><th>Share</th></tr>${statusRows}</table>
+        <h2>Complaints by Category</h2>
+        <table><tr><th>Category</th><th>Complaints</th></tr>${categoryRows || '<tr><td colspan="2">No data available</td></tr>'}</table>
+        <h2>Complaints by Zone</h2>
+        <table><tr><th>Area</th><th>Complaints</th></tr>${zoneRows || '<tr><td colspan="2">No data available</td></tr>'}</table>
+        <h2>${escapeHtml(trendTitle)}</h2>
+        <table><tr><th>Period</th><th>Complaints</th></tr>${trendRows}</table>
+        <h2>Resolution Performance</h2>
+        <table><tr><th>Resolved</th><th>Within Deadline</th><th>Overdue</th><th>On-time Rate</th><th>Average Days</th></tr>
+          <tr><td>${authorityResolutionPerformance.resolved}</td><td>${authorityResolutionPerformance.withinDeadline}</td><td>${authorityResolutionPerformance.overdue}</td><td>${authorityResolutionPerformance.onTimeRate}%</td><td>${authorityResolutionPerformance.averageDays}</td></tr>
+        </table>
+      </body></html>`;
+
+    try {
+      if (Platform.OS === "web") {
+        await Print.printAsync({ html });
+      } else {
+        const { uri } = await Print.printToFileAsync({ html });
+        const canShare = await Sharing.isAvailableAsync();
+        if (!canShare) {
+          Alert.alert("Report created", `The PDF was created at ${uri}`);
+        } else {
+          await Sharing.shareAsync(uri, {
+            mimeType: "application/pdf",
+            dialogTitle: "Save analytics report",
+            UTI: "com.adobe.pdf",
+          });
+        }
+      }
+      setReportGenerated(true);
+    } catch (error) {
+      console.error("Failed to generate analytics report:", error);
+      Alert.alert(
+        "Report failed",
+        "Unable to create the analytics PDF. Please try again.",
+      );
+    } finally {
+      setIsGeneratingReport(false);
+    }
+  };
+
   return (
     <SafeAreaView edges={["left", "right"]} style={styles.safeArea}>
       <ScrollView
@@ -255,20 +364,30 @@ export default function AuthorityAnalytics() {
               </Text>
             </View>
             <TouchableOpacity
-              style={styles.reportButton}
-              onPress={() => setReportGenerated(true)}
+              style={[
+                styles.reportButton,
+                isGeneratingReport && styles.reportButtonDisabled,
+              ]}
+              onPress={handleGenerateReport}
+              disabled={isGeneratingReport}
             >
               <Ionicons
                 name={
-                  reportGenerated
-                    ? "checkmark-circle-outline"
-                    : "document-text-outline"
+                  isGeneratingReport
+                    ? "refresh-outline"
+                    : reportGenerated
+                      ? "checkmark-circle-outline"
+                      : "document-text-outline"
                 }
                 size={19}
                 color="#FFFFFF"
               />
               <Text style={styles.reportButtonText}>
-                {reportGenerated ? "Report Generated" : "Generate Total Report"}
+                {isGeneratingReport
+                  ? "Preparing PDF..."
+                  : reportGenerated
+                    ? "Generate Again"
+                    : "Generate Total Report"}
               </Text>
             </TouchableOpacity>
           </View>
@@ -453,8 +572,6 @@ export default function AuthorityAnalytics() {
                 ))}
               </View>
             </View>
-
-
           </View>
 
           <View
@@ -580,8 +697,19 @@ const styles = StyleSheet.create({
   },
   heroCompact: { alignItems: "flex-start", flexDirection: "column" },
   heroCopy: { flex: 1 },
-  eyebrow: { color: "#B9854B", fontSize: 12, fontWeight: "600", letterSpacing: 0.8 },
-  title: { color: "#00475E", fontSize: 32, fontWeight: "700", letterSpacing: -0.5, marginTop: 3 },
+  eyebrow: {
+    color: "#B9854B",
+    fontSize: 12,
+    fontWeight: "600",
+    letterSpacing: 0.8,
+  },
+  title: {
+    color: "#00475E",
+    fontSize: 32,
+    fontWeight: "700",
+    letterSpacing: -0.5,
+    marginTop: 3,
+  },
   subtitle: { color: "#40484D", fontSize: 14, lineHeight: 20, marginTop: 5 },
   reportButton: {
     minHeight: 44,
@@ -593,6 +721,7 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     backgroundColor: "#23435D",
   },
+  reportButtonDisabled: { opacity: 0.65 },
   reportButtonText: { color: "#FFFFFF", fontSize: 12, fontWeight: "700" },
   periodRow: {
     flexDirection: "row",
