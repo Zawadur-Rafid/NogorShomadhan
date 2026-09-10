@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
-import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
-import Ionicons from '@expo/vector-icons/Ionicons';
+import Ionicons from "@expo/vector-icons/Ionicons";
+import React, { useEffect, useState } from "react";
+import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
 
 interface ConfirmState {
   visible: boolean;
@@ -10,7 +10,9 @@ interface ConfirmState {
   resolve: (value: boolean) => void;
 }
 
-let setModalStateGlobal: React.Dispatch<React.SetStateAction<ConfirmState | null>> | null = null;
+let setModalStateGlobal: React.Dispatch<
+  React.SetStateAction<ConfirmState | null>
+> | null = null;
 
 /**
  * Prompts a custom styled confirmation popup dialog with 'Yes' and 'No' buttons
@@ -22,17 +24,17 @@ let setModalStateGlobal: React.Dispatch<React.SetStateAction<ConfirmState | null
 export function confirmAction(
   message: string,
   onConfirm?: () => void | Promise<void>,
-  title: string = 'Confirmation',
-  onCancel?: () => void
+  title: string = "Confirmation",
+  onCancel?: () => void,
 ): Promise<boolean> {
   const lowerMsg = message.toLowerCase();
   const lowerTitle = title.toLowerCase();
   const isDestructive =
-    lowerMsg.includes('delete') ||
-    lowerMsg.includes('reject') ||
-    lowerMsg.includes('remove') ||
-    lowerTitle.includes('delete') ||
-    lowerTitle.includes('reject');
+    lowerMsg.includes("delete") ||
+    lowerMsg.includes("reject") ||
+    lowerMsg.includes("remove") ||
+    lowerTitle.includes("delete") ||
+    lowerTitle.includes("reject");
 
   return new Promise<boolean>((resolve) => {
     const handleResolve = (result: boolean) => {
@@ -54,8 +56,12 @@ export function confirmAction(
       });
     } else {
       // Direct fallback if provider is not yet attached
-      import('react-native').then(({ Alert, Platform }) => {
-        if (Platform.OS === 'web' && typeof window !== 'undefined' && window.confirm) {
+      import("react-native").then(({ Alert, Platform }) => {
+        if (
+          Platform.OS === "web" &&
+          typeof window !== "undefined" &&
+          window.confirm
+        ) {
           const res = window.confirm(message);
           handleResolve(res);
           return;
@@ -64,10 +70,14 @@ export function confirmAction(
           title,
           message,
           [
-            { text: 'No', style: 'cancel', onPress: () => handleResolve(false) },
-            { text: 'Yes', onPress: () => handleResolve(true) },
+            {
+              text: "No",
+              style: "cancel",
+              onPress: () => handleResolve(false),
+            },
+            { text: "Yes", onPress: () => handleResolve(true) },
           ],
-          { cancelable: true, onDismiss: () => handleResolve(false) }
+          { cancelable: true, onDismiss: () => handleResolve(false) },
         );
       });
     }
@@ -113,7 +123,10 @@ export function GlobalConfirmModal() {
       statusBarTranslucent
     >
       <Pressable style={styles.overlay} onPress={handleNo}>
-        <Pressable style={styles.dialogCard} onPress={(e) => e.stopPropagation()}>
+        <Pressable
+          style={styles.dialogCard}
+          onPress={(e) => e.stopPropagation()}
+        >
           <View
             style={[
               styles.iconWrap,
@@ -121,13 +134,9 @@ export function GlobalConfirmModal() {
             ]}
           >
             <Ionicons
-              name={
-                isDestructive
-                  ? 'trash-outline'
-                  : 'help-circle-outline'
-              }
+              name={isDestructive ? "trash-outline" : "help-circle-outline"}
               size={26}
-              color={isDestructive ? '#D92D20' : '#23435D'}
+              color={isDestructive ? "#D92D20" : "#23435D"}
             />
           </View>
 
@@ -154,7 +163,9 @@ export function GlobalConfirmModal() {
               onPress={handleYes}
               style={({ pressed }) => [
                 styles.button,
-                isDestructive ? styles.yesButtonDanger : styles.yesButtonPrimary,
+                isDestructive
+                  ? styles.yesButtonDanger
+                  : styles.yesButtonPrimary,
                 pressed &&
                   (isDestructive
                     ? styles.yesButtonDangerPressed
@@ -173,99 +184,103 @@ export function GlobalConfirmModal() {
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     padding: 20,
-    backgroundColor: 'rgba(15, 23, 42, 0.45)',
+    backgroundColor: "rgba(15, 23, 42, 0.45)",
   },
   dialogCard: {
-    width: '100%',
+    width: "100%",
     maxWidth: 340,
     padding: 22,
     borderRadius: 18,
-    backgroundColor: '#FFFFFF',
-    alignItems: 'center',
-    shadowColor: '#000000',
+    backgroundColor: "#FFFFFF",
+    alignItems: "center",
+    shadowColor: "#000000",
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.14,
     shadowRadius: 22,
     elevation: 8,
     borderWidth: 1,
-    borderColor: '#EAECF0',
+    borderColor: "#EAECF0",
   },
   iconWrap: {
     width: 52,
     height: 52,
     borderRadius: 26,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     marginBottom: 14,
   },
   iconWrapPrimary: {
-    backgroundColor: '#EAF0F6',
+    backgroundColor: "#EAF0F6",
   },
   iconWrapDanger: {
-    backgroundColor: '#FEE4E2',
+    backgroundColor: "#FEE4E2",
   },
   title: {
-    color: '#1F2937',
+    color: "#1F2937",
     fontSize: 18,
-    fontWeight: '800',
-    textAlign: 'center',
+    fontWeight: "800",
+    textAlign: "center",
     letterSpacing: 0.1,
+    fontFamily: "System",
   },
   message: {
     marginTop: 8,
-    color: '#667085',
+    color: "#667085",
     fontSize: 14,
     lineHeight: 20,
-    textAlign: 'center',
+    textAlign: "center",
     paddingHorizontal: 6,
+    fontFamily: "System",
   },
   actions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     gap: 12,
     marginTop: 22,
-    width: '100%',
+    width: "100%",
   },
   button: {
     flex: 1,
     minHeight: 44,
     borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     paddingHorizontal: 16,
   },
   noButton: {
-    backgroundColor: '#F2F4F7',
+    backgroundColor: "#F2F4F7",
     borderWidth: 1,
-    borderColor: '#D0D5DD',
+    borderColor: "#D0D5DD",
   },
   noButtonPressed: {
-    backgroundColor: '#E4E7EC',
+    backgroundColor: "#E4E7EC",
   },
   noButtonText: {
-    color: '#344054',
+    color: "#344054",
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: "700",
+    fontFamily: "System",
   },
   yesButtonPrimary: {
-    backgroundColor: '#23435D',
+    backgroundColor: "#23435D",
   },
   yesButtonPrimaryPressed: {
-    backgroundColor: '#193043',
+    backgroundColor: "#193043",
   },
   yesButtonDanger: {
-    backgroundColor: '#D92D20',
+    backgroundColor: "#D92D20",
   },
   yesButtonDangerPressed: {
-    backgroundColor: '#B42318',
+    backgroundColor: "#B42318",
   },
   yesButtonText: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: "700",
+    fontFamily: "System",
   },
 });
