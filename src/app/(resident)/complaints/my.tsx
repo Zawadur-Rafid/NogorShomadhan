@@ -42,21 +42,27 @@ const theme = {
   onSecondaryContainer: "#713b00",
 };
 
+import SkeletonComplaintCard from "@/components/SkeletonComplaintCard";
+
 export default function MyComplaintsScreen() {
   const router = useRouter();
   const [activeFilter, setActiveFilter] = useState<StatusFilter>("All");
 
   const [myComplaints, setMyComplaints] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function loadData() {
       try {
+        setLoading(true);
         const data = await getMyFeedComplaints();
         setMyComplaints(data);
       } catch (error) {
         if (error instanceof Error) {
           Alert.alert("Error", error.message);
         }
+      } finally {
+        setLoading(false);
       }
     }
     loadData();
@@ -135,7 +141,13 @@ export default function MyComplaintsScreen() {
 
         {/* Complaints List */}
         <View style={styles.listContainer}>
-          {filteredComplaints.length === 0 ? (
+          {loading ? (
+            <>
+              <SkeletonComplaintCard />
+              <SkeletonComplaintCard />
+              <SkeletonComplaintCard />
+            </>
+          ) : filteredComplaints.length === 0 ? (
             <View style={styles.emptyState}>
               <MaterialIcons
                 name="assignment-late"
@@ -220,7 +232,7 @@ export default function MyComplaintsScreen() {
                     </View>
                   </View>
 
-                  {item.image && (
+                  {typeof item.image === 'string' && item.image.trim() !== '' && item.image !== 'null' && (
                     <View style={styles.imageWrapper}>
                       <Image
                         source={{ uri: item.image }}

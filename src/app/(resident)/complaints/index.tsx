@@ -52,6 +52,8 @@ const theme = {
   onSecondaryContainer: "#713b00",
 };
 
+import SkeletonComplaintCard from "@/components/SkeletonComplaintCard";
+
 export default function ResidentAllComplaintsScreen() {
   const router = useRouter();
   const [activeStatusFilter, setActiveStatusFilter] =
@@ -60,16 +62,20 @@ export default function ResidentAllComplaintsScreen() {
     useState<string>("All Categories");
 
   const [complaints, setComplaints] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function loadData() {
       try {
+        setLoading(true);
         const data = await getFeedComplaints();
         setComplaints(data);
       } catch (error) {
         if (error instanceof Error) {
           Alert.alert("Error", error.message);
         }
+      } finally {
+        setLoading(false);
       }
     }
     loadData();
@@ -186,7 +192,13 @@ export default function ResidentAllComplaintsScreen() {
 
         {/* Complaint List */}
         <View style={styles.listContainer}>
-          {filteredComplaints.length === 0 ? (
+          {loading ? (
+            <>
+              <SkeletonComplaintCard />
+              <SkeletonComplaintCard />
+              <SkeletonComplaintCard />
+            </>
+          ) : filteredComplaints.length === 0 ? (
             <View style={styles.emptyState}>
               <MaterialIcons
                 name="error-outline"
@@ -271,7 +283,7 @@ export default function ResidentAllComplaintsScreen() {
                     </View>
                   </View>
 
-                  {item.image && (
+                  {typeof item.image === 'string' && item.image.trim() !== '' && item.image !== 'null' && (
                     <Image
                       source={{ uri: item.image }}
                       style={styles.evidenceImage}

@@ -90,11 +90,12 @@ function EvidenceGrid({
   removable?: boolean;
   onRemove?: (index: number) => void;
 }) {
-  if (!images || images.length === 0) return null;
+  const validImages = images?.filter(img => typeof img === 'string' && img.trim() !== '' && img !== 'null') || [];
+  if (validImages.length === 0) return null;
 
   return (
     <View style={styles.evidenceGrid}>
-      {images.map((image, index) => (
+      {validImages.map((image, index) => (
         <View key={`${index}`} style={styles.evidenceThumbWrap}>
           <Image source={{uri: image}} style={styles.evidenceThumb} contentFit="cover" />
           {removable && onRemove && (
@@ -565,35 +566,22 @@ function ResidentFeedback({
 
 function ReporterProfile({ complaint }: { complaint: any }) {
   const [expanded, setExpanded] = useState(false);
-  const maxReporters: number = 3;
-  const bangladeshiNames = ['Rahim Uddin', 'Karim Hasan', 'Anisur Rahman'];
-  
-  const otherReporters = Array.from({ length: maxReporters }).map((_, i) => {
-    const name = bangladeshiNames[i];
-    const initials = name.split(' ').map(n => n[0]).join('');
-    return {
-      id: `r-${i}`,
-      initials,
-      name,
-      submittedAt: complaint.date,
-    };
-  });
-
-  const reporterCount = maxReporters;
+  const otherReporters = complaint.otherReporters || [];
+  const reporterCount = otherReporters.length;
 
   return (
     <View style={styles.reporterPanel}>
       <View style={styles.reporterCard}>
         <View style={styles.avatar}>
-          <Text style={styles.avatarText}>ME</Text>
+          <Text style={styles.avatarText}>{complaint.reporterInitials || 'MR'}</Text>
         </View>
         <View style={styles.reporterCopy}>
           <Text style={styles.reporterLabel}>PRIMARY REPORTER</Text>
           <Text selectable style={styles.reporterName}>
-            You (Resident)
+            {complaint.reporter || 'You (Resident)'}
           </Text>
           <Text selectable style={styles.reporterPhone}>
-            017XXXXXXXX
+            {complaint.reporterPhone || 'Not available'}
           </Text>
           <Text style={styles.primaryReporterHint}>
             First person who reported this issue
@@ -641,7 +629,7 @@ function ReporterProfile({ complaint }: { complaint: any }) {
               exiting={FadeOut.duration(120)}
               style={styles.otherReportersList}
             >
-              {otherReporters.map((reporter) => (
+              {otherReporters.map((reporter: any) => (
                 <View key={reporter.id} style={styles.otherReporterRow}>
                   <View style={styles.otherReporterAvatar}>
                     <Text style={styles.otherReporterAvatarText}>{reporter.initials}</Text>
@@ -857,31 +845,33 @@ export default function ComplaintDetailScreen() {
                 </View>
               </View>
 
-              <View style={styles.panel}>
-                <View style={styles.panelHeading}>
-                  <View>
-                    <Text style={styles.panelTitle}>
-                      {mode === 'pending'
-                        ? 'Resident Evidence'
-                        : mode === 'in-progress'
-                          ? 'Latest Work Evidence'
-                          : 'Final Completion Evidence'}
-                    </Text>
-                    <Text style={styles.panelSubtitle}>
-                      {mode === 'resolved'
-                        ? 'Required proof submitted when the complaint was closed'
-                        : 'Most recent photo attached to this complaint record'}
-                    </Text>
+              {typeof displayEvidence === 'string' && displayEvidence.trim() !== '' && displayEvidence !== 'null' && (
+                <View style={styles.panel}>
+                  <View style={styles.panelHeading}>
+                    <View>
+                      <Text style={styles.panelTitle}>
+                        {mode === 'pending'
+                          ? 'Resident Evidence'
+                          : mode === 'in-progress'
+                            ? 'Latest Work Evidence'
+                            : 'Final Completion Evidence'}
+                      </Text>
+                      <Text style={styles.panelSubtitle}>
+                        {mode === 'resolved'
+                          ? 'Required proof submitted when the complaint was closed'
+                          : 'Most recent photo attached to this complaint record'}
+                      </Text>
+                    </View>
+                    <Ionicons name="image-outline" size={21} color="#23435D" />
                   </View>
-                  <Ionicons name="image-outline" size={21} color="#23435D" />
+                  <Image
+                    source={{ uri: displayEvidence }}
+                    style={styles.evidenceImage}
+                    contentFit="cover"
+                    transition={180}
+                  />
                 </View>
-                <Image
-                  source={{ uri: displayEvidence }}
-                  style={styles.evidenceImage}
-                  contentFit="cover"
-                  transition={180}
-                />
-              </View>
+              )}
 
 
 
