@@ -130,19 +130,45 @@ function getNotificationKind(notification: AppNotification): NotificationKind {
 }
 
 function getAuthorityNotificationPath(notification: AppNotification): string {
-  if (notification.actionPath?.startsWith('/authority/')) {
-    return notification.actionPath;
-  }
+  const dataString = (key: string) => {
+    const value = notification.data[key];
+    return typeof value === 'string' && value.trim() ? value : null;
+  };
 
-  if (notification.entityType === 'feedback') {
-    return '/authority/feedback-center';
+  if (
+    notification.entityType === 'feedback' ||
+    notification.type === 'complaint_feedback_received' ||
+    notification.type === 'complaint_feedback_replied'
+  ) {
+    const feedbackId = dataString('feedback_id') ?? notification.entityId;
+    return feedbackId
+      ? `/authority/feedback-center?feedbackId=${encodeURIComponent(feedbackId)}`
+      : '/authority/feedback-center';
   }
 
   if (
     notification.entityType === 'forum_post' ||
-    notification.entityType === 'forum_comment'
+    notification.entityType === 'forum_comment' ||
+    notification.type === 'forum_comment_received' ||
+    notification.type === 'forum_reply_received' ||
+    notification.type === 'official_announcement'
   ) {
-    return '/authority/forum';
+    const postId =
+      dataString('forum_post_id') ??
+      (notification.entityType === 'forum_post' ? notification.entityId : null);
+    const commentId =
+      dataString('forum_comment_id') ??
+      (notification.entityType === 'forum_comment' ? notification.entityId : null);
+    const params = [
+      postId ? `postId=${encodeURIComponent(postId)}` : null,
+      commentId ? `commentId=${encodeURIComponent(commentId)}` : null,
+    ].filter(Boolean);
+
+    return params.length > 0 ? `/authority/forum?${params.join('&')}` : '/authority/forum';
+  }
+
+  if (notification.actionPath?.startsWith('/authority/')) {
+    return notification.actionPath;
   }
 
   if (notification.entityType === 'complaint' && notification.entityId) {
@@ -238,7 +264,7 @@ export default function AuthorityNotifications() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <AuthorityPageHeader title="Dashboard" />
+      <AuthorityPageHeader />
       <ScrollView
         contentInsetAdjustmentBehavior="automatic"
         showsVerticalScrollIndicator={false}

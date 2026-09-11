@@ -1,6 +1,6 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { useRouter } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
+import { useLocalSearchParams } from 'expo-router';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -22,9 +22,18 @@ type DiscussionComment = {
 };
 
 export default function AuthorityFeedbackCenter() {
-  const router = useRouter();
+  const { feedbackId: feedbackIdParam } = useLocalSearchParams<{
+    feedbackId?: string | string[];
+  }>();
+  const targetFeedbackId = Array.isArray(feedbackIdParam)
+    ? feedbackIdParam[0]
+    : feedbackIdParam;
   const { width } = useWindowDimensions();
   const { complaints } = useAuthorityComplaints();
+  const scrollViewRef = useRef<ScrollView>(null);
+  const feedbackGridOffsetRef = useRef<number | null>(null);
+  const feedbackCardOffsetsRef = useRef<Record<string, number>>({});
+  const scrolledFeedbackIdRef = useRef<string | null>(null);
   const [filter, setFilter] = useState<(typeof filters)[number]>('All Feedback');
   const [comments, setComments] = useState<Record<string, DiscussionComment[]>>({});
   const [drafts, setDrafts] = useState<Record<string, string>>({});
@@ -86,9 +95,38 @@ export default function AuthorityFeedbackCenter() {
     };
   }, [authorityFeedback]);
   const visibleFeedback = authorityFeedback.filter((item) => {
+    if (targetFeedbackId) return true;
     if (filter === 'All Feedback') return true;
     return item.rating === Number(filter.charAt(0));
   });
+
+  const scrollToTargetFeedback = useCallback(() => {
+    if (
+      !targetFeedbackId ||
+      scrolledFeedbackIdRef.current === targetFeedbackId ||
+      feedbackGridOffsetRef.current === null
+    ) {
+      return;
+    }
+
+    const cardOffset = feedbackCardOffsetsRef.current[targetFeedbackId];
+    if (cardOffset === undefined) return;
+
+    scrolledFeedbackIdRef.current = targetFeedbackId;
+    requestAnimationFrame(() => {
+      scrollViewRef.current?.scrollTo({
+        y: Math.max(0, feedbackGridOffsetRef.current! + cardOffset - 16),
+        animated: true,
+      });
+    });
+  }, [targetFeedbackId]);
+
+  useEffect(() => {
+    if (!targetFeedbackId) return;
+
+    scrolledFeedbackIdRef.current = null;
+    requestAnimationFrame(scrollToTargetFeedback);
+  }, [scrollToTargetFeedback, targetFeedbackId]);
 
   const submitComment = (feedbackId: string) => {
     const message = drafts[feedbackId]?.trim();
@@ -128,12 +166,9 @@ export default function AuthorityFeedbackCenter() {
 
   return (
     <SafeAreaView edges={['top', 'left', 'right']} style={styles.safeArea}>
-      <AuthorityPageHeader
-        title="Home"
-        icon="home-outline"
-        onBack={() => router.navigate('/authority/dashboard' as never)}
-      />
+      <AuthorityPageHeader />
       <ScrollView
+        ref={scrollViewRef}
         contentInsetAdjustmentBehavior="automatic"
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
@@ -193,9 +228,27 @@ export default function AuthorityFeedbackCenter() {
             </ScrollView>
           </View>
 
-          <View style={[styles.feedbackGrid, wide && styles.feedbackGridWide]}>
+          <View
+            style={[styles.feedbackGrid, wide && styles.feedbackGridWide]}
+            onLayout={(event) => {
+              feedbackGridOffsetRef.current = event.nativeEvent.layout.y;
+              scrollToTargetFeedback();
+            }}
+          >
             {visibleFeedback.map((feedback) => (
-              <View key={feedback.id} style={styles.feedbackCard}>
+              <View
+                key={feedback.id}
+                onLayout={(event) => {
+                  feedbackCardOffsetsRef.current[feedback.id] = event.nativeEvent.layout.y;
+                  if (feedback.id === targetFeedbackId) {
+                    scrollToTargetFeedback();
+                  }
+                }}
+                style={[
+                  styles.feedbackCard,
+                  feedback.id === targetFeedbackId && styles.feedbackCardFocused,
+                ]}
+              >
                 <Image source={feedback.image} style={styles.feedbackImage} resizeMode="cover" />
                 <View style={styles.feedbackBody}>
                   <View style={styles.complaintTopRow}>
@@ -253,13 +306,17 @@ export default function AuthorityFeedbackCenter() {
                         </View>
                       </View>
                       <Ionicons
-                        name={openDiscussions[feedback.id] ? 'chevron-up' : 'chevron-down'}
+                        name={
+                          openDiscussions[feedback.id] || feedback.id === targetFeedbackId
+                            ? 'chevron-up'
+                            : 'chevron-down'
+                        }
                         size={17}
                         color="#7A8493"
                       />
                     </TouchableOpacity>
 
-                    {openDiscussions[feedback.id] && (
+                    {(openDiscussions[feedback.id] || feedback.id === targetFeedbackId) && (
                       <View style={styles.discussionBody}>
                         {(comments[feedback.id] ?? []).map((comment) => (
                           <View
@@ -354,6 +411,7 @@ const styles = StyleSheet.create({
   feedbackGrid: { gap: 15 },
   feedbackGridWide: { flexDirection: 'row', alignItems: 'stretch' },
   feedbackCard: { flex: 1, minWidth: 0, backgroundColor: '#FFFFFF', borderRadius: 15, overflow: 'hidden', borderWidth: 1, borderColor: '#E8ECF1', boxShadow: '0 3px 12px rgba(0,0,0,0.05)' },
+  feedbackCardFocused: { borderWidth: 2, borderColor: '#2F6B5F', boxShadow: '0 0 0 4px rgba(47,107,95,0.14)' },
   feedbackImage: { width: '100%', height: 230, backgroundColor: '#E8EDF4' },
   feedbackBody: { padding: 15, gap: 8 },
   complaintTopRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },

@@ -43,7 +43,7 @@ export default function AuthorityDashboard() {
   const { complaints } = useAuthorityComplaints();
 
   const [profileOpen, setProfileOpen] = useState(false);
-  const [hasUnreadNotifications, setHasUnreadNotifications] = useState(false);
+  const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
 
   useFocusEffect(
     useCallback(() => {
@@ -53,7 +53,7 @@ export default function AuthorityDashboard() {
         .fetchUnreadCount()
         .then((unreadCount) => {
           if (active) {
-            setHasUnreadNotifications(unreadCount > 0);
+            setUnreadNotificationCount(unreadCount);
           }
         })
         .catch((error) => {
@@ -171,7 +171,7 @@ export default function AuthorityDashboard() {
         <View style={styles.headerActions}>
           <TouchableOpacity
             style={styles.headerIcon}
-            accessibilityLabel="Notifications"
+            accessibilityLabel={`Notifications, ${unreadNotificationCount} unread`}
             onPress={() =>
               router.push(
                 '/authority/notifications' as never,
@@ -184,8 +184,12 @@ export default function AuthorityDashboard() {
               color="#23435D"
             />
 
-            {hasUnreadNotifications ? (
-              <View style={styles.notificationDot} />
+            {unreadNotificationCount > 0 ? (
+              <View style={styles.notificationBadge}>
+                <Text style={styles.notificationBadgeText}>
+                  {unreadNotificationCount > 99 ? '99+' : unreadNotificationCount}
+                </Text>
+              </View>
             ) : null}
           </TouchableOpacity>
 
@@ -901,14 +905,27 @@ const styles = StyleSheet.create({
     backgroundColor: '#F7F8FA',
   },
 
-  notificationDot: {
+  notificationBadge: {
     position: 'absolute',
-    top: 7,
-    right: 8,
-    width: 6,
-    height: 6,
-    borderRadius: 3,
+    top: 1,
+    right: 0,
+    minWidth: 18,
+    height: 18,
+    paddingHorizontal: 4,
+    borderRadius: 9,
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
     backgroundColor: '#EF4444',
+  },
+
+  notificationBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 8,
+    fontWeight: '900',
+    lineHeight: 10,
+    fontVariant: ['tabular-nums'],
   },
 
   profileTrigger: {

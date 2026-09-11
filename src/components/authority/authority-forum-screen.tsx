@@ -1,6 +1,6 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { useRouter } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
+import { useLocalSearchParams } from 'expo-router';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ScrollView,
   StyleSheet,
@@ -135,9 +135,24 @@ const statusTheme: Record<ForumStatus, { background: string; color: string }> = 
 };
 
 export default function AuthorityForumScreen() {
-  const router = useRouter();
+  const {
+    postId: postIdParam,
+    commentId: commentIdParam,
+  } = useLocalSearchParams<{
+    postId?: string | string[];
+    commentId?: string | string[];
+  }>();
+  const requestedPostId = Array.isArray(postIdParam) ? postIdParam[0] : postIdParam;
+  const targetCommentId = Array.isArray(commentIdParam)
+    ? commentIdParam[0]
+    : commentIdParam;
   const { width } = useWindowDimensions();
   const wide = width >= 760;
+  const scrollViewRef = useRef<ScrollView>(null);
+  const feedOffsetRef = useRef<number | null>(null);
+  const postOffsetsRef = useRef<Record<string, number>>({});
+  const commentOffsetsRef = useRef<Record<string, number>>({});
+  const scrolledTargetRef = useRef<string | null>(null);
   const [posts, setPosts] = useState<ForumPostUI[]>(initialPosts);
   const [postTitle, setPostTitle] = useState('');
   const [postBody, setPostBody] = useState('');
@@ -195,10 +210,63 @@ export default function AuthorityForumScreen() {
     loadPostsFromDb();
   }, []);
 
-  const visiblePosts = useMemo(
-    () => (activeFilter === 'All' ? posts : posts.filter((post) => post.status === activeFilter)),
-    [activeFilter, posts],
+  const targetPostId = useMemo(
+    () =>
+      requestedPostId ??
+      (targetCommentId
+        ? posts.find((post) =>
+            post.comments.some((comment) => comment.id === targetCommentId),
+          )?.id
+        : undefined),
+    [posts, requestedPostId, targetCommentId],
   );
+  const visiblePosts = useMemo(
+    () =>
+      targetPostId || targetCommentId
+        ? posts
+        : activeFilter === 'All'
+          ? posts
+          : posts.filter((post) => post.status === activeFilter),
+    [activeFilter, posts, targetCommentId, targetPostId],
+  );
+
+  const scrollToTargetForumItem = useCallback(() => {
+    const targetKey = targetCommentId ?? targetPostId;
+    if (
+      !targetKey ||
+      !targetPostId ||
+      scrolledTargetRef.current === targetKey ||
+      feedOffsetRef.current === null
+    ) {
+      return;
+    }
+
+    const postOffset = postOffsetsRef.current[targetPostId];
+    if (postOffset === undefined) return;
+
+    const commentOffset = targetCommentId
+      ? commentOffsetsRef.current[targetCommentId]
+      : 0;
+    if (targetCommentId && commentOffset === undefined) return;
+
+    scrolledTargetRef.current = targetKey;
+    requestAnimationFrame(() => {
+      scrollViewRef.current?.scrollTo({
+        y: Math.max(
+          0,
+          feedOffsetRef.current! + postOffset + (commentOffset ?? 0) - 16,
+        ),
+        animated: true,
+      });
+    });
+  }, [targetCommentId, targetPostId]);
+
+  useEffect(() => {
+    if (!targetPostId && !targetCommentId) return;
+
+    scrolledTargetRef.current = null;
+    requestAnimationFrame(scrollToTargetForumItem);
+  }, [scrollToTargetForumItem, targetCommentId, targetPostId]);
 
   const authorityPostCount = posts.filter((post) => post.official).length;
   const authorityResponseCount = posts.reduce(
@@ -297,13 +365,10 @@ export default function AuthorityForumScreen() {
 
   return (
     <SafeAreaView edges={['top', 'left', 'right', 'bottom']} style={styles.safeArea}>
-      <AuthorityPageHeader
-        title="Home"
-        icon="home-outline"
-        onBack={() => router.navigate('/authority/dashboard' as never)}
-      />
+      <AuthorityPageHeader />
 
       <ScrollView
+        ref={scrollViewRef}
         contentInsetAdjustmentBehavior="automatic"
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
@@ -429,9 +494,27 @@ export default function AuthorityForumScreen() {
             ))}
           </ScrollView>
 
-          <View style={styles.feed}>
+          <View
+            style={styles.feed}
+            onLayout={(event) => {
+              feedOffsetRef.current = event.nativeEvent.layout.y;
+              scrollToTargetForumItem();
+            }}
+          >
             {visiblePosts.map((post) => (
-              <View key={post.id} style={styles.postCard}>
+              <View
+                key={post.id}
+                onLayout={(event) => {
+                  postOffsetsRef.current[post.id] = event.nativeEvent.layout.y;
+                  if (post.id === targetPostId) {
+                    scrollToTargetForumItem();
+                  }
+                }}
+                style={[
+                  styles.postCard,
+                  post.id === targetPostId && styles.postCardFocused,
+                ]}
+              >
                 <View style={styles.postHeader}>
                   <View style={styles.authorRow}>
                     <View style={[styles.avatar, post.official && styles.officialAvatar]}>
@@ -516,7 +599,14 @@ export default function AuthorityForumScreen() {
                       styles.comment,
                       comment.official && styles.officialComment,
                       comment.parent_comment_id && styles.replyComment,
+                      comment.id === targetCommentId && styles.commentFocused,
                     ]}
+                    onLayout={(event) => {
+                      commentOffsetsRef.current[comment.id] = event.nativeEvent.layout.y;
+                      if (comment.id === targetCommentId) {
+                        scrollToTargetForumItem();
+                      }
+                    }}
                   >
                     <View style={[styles.commentAvatar, comment.official && styles.officialCommentAvatar]}>
                       <Text style={styles.commentAvatarText}>{comment.initials}</Text>
@@ -744,6 +834,7 @@ const styles = StyleSheet.create({
   activeFilterText: { color: '#FFFFFF' },
   feed: { gap: 12 },
   postCard: { padding: 16, borderRadius: 15, borderWidth: 1, borderColor: '#E3E7EA', backgroundColor: '#FFFFFF' },
+  postCardFocused: { borderWidth: 2, borderColor: '#2F6B5F', boxShadow: '0 0 0 4px rgba(47,107,95,0.12)' },
   postHeader: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10 },
   authorRow: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: 9 },
   avatar: { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center', backgroundColor: '#E8EEF5' },
@@ -763,6 +854,7 @@ const styles = StyleSheet.create({
   commentHeading: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 15, paddingTop: 12, borderTopWidth: 1, borderTopColor: '#EEF0F2' },
   commentHeadingText: { color: '#667085', fontSize: 10, fontWeight: '700' },
   comment: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, marginTop: 9, padding: 10, borderRadius: 10, backgroundColor: '#F7F8FA' },
+  commentFocused: { borderWidth: 2, borderColor: '#C57C1B', backgroundColor: '#FFF9F1' },
   officialComment: { borderWidth: 1, borderColor: '#DCEAE5', backgroundColor: '#F3F8F6' },
   replyComment: { marginLeft: 20, backgroundColor: '#EFF6FF', borderLeftWidth: 2, borderLeftColor: '#2F6B5F' },
   commentAvatar: { width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: '#E7EDF4' },

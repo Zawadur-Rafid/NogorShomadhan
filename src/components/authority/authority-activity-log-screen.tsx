@@ -194,11 +194,7 @@ export default function AuthorityActivityLogScreen() {
 
   return (
     <SafeAreaView edges={['top', 'left', 'right']} style={styles.safeArea}>
-      <AuthorityPageHeader
-        title="Home"
-        icon="home-outline"
-        onBack={() => router.navigate('/authority/dashboard' as never)}
-      />
+      <AuthorityPageHeader />
       <FlatList
         data={visibleActivities}
         keyExtractor={(item) => item.id}

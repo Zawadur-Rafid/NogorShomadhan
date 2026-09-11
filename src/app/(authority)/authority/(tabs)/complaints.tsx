@@ -327,15 +327,7 @@ export default function AuthorityAllComplaints() {
       ]}
       style={styles.safeArea}
     >
-      <AuthorityPageHeader
-        title="Home"
-        icon="home-outline"
-        onBack={() =>
-          router.navigate(
-            '/authority/dashboard' as never,
-          )
-        }
-      />
+      <AuthorityPageHeader />
 
       <ScrollView
         contentInsetAdjustmentBehavior="automatic"
