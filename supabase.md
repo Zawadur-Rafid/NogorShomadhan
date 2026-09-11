@@ -172,6 +172,21 @@ Purpose:
 Purpose:
 - Stores responses from community authority to resident feedback comments.
 
+### `app_settings`
+- `id`: INTEGER (Primary Key, CHECK: id = 1 — singleton row)
+- `ai_auto_categorize`: BOOLEAN (Default: true, NOT NULL)
+- `duplicate_detection`: BOOLEAN (Default: true, NOT NULL)
+- `duplicate_threshold_percent`: INTEGER (Default: 85, NOT NULL, CHECK: IN (50, 70, 85))
+- `duplicate_alerts`: BOOLEAN (Default: true, NOT NULL)
+- `new_account_alerts`: BOOLEAN (Default: true, NOT NULL)
+- `maintenance_mode`: BOOLEAN (Default: false, NOT NULL)
+- `updated_by_acc_id`: UUID (Nullable Foreign Key to account.acc_id, ON DELETE SET NULL)
+- `updated_at`: TIMESTAMPTZ (Default: CURRENT_TIMESTAMP, NOT NULL)
+
+Purpose:
+- Persists the admin System Settings page: AI categorization, duplicate detection, thresholds, notification toggles, and maintenance mode.
+- Uses a single row (`id = 1`) as a configuration singleton.
+
 ### `notifications`
 - `notification_id`: UUID (Primary Key, Default: gen_random_uuid())
 - `recipient_acc_id`: UUID (Foreign Key to account.acc_id, ON DELETE CASCADE, NOT NULL)

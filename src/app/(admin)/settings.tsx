@@ -1,9 +1,9 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
-  Alert,
+  ActivityIndicator,
   ScrollView,
   StyleSheet,
   Switch,
@@ -13,6 +13,14 @@ import {
 } from "react-native";
 
 import AdminBottomNav from "@/components/AdminBottomNav";
+import { supabase } from "@/lib/supabase";
+import {
+  getAppSettings,
+  getPersistenceMode,
+  thresholdPercentToLabel,
+  updateAppSettings,
+  type AppSettings,
+} from "@/services/settings.service";
 import { confirmAction } from "@/utils/confirm";
 
 const colors = {
@@ -24,7 +32,6 @@ const colors = {
   border: "#E8E8E8",
   red: "#B42318",
   green: "#1E8E3E",
-  blue: "#1E63C6",
 };
 
 export default function AdminSettingsPage() {
@@ -33,18 +40,92 @@ export default function AdminSettingsPage() {
   // Settings State
   const [aiAutoCategorize, setAiAutoCategorize] = useState(true);
   const [duplicateDetection, setDuplicateDetection] = useState(true);
-  const [emailAlerts, setEmailAlerts] = useState(true);
+  const [duplicateAlerts, setDuplicateAlerts] = useState(true);
   const [newAccountAlerts, setNewAccountAlerts] = useState(true);
   const [maintenanceMode, setMaintenanceMode] = useState(false);
-  const [duplicateThreshold, setDuplicateThreshold] = useState<"High (85%)" | "Medium (70%)" | "Low (50%)">("High (85%)");
+  const [duplicateThresholdPercent, setDuplicateThresholdPercent] =
+    useState<number>(85);
+
+  // Admin Profile State
+  const [adminProfile, setAdminProfile] = useState<{
+    full_name: string;
+    email: string;
+    username: string;
+  } | null>(null);
+
+  // Load / Save State
+  const [settingsLoading, setSettingsLoading] = useState(true);
+  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "error">(
+    "idle",
+  );
+  const [localMode, setLocalMode] = useState(false);
 
   const [cacheMessage, setCacheMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    const loadSettings = async () => {
+      setSettingsLoading(true);
+      try {
+        const [settings, accId] = await Promise.all([
+          getAppSettings(),
+          AsyncStorage.getItem("acc_id"),
+        ]);
+
+        setAiAutoCategorize(settings.ai_auto_categorize);
+        setDuplicateDetection(settings.duplicate_detection);
+        setDuplicateThresholdPercent(settings.duplicate_threshold_percent);
+        setDuplicateAlerts(settings.duplicate_alerts);
+        setNewAccountAlerts(settings.new_account_alerts);
+        setMaintenanceMode(settings.maintenance_mode);
+
+        if (accId) {
+          const { data } = await supabase
+            .from("account")
+            .select("full_name,email,username")
+            .eq("acc_id", accId)
+            .single();
+          if (data) {
+            setAdminProfile({
+              full_name: data.full_name,
+              email: data.email,
+              username: data.username,
+            });
+          }
+        }
+      } catch (err) {
+        console.error("Failed to load system settings:", err);
+        setLocalMode(true);
+      } finally {
+        setSettingsLoading(false);
+      }
+    };
+
+    void loadSettings();
+  }, []);
+
+  const persistChange = async (
+    patch: Partial<Omit<AppSettings, "id">>,
+    rollback: () => void,
+  ) => {
+    setSaveStatus("saving");
+    try {
+      const accId = (await AsyncStorage.getItem("acc_id")) || null;
+      await updateAppSettings(patch, accId);
+      setLocalMode(getPersistenceMode() === "local");
+      setSaveStatus("idle");
+    } catch (err) {
+      console.error("Failed to save system settings:", err);
+      rollback();
+      setSaveStatus("error");
+      setTimeout(() => setSaveStatus("idle"), 3000);
+    }
+  };
 
   const handleClearCache = async () => {
     const confirmed = await confirmAction(
       "Are you sure you want to clear application local cache?",
       undefined,
-      "Clear Cache"
+      "Clear Cache",
     );
     if (!confirmed) return;
 
@@ -56,7 +137,7 @@ export default function AdminSettingsPage() {
     const confirmed = await confirmAction(
       "Are you sure you want to sign out of the administrator portal?",
       undefined,
-      "Sign Out"
+      "Sign Out",
     );
     if (!confirmed) return;
 
@@ -65,9 +146,17 @@ export default function AdminSettingsPage() {
   };
 
   const cycleThreshold = () => {
-    if (duplicateThreshold === "High (85%)") setDuplicateThreshold("Medium (70%)");
-    else if (duplicateThreshold === "Medium (70%)") setDuplicateThreshold("Low (50%)");
-    else setDuplicateThreshold("High (85%)");
+    const next =
+      duplicateThresholdPercent === 85
+        ? 70
+        : duplicateThresholdPercent === 70
+          ? 50
+          : 85;
+    setDuplicateThresholdPercent(next);
+    void persistChange(
+      { duplicate_threshold_percent: next },
+      () => void setDuplicateThresholdPercent(duplicateThresholdPercent),
+    );
   };
 
   return (
@@ -86,7 +175,36 @@ export default function AdminSettingsPage() {
           <Text style={styles.backLinkText}>Dashboard</Text>
         </TouchableOpacity>
 
-        <Text style={styles.pageTitle}>System Settings</Text>
+        <View style={styles.titleRow}>
+          <Text style={styles.pageTitle}>System Settings</Text>
+          {settingsLoading ? (
+            <ActivityIndicator size="small" color={colors.primary} />
+          ) : null}
+        </View>
+
+        {saveStatus === "saving" ? (
+          <View style={styles.saveBanner}>
+            <ActivityIndicator size="small" color="#1E8E3E" />
+            <Text style={styles.saveBannerText}>Saving changes…</Text>
+          </View>
+        ) : null}
+        {saveStatus === "error" ? (
+          <View style={[styles.saveBanner, styles.saveBannerError]}>
+            <Ionicons name="alert-circle-outline" size={16} color={colors.red} />
+            <Text style={[styles.saveBannerText, { color: colors.red }]}>
+              Failed to save changes. Please try again.
+            </Text>
+          </View>
+        ) : null}
+        {localMode && saveStatus !== "saving" ? (
+          <View style={[styles.saveBanner, styles.saveBannerLocal]}>
+            <Ionicons name="phone-portrait-outline" size={16} color="#7A5AF8" />
+            <Text style={[styles.saveBannerText, { color: "#7A5AF8" }]}>
+              Saved on this device. Apply the app_settings SQL migration to sync
+              to the server.
+            </Text>
+          </View>
+        ) : null}
 
         {/* Admin Account Profile Card */}
         <View style={styles.card}>
@@ -95,8 +213,14 @@ export default function AdminSettingsPage() {
               <Ionicons name="person-circle" size={44} color={colors.primary} />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={styles.adminName}>System Administrator</Text>
-              <Text style={styles.adminEmail}>admin@example.com • Username: admin</Text>
+              <Text style={styles.adminName}>
+                {adminProfile?.full_name ?? "System Administrator"}
+              </Text>
+              <Text style={styles.adminEmail}>
+                {adminProfile
+                  ? `${adminProfile.email} • Username: ${adminProfile.username}`
+                  : "admin@example.com • Username: admin"}
+              </Text>
               <View style={styles.roleBadge}>
                 <Text style={styles.roleBadgeText}>ADMINISTRATOR PORTAL</Text>
               </View>
@@ -116,22 +240,37 @@ export default function AdminSettingsPage() {
         {/* AI & Automation Settings */}
         <View style={styles.card}>
           <View style={styles.cardHeader}>
-            <Ionicons name="hardware-chip-outline" size={20} color={colors.primary} />
-            <Text style={styles.cardTitle}>AI & Intelligent Categorization</Text>
+            <Ionicons
+              name="hardware-chip-outline"
+              size={20}
+              color={colors.primary}
+            />
+            <Text style={styles.cardTitle}>
+              AI & Intelligent Categorization
+            </Text>
           </View>
 
           <View style={styles.settingRow}>
             <View style={{ flex: 1, marginRight: 12 }}>
-              <Text style={styles.settingLabel}>Gemini AI Auto-Categorization</Text>
+              <Text style={styles.settingLabel}>
+                Gemini AI Auto-Categorization
+              </Text>
               <Text style={styles.settingSub}>
                 Automatically classify incoming complaints using Gemini AI.
               </Text>
             </View>
             <Switch
               value={aiAutoCategorize}
-              onValueChange={setAiAutoCategorize}
+              onValueChange={(value) => {
+                setAiAutoCategorize(value);
+                void persistChange(
+                  { ai_auto_categorize: value },
+                  () => void setAiAutoCategorize(!value),
+                );
+              }}
               trackColor={{ false: "#D1D5DB", true: "#93C5FD" }}
               thumbColor={aiAutoCategorize ? colors.primary : "#F3F4F6"}
+              disabled={settingsLoading}
             />
           </View>
 
@@ -141,14 +280,22 @@ export default function AdminSettingsPage() {
             <View style={{ flex: 1, marginRight: 12 }}>
               <Text style={styles.settingLabel}>Duplicate Issue Detection</Text>
               <Text style={styles.settingSub}>
-                Detect duplicate reports using location radius and category matching.
+                Detect duplicate reports using location radius and category
+                matching.
               </Text>
             </View>
             <Switch
               value={duplicateDetection}
-              onValueChange={setDuplicateDetection}
+              onValueChange={(value) => {
+                setDuplicateDetection(value);
+                void persistChange(
+                  { duplicate_detection: value },
+                  () => void setDuplicateDetection(!value),
+                );
+              }}
               trackColor={{ false: "#D1D5DB", true: "#93C5FD" }}
               thumbColor={duplicateDetection ? colors.primary : "#F3F4F6"}
+              disabled={settingsLoading}
             />
           </View>
 
@@ -158,13 +305,20 @@ export default function AdminSettingsPage() {
             style={styles.settingRowTouchable}
             onPress={cycleThreshold}
             activeOpacity={0.8}
+            disabled={settingsLoading}
           >
             <View style={{ flex: 1 }}>
-              <Text style={styles.settingLabel}>Duplicate Matching Sensitivity</Text>
-              <Text style={styles.settingSub}>Tap to toggle AI matching threshold.</Text>
+              <Text style={styles.settingLabel}>
+                Duplicate Matching Sensitivity
+              </Text>
+              <Text style={styles.settingSub}>
+                Tap to toggle AI matching threshold.
+              </Text>
             </View>
             <View style={styles.thresholdBadge}>
-              <Text style={styles.thresholdBadgeText}>{duplicateThreshold}</Text>
+              <Text style={styles.thresholdBadgeText}>
+                {thresholdPercentToLabel(duplicateThresholdPercent)}
+              </Text>
             </View>
           </TouchableOpacity>
         </View>
@@ -172,22 +326,38 @@ export default function AdminSettingsPage() {
         {/* System Notifications & Alerts */}
         <View style={styles.card}>
           <View style={styles.cardHeader}>
-            <Ionicons name="notifications-outline" size={20} color={colors.primary} />
-            <Text style={styles.cardTitle}>Notifications & Administrative Alerts</Text>
+            <Ionicons
+              name="notifications-outline"
+              size={20}
+              color={colors.primary}
+            />
+            <Text style={styles.cardTitle}>
+              Notifications & Administrative Alerts
+            </Text>
           </View>
 
           <View style={styles.settingRow}>
             <View style={{ flex: 1, marginRight: 12 }}>
-              <Text style={styles.settingLabel}>Urgent Complaint Alerts</Text>
+              <Text style={styles.settingLabel}>
+                Duplicate Complaint Alerts
+              </Text>
               <Text style={styles.settingSub}>
-                Receive notifications when high-urgency issue reports are submitted.
+                Receive notifications when duplicate complaint are reported by
+                Gemini AI.
               </Text>
             </View>
             <Switch
-              value={emailAlerts}
-              onValueChange={setEmailAlerts}
+              value={duplicateAlerts}
+              onValueChange={(value) => {
+                setDuplicateAlerts(value);
+                void persistChange(
+                  { duplicate_alerts: value },
+                  () => void setDuplicateAlerts(!value),
+                );
+              }}
               trackColor={{ false: "#D1D5DB", true: "#93C5FD" }}
-              thumbColor={emailAlerts ? colors.primary : "#F3F4F6"}
+              thumbColor={duplicateAlerts ? colors.primary : "#F3F4F6"}
+              disabled={settingsLoading}
             />
           </View>
 
@@ -197,14 +367,22 @@ export default function AdminSettingsPage() {
             <View style={{ flex: 1, marginRight: 12 }}>
               <Text style={styles.settingLabel}>New Account Registrations</Text>
               <Text style={styles.settingSub}>
-                Alert when new resident or authority accounts request verification.
+                Alert when new resident or authority accounts request
+                verification.
               </Text>
             </View>
             <Switch
               value={newAccountAlerts}
-              onValueChange={setNewAccountAlerts}
+              onValueChange={(value) => {
+                setNewAccountAlerts(value);
+                void persistChange(
+                  { new_account_alerts: value },
+                  () => void setNewAccountAlerts(!value),
+                );
+              }}
               trackColor={{ false: "#D1D5DB", true: "#93C5FD" }}
               thumbColor={newAccountAlerts ? colors.primary : "#F3F4F6"}
+              disabled={settingsLoading}
             />
           </View>
         </View>
@@ -219,7 +397,9 @@ export default function AdminSettingsPage() {
           <View style={styles.statusRow}>
             <Text style={styles.statusLabel}>Supabase PostgreSQL Database</Text>
             <View style={styles.statusPill}>
-              <View style={[styles.statusDot, { backgroundColor: colors.green }]} />
+              <View
+                style={[styles.statusDot, { backgroundColor: colors.green }]}
+              />
               <Text style={styles.statusPillText}>Connected</Text>
             </View>
           </View>
@@ -227,7 +407,9 @@ export default function AdminSettingsPage() {
           <View style={styles.statusRow}>
             <Text style={styles.statusLabel}>Google Gemini AI Engine</Text>
             <View style={styles.statusPill}>
-              <View style={[styles.statusDot, { backgroundColor: colors.green }]} />
+              <View
+                style={[styles.statusDot, { backgroundColor: colors.green }]}
+              />
               <Text style={styles.statusPillText}>Active</Text>
             </View>
           </View>
@@ -265,20 +447,24 @@ export default function AdminSettingsPage() {
             </View>
             <Switch
               value={maintenanceMode}
-              onValueChange={async (val) => {
-                if (val) {
+              onValueChange={async (value) => {
+                if (value) {
                   const confirmed = await confirmAction(
                     "Are you sure you want to enable Maintenance Mode?",
                     undefined,
-                    "Enable Maintenance"
+                    "Enable Maintenance",
                   );
-                  if (confirmed) setMaintenanceMode(true);
-                } else {
-                  setMaintenanceMode(false);
+                  if (!confirmed) return;
                 }
+                setMaintenanceMode(value);
+                await persistChange(
+                  { maintenance_mode: value },
+                  () => void setMaintenanceMode(!value),
+                );
               }}
               trackColor={{ false: "#D1D5DB", true: "#FCA5A5" }}
               thumbColor={maintenanceMode ? colors.red : "#F3F4F6"}
+              disabled={settingsLoading}
             />
           </View>
         </View>
@@ -314,11 +500,37 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "700",
   },
+  titleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+  },
   pageTitle: {
     fontSize: 26,
     fontWeight: "800",
     color: colors.primary,
     marginBottom: 4,
+  },
+  saveBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    backgroundColor: "#EAF8EF",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
+  },
+  saveBannerError: {
+    backgroundColor: "#FFF1F0",
+  },
+  saveBannerLocal: {
+    backgroundColor: "#F4F1FF",
+  },
+  saveBannerText: {
+    color: colors.green,
+    fontSize: 12,
+    fontWeight: "600",
   },
   card: {
     backgroundColor: colors.white,
