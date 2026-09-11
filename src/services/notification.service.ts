@@ -1,4 +1,127 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
 import { supabase } from "@/lib/supabase";
+
+export type NotificationType =
+  | "account_review_required"
+  | "account_approved"
+  | "account_rejected"
+  | "complaint_review_required"
+  | "duplicate_review_required"
+  | "complaint_accepted"
+  | "complaint_rejected"
+  | "complaint_duplicate_confirmed"
+  | "complaint_work_started"
+  | "complaint_pending_stale"
+  | "complaint_progress_updated"
+  | "complaint_deadline_changed"
+  | "complaint_deadline_milestone"
+  | "complaint_overdue"
+  | "complaint_resolved"
+  | "complaint_feedback_received"
+  | "complaint_feedback_replied"
+  | "forum_comment_received"
+  | "forum_reply_received"
+  | "official_announcement"
+  | "system_alert";
+
+export type NotificationEntityType =
+  | "account"
+  | "complaint"
+  | "feedback"
+  | "forum_post"
+  | "forum_comment"
+  | "system";
+
+export type NotificationPriority = "low" | "normal" | "high" | "urgent";
+
+export interface AppNotification {
+  id: string;
+  recipientAccountId: string;
+  actorAccountId: string | null;
+  type: NotificationType;
+  entityType: NotificationEntityType;
+  entityId: string | null;
+  eventKey: string;
+  title: string;
+  body: string;
+  actionPath: string | null;
+  data: Record<string, unknown>;
+  priority: NotificationPriority;
+  createdAt: Date;
+  seenAt: Date | null;
+  readAt: Date | null;
+}
+
+export interface FetchNotificationsOptions {
+  accountId?: string;
+  limit?: number;
+  unreadOnly?: boolean;
+}
+
+type NotificationRow = {
+  notification_id: string;
+  recipient_acc_id: string;
+  actor_acc_id: string | null;
+  type: NotificationType;
+  entity_type: NotificationEntityType;
+  entity_id: string | null;
+  event_key: string;
+  title: string;
+  body: string;
+  action_path: string | null;
+  data: unknown;
+  priority: NotificationPriority;
+  created_at: string;
+  seen_at: string | null;
+  read_at: string | null;
+};
+
+const NOTIFICATION_COLUMNS =
+  "notification_id, recipient_acc_id, actor_acc_id, type, entity_type, entity_id, event_key, title, body, action_path, data, priority, created_at, seen_at, read_at";
+
+function parseNotificationDate(value: string | null): Date | null {
+  if (!value) return null;
+
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function mapNotificationRow(row: NotificationRow): AppNotification {
+  const createdAt = parseNotificationDate(row.created_at) ?? new Date();
+  const data =
+    row.data && typeof row.data === "object" && !Array.isArray(row.data)
+      ? (row.data as Record<string, unknown>)
+      : {};
+
+  return {
+    id: row.notification_id,
+    recipientAccountId: row.recipient_acc_id,
+    actorAccountId: row.actor_acc_id,
+    type: row.type,
+    entityType: row.entity_type,
+    entityId: row.entity_id,
+    eventKey: row.event_key,
+    title: row.title,
+    body: row.body,
+    actionPath: row.action_path,
+    data,
+    priority: row.priority,
+    createdAt,
+    seenAt: parseNotificationDate(row.seen_at),
+    readAt: parseNotificationDate(row.read_at),
+  };
+}
+
+async function getNotificationAccountId(explicitAccountId?: string): Promise<string> {
+  const accountId = explicitAccountId ?? (await AsyncStorage.getItem("acc_id"));
+
+  if (!accountId) {
+    throw new Error("No logged-in account was found for notifications.");
+  }
+
+  return accountId;
+}
 
 function formatTimeAgo(dateString: string): string {
   const date = new Date(dateString);
@@ -51,6 +174,94 @@ export interface ForumNotification {
 }
 
 export const notificationService = {
+  async fetchNotifications(
+    options: FetchNotificationsOptions = {},
+  ): Promise<AppNotification[]> {
+    const accountId = await getNotificationAccountId(options.accountId);
+    const limit = Math.min(Math.max(options.limit ?? 60, 1), 200);
+
+    let query = supabase
+      .from("notifications")
+      .select(NOTIFICATION_COLUMNS)
+      .eq("recipient_acc_id", accountId)
+      .order("created_at", { ascending: false })
+      .limit(limit);
+
+    if (options.unreadOnly) {
+      query = query.is("read_at", null);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      throw new Error(`Failed to load notifications: ${error.message}`);
+    }
+
+    return ((data ?? []) as NotificationRow[]).map(mapNotificationRow);
+  },
+
+  async fetchUnreadCount(accountId?: string): Promise<number> {
+    const recipientAccountId = await getNotificationAccountId(accountId);
+    const { count, error } = await supabase
+      .from("notifications")
+      .select("notification_id", { count: "exact", head: true })
+      .eq("recipient_acc_id", recipientAccountId)
+      .is("read_at", null);
+
+    if (error) {
+      throw new Error(`Failed to load unread notification count: ${error.message}`);
+    }
+
+    return count ?? 0;
+  },
+
+  async markNotificationsAsSeen(
+    notificationIds: string[],
+    accountId?: string,
+  ): Promise<void> {
+    if (notificationIds.length === 0) return;
+
+    const recipientAccountId = await getNotificationAccountId(accountId);
+    const { error } = await supabase
+      .from("notifications")
+      .update({ seen_at: new Date().toISOString() })
+      .eq("recipient_acc_id", recipientAccountId)
+      .in("notification_id", notificationIds)
+      .is("seen_at", null);
+
+    if (error) {
+      throw new Error(`Failed to mark notifications as seen: ${error.message}`);
+    }
+  },
+
+  async markAsRead(notificationId: string, accountId?: string): Promise<void> {
+    const recipientAccountId = await getNotificationAccountId(accountId);
+    const timestamp = new Date().toISOString();
+    const { error } = await supabase
+      .from("notifications")
+      .update({ seen_at: timestamp, read_at: timestamp })
+      .eq("recipient_acc_id", recipientAccountId)
+      .eq("notification_id", notificationId);
+
+    if (error) {
+      throw new Error(`Failed to mark notification as read: ${error.message}`);
+    }
+  },
+
+  async markAllAsRead(accountId?: string): Promise<void> {
+    const recipientAccountId = await getNotificationAccountId(accountId);
+    const timestamp = new Date().toISOString();
+    const { error } = await supabase
+      .from("notifications")
+      .update({ seen_at: timestamp, read_at: timestamp })
+      .eq("recipient_acc_id", recipientAccountId)
+      .is("read_at", null);
+
+    if (error) {
+      throw new Error(`Failed to mark all notifications as read: ${error.message}`);
+    }
+  },
+
   async fetchAdminNotifications(): Promise<AdminNotification[]> {
     try {
       const notifications: AdminNotification[] = [];

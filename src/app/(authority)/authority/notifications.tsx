@@ -1,4 +1,3 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -14,23 +13,17 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import AuthorityPageHeader from '@/components/authority/authority-page-header';
-import { useAuthorityComplaints } from '@/components/authority/authority-complaints-context';
-import {
-  notificationService,
-  type ForumNotification,
-} from '@/services/notification.service';
-import { AUTHORITY_UNREAD_NOTIFICATION_COUNT_KEY } from '@/utils/authority-notification-storage';
+import { useNotifications } from '@/hooks/use-notifications';
+import type { AppNotification } from '@/services/notification.service';
 
 type NotificationFilter = 'ALL' | 'UNREAD';
 type NotificationKind =
   | 'complaint'
   | 'feedback'
   | 'deadline'
-  | ForumNotification['type'];
-
-type NotificationTarget =
-  | { type: 'complaint'; complaintId: string }
-  | { type: 'forum' };
+  | 'forum_announcement'
+  | 'forum_comment'
+  | 'system';
 
 type AuthorityNotificationItem = {
   id: string;
@@ -38,7 +31,7 @@ type AuthorityNotificationItem = {
   message: string;
   kind: NotificationKind;
   createdAt: Date;
-  target: NotificationTarget;
+  actionPath: string;
   read: boolean;
 };
 
@@ -46,9 +39,6 @@ type NotificationSection = {
   title: 'Today' | 'Yesterday' | 'Earlier';
   data: AuthorityNotificationItem[];
 };
-
-const READ_NOTIFICATION_IDS_KEY =
-  '@nogor-shomadhan/authority/read-notification-ids';
 
 const notificationTheme: Record<
   NotificationKind,
@@ -73,11 +63,6 @@ const notificationTheme: Record<
     color: '#C2410C',
     background: '#FFF0E8',
   },
-  forum_post: {
-    icon: 'chatbubble-ellipses-outline',
-    color: '#16845B',
-    background: '#EAF8F1',
-  },
   forum_announcement: {
     icon: 'megaphone-outline',
     color: '#B42318',
@@ -88,14 +73,12 @@ const notificationTheme: Record<
     color: '#2563EB',
     background: '#EAF2FF',
   },
+  system: {
+    icon: 'warning-outline',
+    color: '#B42318',
+    background: '#FFF0EF',
+  },
 };
-
-function parseDate(value?: string | null, fallback = new Date()): Date {
-  if (!value) return fallback;
-
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? fallback : date;
-}
 
 function startOfDay(date: Date): Date {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate());
@@ -118,20 +101,55 @@ function formatNotificationTime(date: Date): string {
   });
 }
 
-function getDeadlineMessage(displayId: string, deadline: Date): string {
-  const differenceInDays = Math.ceil(
-    (startOfDay(deadline).getTime() - startOfDay(new Date()).getTime()) /
-      86_400_000,
-  );
+function getNotificationKind(notification: AppNotification): NotificationKind {
+  if (notification.type === 'complaint_feedback_received') return 'feedback';
 
-  if (differenceInDays < 0) {
-    const overdueDays = Math.abs(differenceInDays);
-    return `${displayId} is overdue by ${overdueDays} day${overdueDays === 1 ? '' : 's'}.`;
+  if (
+    notification.type === 'complaint_pending_stale' ||
+    notification.type === 'complaint_deadline_changed' ||
+    notification.type === 'complaint_deadline_milestone' ||
+    notification.type === 'complaint_overdue'
+  ) {
+    return 'deadline';
   }
 
-  if (differenceInDays === 0) return `${displayId} is due today.`;
-  if (differenceInDays === 1) return `${displayId} is due tomorrow.`;
-  return `${displayId} is due within ${differenceInDays} days.`;
+  if (notification.type === 'official_announcement') {
+    return 'forum_announcement';
+  }
+
+  if (
+    notification.type === 'forum_comment_received' ||
+    notification.type === 'forum_reply_received'
+  ) {
+    return 'forum_comment';
+  }
+
+  if (notification.type === 'system_alert') return 'system';
+
+  return 'complaint';
+}
+
+function getAuthorityNotificationPath(notification: AppNotification): string {
+  if (notification.actionPath?.startsWith('/authority/')) {
+    return notification.actionPath;
+  }
+
+  if (notification.entityType === 'feedback') {
+    return '/authority/feedback-center';
+  }
+
+  if (
+    notification.entityType === 'forum_post' ||
+    notification.entityType === 'forum_comment'
+  ) {
+    return '/authority/forum';
+  }
+
+  if (notification.entityType === 'complaint' && notification.entityId) {
+    return `/authority/complaints/${notification.entityId}`;
+  }
+
+  return '/authority';
 }
 
 function groupNotifications(
@@ -165,155 +183,38 @@ function groupNotifications(
 export default function AuthorityNotifications() {
   const router = useRouter();
   const {
-    complaints,
-    loading: complaintsLoading,
-    error: complaintsError,
-    refreshComplaints,
-  } = useAuthorityComplaints();
+    notifications: inboxNotifications,
+    unreadCount,
+    loading,
+    refreshing,
+    error,
+    refresh,
+    markAsRead,
+    markAllAsRead,
+    markAllAsSeen,
+  } = useNotifications({ limit: 60 });
   const [filter, setFilter] = useState<NotificationFilter>('ALL');
-  const [forumNotifications, setForumNotifications] = useState<
-    ForumNotification[]
-  >([]);
-  const [forumLoading, setForumLoading] = useState(true);
-  const [readNotificationIds, setReadNotificationIds] = useState<Set<string>>(
-    new Set(),
-  );
-  const [readStateLoading, setReadStateLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-
-  const loadForumNotifications = useCallback(async () => {
-    try {
-      const notifications =
-        await notificationService.fetchForumNotifications('authority');
-      setForumNotifications(notifications);
-    } finally {
-      setForumLoading(false);
-    }
-  }, []);
 
   useEffect(() => {
-    void loadForumNotifications();
-  }, [loadForumNotifications]);
-
-  useEffect(() => {
-    async function loadReadState() {
-      try {
-        const storedValue = await AsyncStorage.getItem(
-          READ_NOTIFICATION_IDS_KEY,
-        );
-        const storedIds: unknown = storedValue ? JSON.parse(storedValue) : [];
-
-        if (Array.isArray(storedIds)) {
-          setReadNotificationIds(
-            new Set(storedIds.filter((id): id is string => typeof id === 'string')),
-          );
-        }
-      } catch (error) {
-        console.warn('Could not load authority notification read state:', error);
-      } finally {
-        setReadStateLoading(false);
-      }
+    if (!loading && inboxNotifications.length > 0) {
+      void markAllAsSeen();
     }
+  }, [inboxNotifications.length, loading, markAllAsSeen]);
 
-    void loadReadState();
-  }, []);
-
-  const sourceNotifications = useMemo<AuthorityNotificationItem[]>(() => {
-    const complaintNotifications = complaints.flatMap((complaint) => {
-      const eventDate =
-        complaint.status === 'RESOLVED'
-          ? parseDate(complaint.resolvedAt, parseDate(complaint.timestamp))
-          : complaint.status === 'IN PROGRESS'
-            ? parseDate(complaint.startedAt, parseDate(complaint.timestamp))
-            : parseDate(complaint.timestamp);
-      const statusNotification: AuthorityNotificationItem = {
-        id: `complaint-${complaint.id}-${complaint.status}`,
-        title:
-          complaint.status === 'PENDING'
-            ? 'Complaint ready for action'
-            : complaint.status === 'IN PROGRESS'
-              ? 'Work started'
-              : 'Complaint resolved',
-        message: `${complaint.displayId} · ${complaint.title}`,
-        kind: 'complaint',
-        createdAt: eventDate,
-        target: { type: 'complaint', complaintId: complaint.id },
-        read: false,
-      };
-
-      const feedbackNotifications: AuthorityNotificationItem[] =
-        complaint.feedback.map((feedback) => ({
-          id: `feedback-${feedback.id}`,
-          title: 'New resident feedback',
-          message: `${complaint.displayId} received a ${feedback.rating}-star rating.`,
-          kind: 'feedback',
-          createdAt: parseDate(feedback.createdAt, eventDate),
-          target: { type: 'complaint', complaintId: complaint.id },
-          read: false,
-        }));
-
-      const deadlineNotifications: AuthorityNotificationItem[] = [];
-
-      if (complaint.status === 'IN PROGRESS' && complaint.deadline) {
-        const deadline = parseDate(`${complaint.deadline}T12:00:00`);
-        const differenceInDays = Math.ceil(
-          (startOfDay(deadline).getTime() - startOfDay(new Date()).getTime()) /
-            86_400_000,
-        );
-
-        if (differenceInDays >= -30 && differenceInDays <= 2) {
-          deadlineNotifications.push({
-            id: `deadline-${complaint.id}-${complaint.deadline}`,
-            title:
-              differenceInDays < 0
-                ? 'Work deadline overdue'
-                : 'Work deadline approaching',
-            message: getDeadlineMessage(complaint.displayId, deadline),
-            kind: 'deadline',
-            createdAt: new Date(),
-            target: { type: 'complaint', complaintId: complaint.id },
-            read: false,
-          });
-        }
-      }
-
-      return [
-        ...deadlineNotifications,
-        ...feedbackNotifications,
-        statusNotification,
-      ];
-    });
-
-    const forumItems: AuthorityNotificationItem[] = forumNotifications.map(
-      (notification) => ({
+  const notifications = useMemo<AuthorityNotificationItem[]>(
+    () =>
+      inboxNotifications.map((notification) => ({
         id: notification.id,
         title: notification.title,
-        message: notification.message,
-        kind: notification.type,
+        message: notification.body,
+        kind: getNotificationKind(notification),
         createdAt: notification.createdAt,
-        target: { type: 'forum' },
-        read: notification.read,
-      }),
-    );
-
-    return [...complaintNotifications, ...forumItems]
-      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
-      .slice(0, 60);
-  }, [complaints, forumNotifications]);
-
-  const notifications = useMemo(
-    () =>
-      sourceNotifications.map((notification) => ({
-        ...notification,
-        read:
-          notification.read || readNotificationIds.has(notification.id),
+        actionPath: getAuthorityNotificationPath(notification),
+        read: Boolean(notification.readAt),
       })),
-    [readNotificationIds, sourceNotifications],
+    [inboxNotifications],
   );
 
-  const unreadCount = notifications.filter(
-    (notification) => !notification.read,
-  ).length;
   const visibleNotifications = useMemo(
     () =>
       notifications.filter(
@@ -325,78 +226,15 @@ export default function AuthorityNotifications() {
     () => groupNotifications(visibleNotifications),
     [visibleNotifications],
   );
-  const initialLoading =
-    readStateLoading ||
-    (complaintsLoading && complaints.length === 0) ||
-    (forumLoading && forumNotifications.length === 0);
-
-  useEffect(() => {
-    if (initialLoading) return;
-
-    void AsyncStorage.setItem(
-      AUTHORITY_UNREAD_NOTIFICATION_COUNT_KEY,
-      String(unreadCount),
-    ).catch((error) => {
-      console.warn('Could not save authority unread count:', error);
-    });
-  }, [initialLoading, unreadCount]);
-
-  const persistReadIds = useCallback(async (ids: Set<string>) => {
-    try {
-      await AsyncStorage.setItem(
-        READ_NOTIFICATION_IDS_KEY,
-        JSON.stringify([...ids]),
-      );
-    } catch (error) {
-      console.warn('Could not save authority notification read state:', error);
-    }
-  }, []);
-
-  const markAsRead = useCallback(
-    (notificationId: string) => {
-      if (readNotificationIds.has(notificationId)) return;
-
-      const nextIds = new Set(readNotificationIds);
-      nextIds.add(notificationId);
-      setReadNotificationIds(nextIds);
-      void persistReadIds(nextIds);
-    },
-    [persistReadIds, readNotificationIds],
-  );
-
-  const markAllAsRead = useCallback(() => {
-    const nextIds = new Set(readNotificationIds);
-    notifications.forEach((notification) => nextIds.add(notification.id));
-    setReadNotificationIds(nextIds);
-    void persistReadIds(nextIds);
-  }, [notifications, persistReadIds, readNotificationIds]);
+  const initialLoading = loading && notifications.length === 0;
 
   const openNotification = useCallback(
     (notification: AuthorityNotificationItem) => {
-      markAsRead(notification.id);
-
-      if (notification.target.type === 'forum') {
-        router.push('/authority/forum' as never);
-        return;
-      }
-
-      router.push({
-        pathname: '/authority/complaints/[complaintId]',
-        params: { complaintId: notification.target.complaintId },
-      } as never);
+      void markAsRead(notification.id);
+      router.push(notification.actionPath as never);
     },
     [markAsRead, router],
   );
-
-  const refresh = useCallback(async () => {
-    setRefreshing(true);
-
-    try {
-      await Promise.all([refreshComplaints(), loadForumNotifications()]);
-    } finally {
-      setRefreshing(false);
-    }
-  }, [loadForumNotifications, refreshComplaints]);
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -429,7 +267,7 @@ export default function AuthorityNotifications() {
                 accessibilityRole="button"
                 accessibilityLabel="Mark all notifications as read"
                 hitSlop={8}
-                onPress={markAllAsRead}
+                onPress={() => void markAllAsRead()}
                 style={({ pressed }) => [
                   styles.markAllButton,
                   pressed && styles.buttonPressed,
@@ -476,12 +314,12 @@ export default function AuthorityNotifications() {
             })}
           </View>
 
-          {complaintsError ? (
+          {error ? (
             <View style={styles.errorCard}>
               <Ionicons name="alert-circle-outline" size={21} color="#B42318" />
               <View style={styles.errorCopy}>
-                <Text style={styles.errorTitle}>Some updates could not load</Text>
-                <Text style={styles.errorText}>{complaintsError}</Text>
+                <Text style={styles.errorTitle}>Notifications could not update</Text>
+                <Text style={styles.errorText}>{error}</Text>
               </View>
               <Pressable
                 accessibilityRole="button"

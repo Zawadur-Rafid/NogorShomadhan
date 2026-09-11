@@ -1,4 +1,3 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
@@ -16,7 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useAuthorityComplaints } from '@/components/authority/authority-complaints-context';
 import type { AuthorityComplaintStatus } from '@/components/authority/store-authority-dashboard';
-import { AUTHORITY_UNREAD_NOTIFICATION_COUNT_KEY } from '@/utils/authority-notification-storage';
+import { notificationService } from '@/services/notification.service';
 
 const AUTHORITY_NAME = 'Community Authority';
 
@@ -44,19 +43,22 @@ export default function AuthorityDashboard() {
   const { complaints } = useAuthorityComplaints();
 
   const [profileOpen, setProfileOpen] = useState(false);
-  const [hasUnreadNotifications, setHasUnreadNotifications] = useState(true);
+  const [hasUnreadNotifications, setHasUnreadNotifications] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
       let active = true;
 
-      void AsyncStorage.getItem(
-        AUTHORITY_UNREAD_NOTIFICATION_COUNT_KEY,
-      ).then((storedCount) => {
-        if (active && storedCount !== null) {
-          setHasUnreadNotifications(Number(storedCount) > 0);
-        }
-      });
+      void notificationService
+        .fetchUnreadCount()
+        .then((unreadCount) => {
+          if (active) {
+            setHasUnreadNotifications(unreadCount > 0);
+          }
+        })
+        .catch((error) => {
+          console.warn('Could not load authority unread count:', error);
+        });
 
       return () => {
         active = false;
