@@ -98,6 +98,13 @@
   - `Enable update for public`: Allows editing feedback replies.
   - `Enable delete for public`: Allows deleting feedback replies.
 
+### `app_settings`
+- **RLS Enabled:** Yes
+- **Policies:**
+  - `Enable select for public`: Allows all users to read the singleton settings row.
+  - `Enable update for public`: Allows the app to update settings toggles and the maintenance mode.
+- **No delete or insert policy:** The singleton row is seeded by the migration, so clients never insert or delete it.
+
 ### `notifications`
 - **RLS Enabled:** Yes
 - **Policies:**
