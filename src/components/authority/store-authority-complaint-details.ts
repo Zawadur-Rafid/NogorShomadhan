@@ -53,6 +53,7 @@ export type AuthorityResidentFeedback = {
   rating: number;
   comment: string;
   receivedAt: string;
+  createdAt?: string;
   replies?: AuthorityFeedbackReply[];
 };
 

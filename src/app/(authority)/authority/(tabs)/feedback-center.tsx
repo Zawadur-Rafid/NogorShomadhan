@@ -36,6 +36,7 @@ export default function AuthorityFeedbackCenter() {
         complaint.feedback.map((feedback) => ({
           id: feedback.id,
           complaintId: complaint.id,
+          complaintDisplayId: complaint.displayId,
           complaintTitle: complaint.title,
           category: complaint.category,
           resident: feedback.resident,
@@ -108,7 +109,7 @@ export default function AuthorityFeedbackCenter() {
               ...(current[feedbackId] ?? []),
               {
                 id: res?.reply_id ?? `CMT-${Date.now()}`,
-                author: res?.account?.full_name ?? 'Community Authority',
+                author: 'Community Authority',
                 initials: 'CA',
                 message,
                 postedAt: 'Just now',
@@ -201,7 +202,7 @@ export default function AuthorityFeedbackCenter() {
                     <View style={styles.categoryBadge}>
                       <Text style={styles.categoryText}>{feedback.category}</Text>
                     </View>
-                    <Text style={styles.complaintId}>{feedback.complaintId}</Text>
+                    <Text style={styles.complaintId}>{feedback.complaintDisplayId}</Text>
                   </View>
                   <Text style={styles.complaintTitle}>{feedback.complaintTitle}</Text>
                   <View style={styles.locationRow}>

@@ -10,6 +10,7 @@ import type {
 } from '@/components/authority/store-authority-complaint-details';
 import { formatAuthorityAddress } from '@/components/authority/authority-location';
 import type { AuthorityAccountProfile } from '@/types/authority-account';
+import { formatComplaintDisplayId } from '@/utils/complaint-display-id';
 
 type ComplaintStatus =
   | 'unverified'
@@ -595,7 +596,7 @@ export async function getAuthorityComplaints(): Promise<
   }
 
   return Promise.all(
-    complaints.map(async (complaint) => {
+    complaints.map(async (complaint, complaintIndex) => {
       const complaintEvidence = evidenceRows.filter(
         (item) => item.comp_id === complaint.comp_id,
       );
@@ -730,14 +731,11 @@ export async function getAuthorityComplaints(): Promise<
           history.from_status === 'pending' &&
           history.to_status === 'in progress',
       );
-      const approvingAccount = startHistory
-        ? accountMap.get(startHistory.changed_by_acc_id)
-        : undefined;
       const approvedBy =
-        startHistory && approvingAccount
+        startHistory
           ? {
-              name: approvingAccount.full_name,
-              initials: getInitials(approvingAccount.full_name),
+              name: 'Community Authority',
+              initials: 'CA',
               role: 'Community Authority',
               approvedAt: formatDate(startHistory.changed_at),
             }
@@ -768,6 +766,9 @@ export async function getAuthorityComplaints(): Promise<
 
       return {
         id: complaint.comp_id,
+        displayId: formatComplaintDisplayId(
+          complaints.length - complaintIndex,
+        ),
         title: complaint.title,
         description: complaint.description,
         date: formatShortDate(complaint.timestamp),
@@ -826,16 +827,6 @@ export async function getAuthorityComplaints(): Promise<
               : 'Recently';
 
             const replies = (item.replies || []).map((r: any) => {
-              const authName =
-                r.account?.full_name ||
-                (r.account?.role === 'authority'
-                  ? 'Community Authority'
-                  : 'Authority');
-              const authParts = authName.trim().split(' ');
-              const authInitials =
-                authParts.length >= 2
-                  ? `${authParts[0][0]}${authParts[1][0]}`.toUpperCase()
-                  : authName.substring(0, 2).toUpperCase();
 
               const replyDate = new Date(r.created_at);
               const postedAt = !isNaN(replyDate.getTime())
@@ -848,8 +839,8 @@ export async function getAuthorityComplaints(): Promise<
 
               return {
                 id: r.reply_id,
-                author: authName,
-                initials: authInitials,
+                author: 'Community Authority',
+                initials: 'CA',
                 message: r.message,
                 postedAt,
                 authority: true,
@@ -864,6 +855,7 @@ export async function getAuthorityComplaints(): Promise<
               rating: item.rating,
               comment: item.comment,
               receivedAt,
+              createdAt: item.created_at,
               replies,
             };
           }),

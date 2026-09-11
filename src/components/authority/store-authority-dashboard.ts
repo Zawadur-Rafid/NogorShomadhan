@@ -2,6 +2,7 @@ export type AuthorityComplaintStatus = 'PENDING' | 'IN PROGRESS' | 'RESOLVED';
 
 export type AuthorityComplaint = {
   id: string;
+  displayId: string;
   title: string;
   description: string;
   date: string;
