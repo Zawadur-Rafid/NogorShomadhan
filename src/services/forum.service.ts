@@ -7,6 +7,8 @@ export interface DbAccount {
   role: string;
 }
 
+export type ForumStatus = 'Announcement' | 'Update' | 'Alert';
+
 export interface DbForumComment {
   comment_id: string;
   post_id: string;
@@ -23,7 +25,7 @@ export interface DbForumPost {
   acc_id: string;
   title: string;
   body: string;
-  status: 'Announcement' | 'Update' | 'Alert';
+  status: ForumStatus;
   is_official: boolean;
   created_at: string;
   account?: DbAccount | null;
@@ -81,78 +83,45 @@ export const forumService = {
     }
   },
 
-  /**
-   * Create a new forum post or official announcement.
-   */
-  async createPost(params: {
+  /** Create a verified post from an admin or community authority account. */
+  async createOfficialPost(params: {
     acc_id: string;
     title: string;
     body: string;
-    status: 'Announcement' | 'Update' | 'Alert';
-    is_official?: boolean;
+    status: ForumStatus;
   }): Promise<DbForumPost | null> {
-    try {
-      const { data, error } = await supabase
-        .from('forum_posts')
-        .insert([
-          {
-            acc_id: params.acc_id,
-            title: params.title,
-            body: params.body,
-            status: params.status,
-            is_official: params.is_official ?? false,
-          },
-        ])
-        .select(`*, account:account!acc_id(full_name, username, role)`)
-        .single();
-
-      if (error) {
-        console.warn('Supabase post creation skipped (run supabase_forum.sql in Supabase SQL editor):', error.message);
-        return null;
-      }
-      return data;
-    } catch (e: any) {
-      console.warn('Supabase post creation error:', e?.message || e);
-      return null;
-    }
+    return createForumPost({ ...params, is_official: true });
   },
 
-  /**
-   * Post a comment or a reply to a specific comment on a post.
-   * `parent_comment_id` links the reply to the target parent comment.
-   * `acc_id` stores the user/resident ID making the comment.
-   */
-  async createComment(params: {
+  /** Create the only post type available to residents. */
+  async createResidentDiscussion(params: {
+    acc_id: string;
+    title: string;
+    body: string;
+  }): Promise<DbForumPost | null> {
+    return createForumPost({
+      ...params,
+      status: 'Update',
+      is_official: false,
+    });
+  },
+
+  async createOfficialComment(params: {
     post_id: string;
     acc_id: string;
     parent_comment_id?: string | null;
     content: string;
-    is_official?: boolean;
   }): Promise<DbForumComment | null> {
-    try {
-      const { data, error } = await supabase
-        .from('forum_comments')
-        .insert([
-          {
-            post_id: params.post_id,
-            acc_id: params.acc_id,
-            parent_comment_id: params.parent_comment_id || null,
-            content: params.content,
-            is_official: params.is_official ?? false,
-          },
-        ])
-        .select(`*, account:account!acc_id(full_name, username, role)`)
-        .single();
+    return createForumComment({ ...params, is_official: true });
+  },
 
-      if (error) {
-        console.warn('Supabase comment creation skipped (run supabase_forum.sql in Supabase SQL editor):', error.message);
-        return null;
-      }
-      return data;
-    } catch (e: any) {
-      console.warn('Supabase comment creation error:', e?.message || e);
-      return null;
-    }
+  async createResidentComment(params: {
+    post_id: string;
+    acc_id: string;
+    parent_comment_id?: string | null;
+    content: string;
+  }): Promise<DbForumComment | null> {
+    return createForumComment({ ...params, is_official: false });
   },
 
   /**
@@ -197,3 +166,53 @@ export const forumService = {
     }
   },
 };
+
+async function createForumPost(params: {
+  acc_id: string;
+  title: string;
+  body: string;
+  status: ForumStatus;
+  is_official: boolean;
+}): Promise<DbForumPost | null> {
+  try {
+    const { data, error } = await supabase
+      .from('forum_posts')
+      .insert([params])
+      .select(`*, account:account!acc_id(full_name, username, role)`)
+      .single();
+
+    if (error) {
+      console.warn('Supabase post creation skipped (run supabase_forum.sql in Supabase SQL editor):', error.message);
+      return null;
+    }
+    return data;
+  } catch (e: any) {
+    console.warn('Supabase post creation error:', e?.message || e);
+    return null;
+  }
+}
+
+async function createForumComment(params: {
+  post_id: string;
+  acc_id: string;
+  parent_comment_id?: string | null;
+  content: string;
+  is_official: boolean;
+}): Promise<DbForumComment | null> {
+  try {
+    const { data, error } = await supabase
+      .from('forum_comments')
+      .insert([{ ...params, parent_comment_id: params.parent_comment_id || null }])
+      .select(`*, account:account!acc_id(full_name, username, role)`)
+      .single();
+
+    if (error) {
+      console.warn('Supabase comment creation skipped (run supabase_forum.sql in Supabase SQL editor):', error.message);
+      return null;
+    }
+    return data;
+  } catch (e: any) {
+    console.warn('Supabase comment creation error:', e?.message || e);
+    return null;
+  }
+}

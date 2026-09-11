@@ -1,19 +1,25 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import AdminBottomNav from "@/components/AdminBottomNav";
-import { forumService, DbForumPost, DbForumComment } from "@/services/forum.service";
+import { forumService, ForumStatus } from "@/services/forum.service";
 import { confirmAction } from "@/utils/confirm";
+import {
+  ForumCategory,
+  forumCategories,
+  forumCategoryTheme,
+  getForumCategory,
+  getForumSourceLabel,
+  officialPostOptions,
+} from "@/utils/forum-presentation";
 import {
   CommunityEventViewerModal,
   EventData,
   formatDateRangeReadable,
   parseEventFromBody,
 } from "@/components/CommunityEventModal";
-
-type ForumStatus = "Announcement" | "Update" | "Alert";
 
 interface ForumCommentUI {
   id: string;
@@ -116,12 +122,6 @@ const initialFallbackPosts: ForumPostUI[] = [
   },
 ];
 
-const statusStyle: Record<ForumStatus, { background: string; color: string }> = {
-  Announcement: { background: "#EAF3FF", color: "#1D4ED8" },
-  Update: { background: "#EAF8EF", color: "#027A48" },
-  Alert: { background: "#FFF1F0", color: "#B42318" },
-};
-
 export default function AdminForumScreen() {
   const [posts, setPosts] = useState<ForumPostUI[]>(initialFallbackPosts);
   const [postTitle, setPostTitle] = useState("");
@@ -129,7 +129,7 @@ export default function AdminForumScreen() {
   const [postStatus, setPostStatus] = useState<ForumStatus>("Announcement");
   const [commentDrafts, setCommentDrafts] = useState<Record<string, string>>({});
   const [replyTarget, setReplyTarget] = useState<Record<string, string | null>>({});
-  const [activeFilter, setActiveFilter] = useState<ForumStatus | "All">("All");
+  const [activeFilter, setActiveFilter] = useState<ForumCategory>("All");
   const [selectedEventPost, setSelectedEventPost] = useState<{
     title: string;
     event: EventData;
@@ -137,14 +137,13 @@ export default function AdminForumScreen() {
     author?: string;
   } | null>(null);
 
-  const loadPostsFromDb = async () => {
+  const loadPostsFromDb = useCallback(async () => {
     try {
       const dbPosts = await forumService.fetchPosts();
-      if (dbPosts && dbPosts.length > 0) {
-        const formatted: ForumPostUI[] = dbPosts.map((p) => ({
+      const formatted: ForumPostUI[] = dbPosts.map((p) => ({
           id: p.post_id,
-          author: p.account?.full_name || (p.is_official ? "Administrator" : "Resident"),
-          initials: getInitials(p.account?.full_name || (p.is_official ? "Admin" : "Resident")),
+          author: getForumSourceLabel(p.account, p.is_official),
+          initials: getInitials(getForumSourceLabel(p.account, p.is_official)),
           status: p.status,
           title: p.title,
           body: p.body,
@@ -152,34 +151,34 @@ export default function AdminForumScreen() {
           official: p.is_official,
           comments: (p.comments || []).map((c) => ({
             id: c.comment_id,
-            author: c.account?.full_name || (c.is_official ? "Administrator" : "Resident"),
-            initials: getInitials(c.account?.full_name || (c.is_official ? "Admin" : "Resident")),
+            author: getForumSourceLabel(c.account, c.is_official),
+            initials: getInitials(getForumSourceLabel(c.account, c.is_official)),
             text: c.content,
             time: formatTimeAgo(c.created_at),
             parent_comment_id: c.parent_comment_id,
             official: c.is_official,
           })),
-        }));
-        setPosts(formatted);
-      }
+      }));
+      setPosts(formatted);
     } catch (e) {
       console.warn("Could not load forum posts from Supabase:", e);
     }
-  };
-
-  useEffect(() => {
-    loadPostsFromDb();
   }, []);
 
+  useEffect(() => {
+    void Promise.resolve().then(loadPostsFromDb);
+  }, [loadPostsFromDb]);
+
   const visiblePosts = useMemo(
-    () => (activeFilter === "All" ? posts : posts.filter((post) => post.status === activeFilter)),
+    () => (activeFilter === "All" ? posts : posts.filter((post) => getForumCategory(post) === activeFilter)),
     [activeFilter, posts],
   );
 
   const publishPost = async () => {
     if (!postTitle.trim() || !postBody.trim()) return;
 
-    const confirmed = await confirmAction('Are you sure you want to submit this announcement?');
+    const postType = officialPostOptions.find((option) => option.status === postStatus)?.label ?? 'official post';
+    const confirmed = await confirmAction(`Are you sure you want to publish this ${postType.toLowerCase()}?`);
     if (!confirmed) return;
 
     const newTitle = postTitle.trim();
@@ -188,7 +187,7 @@ export default function AdminForumScreen() {
     setPostBody("");
 
     const newPostUI: ForumPostUI = {
-      id: `post-${Date.now()}`,
+      id: createLocalId('post'),
       author: "Administrator",
       initials: "AD",
       status: postStatus,
@@ -202,15 +201,14 @@ export default function AdminForumScreen() {
 
     try {
       const accId = (await AsyncStorage.getItem("acc_id")) || "00000000-0000-0000-0000-000000000000";
-      await forumService.createPost({
+      await forumService.createOfficialPost({
         acc_id: accId,
         title: newTitle,
         body: newBody,
         status: postStatus,
-        is_official: true,
       });
       loadPostsFromDb();
-    } catch (e) {
+    } catch {
       console.log("Locally added post; database sync skipped.");
     }
   };
@@ -228,7 +226,7 @@ export default function AdminForumScreen() {
     setReplyTarget((current) => ({ ...current, [postId]: null }));
 
     const newCommentUI: ForumCommentUI = {
-      id: `comment-${Date.now()}`,
+      id: createLocalId('comment'),
       author: "Administrator",
       initials: "AD",
       text,
@@ -247,15 +245,14 @@ export default function AdminForumScreen() {
 
     try {
       const accId = (await AsyncStorage.getItem("acc_id")) || "00000000-0000-0000-0000-000000000000";
-      await forumService.createComment({
+      await forumService.createOfficialComment({
         post_id: postId,
         acc_id: accId,
         parent_comment_id: parentId,
         content: text,
-        is_official: true,
       });
       loadPostsFromDb();
-    } catch (e) {
+    } catch {
       console.log("Locally added comment; database sync skipped.");
     }
   };
@@ -273,7 +270,7 @@ export default function AdminForumScreen() {
       if (!postId.startsWith("post-")) {
         await forumService.deletePost(postId);
       }
-    } catch (e) {
+    } catch {
       console.log("Local post deletion completed.");
     }
   };
@@ -296,7 +293,7 @@ export default function AdminForumScreen() {
         await forumService.deleteComment(commentId);
         Alert.alert("Deleted", "Comment was removed from the database.");
       }
-    } catch (e: any) {
+    } catch {
       console.log("Local comment deletion completed.");
     }
   };
@@ -311,9 +308,11 @@ export default function AdminForumScreen() {
           </Text>
         </View>
 
-        {/* Create Admin Announcement / Post */}
         <View style={styles.composer}>
-          <Text style={styles.panelTitle}>Create an admin post / announcement</Text>
+          <Text style={styles.panelTitle}>Create an official community post</Text>
+          <Text style={styles.panelSubtitle}>
+            Select the message type so residents can quickly understand its purpose.
+          </Text>
           <TextInput
             value={postTitle}
             onChangeText={setPostTitle}
@@ -324,33 +323,35 @@ export default function AdminForumScreen() {
           <TextInput
             value={postBody}
             onChangeText={setPostBody}
-            placeholder="Write an announcement, update, or alert..."
+            placeholder="Write the official message..."
             placeholderTextColor="#98A2B3"
             multiline
             style={styles.bodyInput}
           />
           <View style={styles.composerBottom}>
             <View style={styles.statusOptions}>
-              {(["Announcement", "Update", "Alert"] as ForumStatus[]).map((status) => (
+              {officialPostOptions.map((option) => (
                 <TouchableOpacity
-                  key={status}
-                  onPress={() => setPostStatus(status)}
+                  key={option.status}
+                  accessibilityLabel={`${option.label}: ${option.description}`}
+                  onPress={() => setPostStatus(option.status)}
                   style={[
                     styles.statusOption,
-                    postStatus === status && {
-                      backgroundColor: statusStyle[status].background,
-                      borderColor: statusStyle[status].color,
+                    postStatus === option.status && {
+                      backgroundColor: forumCategoryTheme[option.label].background,
+                      borderColor: forumCategoryTheme[option.label].color,
                     },
                   ]}
                 >
                   <Text
                     style={[
                       styles.statusOptionText,
-                      postStatus === status && { color: statusStyle[status].color },
+                      postStatus === option.status && { color: forumCategoryTheme[option.label].color },
                     ]}
                   >
-                    {status}
+                    {option.label}
                   </Text>
+                  <Text style={styles.statusOptionDescription}>{option.description}</Text>
                 </TouchableOpacity>
               ))}
             </View>
@@ -360,14 +361,15 @@ export default function AdminForumScreen() {
               style={[styles.publishButton, (!postTitle.trim() || !postBody.trim()) && styles.disabledButton]}
             >
               <Ionicons name="send" size={16} color="#FFFFFF" />
-              <Text style={styles.publishText}>Publish</Text>
+              <Text style={styles.publishText}>
+                Publish {officialPostOptions.find((option) => option.status === postStatus)?.label}
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
 
-        {/* Category Filter */}
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filters}>
-          {(["All", "Announcement", "Update", "Alert"] as const).map((filter) => (
+          {forumCategories.map((filter) => (
             <TouchableOpacity
               key={filter}
               onPress={() => setActiveFilter(filter)}
@@ -395,9 +397,9 @@ export default function AdminForumScreen() {
               </View>
 
               <View style={styles.headerActions}>
-                <View style={[styles.statusBadge, { backgroundColor: statusStyle[post.status].background }]}>
-                  <Text style={[styles.statusText, { color: statusStyle[post.status].color }]}>
-                    {post.status}
+                <View style={[styles.statusBadge, { backgroundColor: forumCategoryTheme[getForumCategory(post)].background }]}>
+                  <Text style={[styles.statusText, { color: forumCategoryTheme[getForumCategory(post)].color }]}>
+                    {getForumCategory(post)}
                   </Text>
                 </View>
                 <TouchableOpacity
@@ -584,6 +586,10 @@ function formatTimeAgo(timestamp: string): string {
   return `${Math.floor(diffHours / 24)} days ago`;
 }
 
+function createLocalId(prefix: string): string {
+  return `${prefix}-${Date.now()}`;
+}
+
 const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: "#F8F9FC" },
   content: { width: "100%", maxWidth: 900, alignSelf: "center", padding: 16, paddingBottom: 102, gap: 16 },
@@ -592,12 +598,14 @@ const styles = StyleSheet.create({
   subtitle: { marginTop: 4, color: "#40484D", fontSize: 14, lineHeight: 20 },
   composer: { padding: 16, borderRadius: 14, backgroundColor: "#FFFFFF", borderWidth: 1, borderColor: "#DDE3E8", gap: 10 },
   panelTitle: { color: "#191C1E", fontSize: 17, fontWeight: "600" },
+  panelSubtitle: { color: "#667085", fontSize: 12, lineHeight: 17 },
   titleInput: { minHeight: 42, paddingHorizontal: 12, borderWidth: 1, borderColor: "#D0D5DD", borderRadius: 8, color: "#191C1E", fontSize: 14 },
   bodyInput: { minHeight: 88, padding: 12, borderWidth: 1, borderColor: "#D0D5DD", borderRadius: 8, color: "#191C1E", fontSize: 14, textAlignVertical: "top" },
   composerBottom: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 10 },
   statusOptions: { flex: 1, flexDirection: "row", flexWrap: "wrap", gap: 6 },
-  statusOption: { paddingHorizontal: 9, paddingVertical: 6, borderRadius: 14, borderWidth: 1, borderColor: "#D0D5DD" },
+  statusOption: { minWidth: 142, paddingHorizontal: 10, paddingVertical: 8, borderRadius: 10, borderWidth: 1, borderColor: "#D0D5DD" },
   statusOptionText: { color: "#667085", fontSize: 11, fontWeight: "600" },
+  statusOptionDescription: { maxWidth: 150, marginTop: 2, color: "#7A8490", fontSize: 9, lineHeight: 12 },
   publishButton: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 12, paddingVertical: 10, borderRadius: 8, backgroundColor: "#00475E" },
   disabledButton: { opacity: 0.45 },
   publishText: { color: "#FFFFFF", fontSize: 12, fontWeight: "700" },

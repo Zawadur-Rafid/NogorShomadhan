@@ -15,8 +15,15 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import BottomNav from "@/components/BottomNav";
 import ResidentPageHeader from "@/components/resident-page-header";
-import { forumService } from "@/services/forum.service";
+import { forumService, ForumStatus } from "@/services/forum.service";
 import { confirmAction } from "@/utils/confirm";
+import {
+  ForumCategory,
+  forumCategories,
+  forumCategoryTheme,
+  getForumCategory,
+  getForumSourceLabel,
+} from "@/utils/forum-presentation";
 import {
   CommunityEventViewerModal,
   EventData,
@@ -24,7 +31,6 @@ import {
   parseEventFromBody,
 } from "@/components/CommunityEventModal";
 
-type ForumStatus = "Announcement" | "Update" | "Alert";
 interface ForumCommentUI {
   id: string;
   author: string;
@@ -125,12 +131,6 @@ const initialPosts: ForumPostUI[] = [
   },
 ];
 
-const statusStyle: Record<ForumStatus, { background: string; color: string }> = {
-  Announcement: { background: "#EAF3FF", color: "#1D4ED8" },
-  Update: { background: "#EAF8EF", color: "#027A48" },
-  Alert: { background: "#FFF1F0", color: "#B42318" },
-};
-
 export default function ResidentForumScreen() {
   const { postId: postIdParam, commentId: commentIdParam } = useLocalSearchParams<{
     postId?: string | string[];
@@ -147,7 +147,7 @@ export default function ResidentForumScreen() {
   const [postBody, setPostBody] = useState("");
   const [commentDrafts, setCommentDrafts] = useState<Record<string, string>>({});
   const [replyTarget, setReplyTarget] = useState<Record<string, string | null>>({});
-  const [activeFilter, setActiveFilter] = useState<ForumStatus | "All">("All");
+  const [activeFilter, setActiveFilter] = useState<ForumCategory>("All");
   const [selectedEventPost, setSelectedEventPost] = useState<{
     title: string;
     event: EventData;
@@ -155,14 +155,13 @@ export default function ResidentForumScreen() {
     author?: string;
   } | null>(null);
 
-  const loadPostsFromDb = async () => {
+  const loadPostsFromDb = useCallback(async () => {
     try {
       const dbPosts = await forumService.fetchPosts();
-      if (dbPosts && dbPosts.length > 0) {
-        const formatted: ForumPostUI[] = dbPosts.map((p) => ({
+      const formatted: ForumPostUI[] = dbPosts.map((p) => ({
           id: p.post_id,
-          author: p.account?.full_name || (p.is_official ? "Authority" : "Resident"),
-          initials: getInitials(p.account?.full_name || (p.is_official ? "Authority" : "Resident")),
+          author: getForumSourceLabel(p.account, p.is_official),
+          initials: getInitials(getForumSourceLabel(p.account, p.is_official)),
           status: p.status,
           title: p.title,
           body: p.body,
@@ -170,64 +169,30 @@ export default function ResidentForumScreen() {
           official: p.is_official,
           comments: (p.comments || []).map((c) => ({
             id: c.comment_id,
-            author: c.account?.full_name || (c.is_official ? "Authority" : "Resident"),
-            initials: getInitials(c.account?.full_name || (c.is_official ? "Authority" : "Resident")),
+            author: getForumSourceLabel(c.account, c.is_official),
+            initials: getInitials(getForumSourceLabel(c.account, c.is_official)),
             text: c.content,
             time: formatTimeAgo(c.created_at),
             parent_comment_id: c.parent_comment_id,
             official: c.is_official,
           })),
-        }));
-        setPosts(formatted);
-      }
+      }));
+      setPosts(formatted);
     } catch (e) {
       console.warn("Could not load posts from Supabase:", e);
     }
-  };
+  }, []);
 
   useEffect(() => {
-    let cancelled = false;
-
-    forumService.fetchPosts()
-      .then((dbPosts) => {
-        if (!cancelled && dbPosts && dbPosts.length > 0) {
-          const formatted: ForumPostUI[] = dbPosts.map((p) => ({
-            id: p.post_id,
-            author: p.account?.full_name || (p.is_official ? "Authority" : "Resident"),
-            initials: getInitials(p.account?.full_name || (p.is_official ? "Authority" : "Resident")),
-            status: p.status,
-            title: p.title,
-            body: p.body,
-            time: formatTimeAgo(p.created_at),
-            official: p.is_official,
-            comments: (p.comments || []).map((c) => ({
-              id: c.comment_id,
-              author: c.account?.full_name || (c.is_official ? "Authority" : "Resident"),
-              initials: getInitials(c.account?.full_name || (c.is_official ? "Authority" : "Resident")),
-              text: c.content,
-              time: formatTimeAgo(c.created_at),
-              parent_comment_id: c.parent_comment_id,
-              official: c.is_official,
-            })),
-          }));
-          setPosts(formatted);
-        }
-      })
-      .catch((error) => {
-        console.warn("Could not load posts from Supabase:", error);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+    void Promise.resolve().then(loadPostsFromDb);
+  }, [loadPostsFromDb]);
 
   const displayedFilter = targetPostId ? 'All' : activeFilter;
   const visiblePosts = useMemo(
     () =>
       displayedFilter === "All"
         ? posts
-        : posts.filter((post) => post.status === displayedFilter),
+        : posts.filter((post) => getForumCategory(post) === displayedFilter),
     [displayedFilter, posts],
   );
 
@@ -279,7 +244,7 @@ export default function ResidentForumScreen() {
   const publishPost = async () => {
     if (!postTitle.trim() || !postBody.trim()) return;
 
-    const confirmed = await confirmAction('Are you sure you want to submit this forum post?');
+    const confirmed = await confirmAction('Are you sure you want to post this resident discussion?');
     if (!confirmed) return;
 
     const title = postTitle.trim();
@@ -301,12 +266,10 @@ export default function ResidentForumScreen() {
 
     try {
       const accId = (await AsyncStorage.getItem("acc_id")) || "00000000-0000-0000-0000-000000000000";
-      await forumService.createPost({
+      await forumService.createResidentDiscussion({
         acc_id: accId,
         title,
         body,
-        status: "Update",
-        is_official: false,
       });
       loadPostsFromDb();
     } catch {
@@ -349,12 +312,11 @@ export default function ResidentForumScreen() {
 
     try {
       const accId = (await AsyncStorage.getItem("acc_id")) || "00000000-0000-0000-0000-000000000000";
-      await forumService.createComment({
+      await forumService.createResidentComment({
         post_id: postId,
         acc_id: accId,
         parent_comment_id: parentId,
         content: text,
-        is_official: false,
       });
       loadPostsFromDb();
     } catch {
@@ -379,7 +341,10 @@ export default function ResidentForumScreen() {
         </View>
 
         <View style={styles.composer}>
-          <Text style={styles.panelTitle}>Start a conversation</Text>
+          <Text style={styles.panelTitle}>Start a resident discussion</Text>
+          <Text style={styles.panelSubtitle}>
+            Ask a question, share a suggestion, or discuss a neighborhood matter with the community.
+          </Text>
           <TextInput
             value={postTitle}
             onChangeText={setPostTitle}
@@ -390,7 +355,7 @@ export default function ResidentForumScreen() {
           <TextInput
             value={postBody}
             onChangeText={setPostBody}
-            placeholder="Ask a question, share an update, or report an issue..."
+            placeholder="What would you like to discuss?"
             placeholderTextColor="#98A2B3"
             multiline
             style={styles.bodyInput}
@@ -402,12 +367,12 @@ export default function ResidentForumScreen() {
             style={[styles.publishButton, (!postTitle.trim() || !postBody.trim()) && styles.disabledButton]}
           >
             <Ionicons name="send" size={16} color="#FFFFFF" />
-            <Text style={styles.publishText}>Post to forum</Text>
+            <Text style={styles.publishText}>Post Discussion</Text>
           </TouchableOpacity>
         </View>
 
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filters}>
-          {(["All", "Announcement", "Update", "Alert"] as const).map((filter) => (
+          {forumCategories.map((filter) => (
             <TouchableOpacity
               key={filter}
               onPress={() => setActiveFilter(filter)}
@@ -438,8 +403,8 @@ export default function ResidentForumScreen() {
                 </View>
               </View>
 
-              <View style={[styles.statusBadge, { backgroundColor: statusStyle[post.status].background }]}>
-                <Text style={[styles.statusText, { color: statusStyle[post.status].color }]}>{post.status}</Text>
+              <View style={[styles.statusBadge, { backgroundColor: forumCategoryTheme[getForumCategory(post)].background }]}>
+                <Text style={[styles.statusText, { color: forumCategoryTheme[getForumCategory(post)].color }]}>{getForumCategory(post)}</Text>
               </View>
             </View>
 
@@ -622,6 +587,7 @@ const styles = StyleSheet.create({
   subtitle: { marginTop: 6, color: "#40484D", fontSize: 14, lineHeight: 20 },
   composer: { padding: 16, borderRadius: 14, backgroundColor: "#FFFFFF", borderWidth: 1, borderColor: "#DDE3E8", gap: 10 },
   panelTitle: { color: "#191C1E", fontSize: 17, fontWeight: "600" },
+  panelSubtitle: { color: "#667085", fontSize: 12, lineHeight: 17 },
   titleInput: { minHeight: 42, paddingHorizontal: 12, borderWidth: 1, borderColor: "#D0D5DD", borderRadius: 8, color: "#191C1E", fontSize: 14 },
   bodyInput: { minHeight: 88, padding: 12, borderWidth: 1, borderColor: "#D0D5DD", borderRadius: 8, color: "#191C1E", fontSize: 14, textAlignVertical: "top" },
   publishButton: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, paddingHorizontal: 12, paddingVertical: 12, borderRadius: 10, backgroundColor: "#00475E" },
