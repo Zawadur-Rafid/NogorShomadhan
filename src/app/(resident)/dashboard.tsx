@@ -226,6 +226,12 @@ export default function Dashboard() {
       color: "#222",
       fontFamily: "System",
     },
+    complaintId: {
+      color: "#3B82F6",
+      fontSize: 9,
+      fontWeight: "800",
+      marginBottom: 2,
+    },
     complaintDesc: {
       marginTop: 2,
       color: "#666",
@@ -491,15 +497,6 @@ export default function Dashboard() {
       fontWeight: "700",
       fontFamily: "System",
     },
-    plusButton: {
-      width: 48,
-      height: 48,
-      borderRadius: 24,
-      backgroundColor: "#C57C1B",
-      justifyContent: "center",
-      alignItems: "center",
-      marginLeft: 8,
-    },
     bottomNav: {
       height: 60,
       backgroundColor: "#fff",
@@ -539,6 +536,7 @@ export default function Dashboard() {
             <Ionicons name={item.icon} size={18} color="#3B82F6" />
           </View>
           <View style={{ flex: 1, marginLeft: 8 }}>
+            <Text style={styles.complaintId}>{item.displayId}</Text>
             <View
               style={{
                 flexDirection: "row",
@@ -698,9 +696,6 @@ export default function Dashboard() {
               <Text style={styles.helpButtonText}>Help Center</Text>
             </TouchableOpacity>
           </View>
-          <TouchableOpacity style={styles.plusButton}>
-            <Ionicons name="add" size={28} color="#fff" />
-          </TouchableOpacity>
         </View>
         </ScrollView>
       )}

@@ -40,50 +40,6 @@ function inRange(value: string | null | undefined, start: Date, end: Date) {
   return !Number.isNaN(time) && time >= start.getTime() && time <= end.getTime();
 }
 
-function dateLabel(date: Date) {
-  return date.toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
-}
-
-function buildTrend(period: AnalyticsPeriod, complaints: AuthorityComplaintDetail[], now: Date) {
-  const start = periodStart(period, now);
-
-  if (period === '7 Days') {
-    return Array.from({ length: 7 }, (_, index) => {
-      const bucketStart = new Date(start);
-      bucketStart.setDate(bucketStart.getDate() + index);
-      const bucketEnd = new Date(bucketStart);
-      bucketEnd.setHours(23, 59, 59, 999);
-      return {
-        label: dateLabel(bucketStart),
-        value: complaints.filter((item) => inRange(item.timestamp, bucketStart, bucketEnd)).length,
-      };
-    });
-  }
-
-  if (period === '30 Days') {
-    return Array.from({ length: 5 }, (_, index) => {
-      const bucketStart = new Date(start);
-      bucketStart.setDate(bucketStart.getDate() + index * 6);
-      const bucketEnd = new Date(bucketStart);
-      bucketEnd.setDate(bucketEnd.getDate() + 5);
-      bucketEnd.setHours(23, 59, 59, 999);
-      return {
-        label: dateLabel(bucketStart),
-        value: complaints.filter((item) => inRange(item.timestamp, bucketStart, bucketEnd)).length,
-      };
-    });
-  }
-
-  return Array.from({ length: 12 }, (_, month) => {
-    const bucketStart = new Date(now.getFullYear(), month, 1);
-    const bucketEnd = new Date(now.getFullYear(), month + 1, 0, 23, 59, 59, 999);
-    return {
-      label: bucketStart.toLocaleDateString('en-US', { month: 'short' }),
-      value: complaints.filter((item) => inRange(item.timestamp, bucketStart, bucketEnd)).length,
-    };
-  });
-}
-
 function distribution(entries: [string, number][], total: number): AnalyticsDistribution[] {
   return entries
     .sort((first, second) => second[1] - first[1])
@@ -165,12 +121,6 @@ export function buildAuthorityAnalytics(
     return !Number.isNaN(deadlineEnd) && deadlineEnd < now.getTime();
   }).length;
 
-  const additionalReports = [...visible]
-    .filter((item) => item.duplicateReportCount > 0)
-    .sort((first, second) => second.duplicateReportCount - first.duplicateReportCount)
-    .slice(0, 5);
-  const totalAdditionalReports = visible.reduce((sum, item) => sum + item.duplicateReportCount, 0);
-
   return {
     visible,
     total,
@@ -184,15 +134,12 @@ export function buildAuthorityAnalytics(
     statusDistribution,
     categoryDistribution: distribution(Object.entries(categoryCounts), total),
     areaDistribution: distribution(Object.entries(areaCounts), total),
-    trend: buildTrend(period, visible, now),
     deadlineResolved: deadlineResolved.length,
     withinDeadline,
     onTimeRate: deadlineResolved.length === 0
       ? null
       : Math.round((withinDeadline / deadlineResolved.length) * 100),
     overdueOpen,
-    additionalReports,
-    totalAdditionalReports,
   };
 }
 

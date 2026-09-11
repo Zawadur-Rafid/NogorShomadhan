@@ -2,10 +2,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { useState } from 'react';
 import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
-
-import TopNav from '../../components/TopNav';
-import BottomNav from '../../components/BottomNav';
+import ResidentPageHeader from '@/components/resident-page-header';
 import { confirmAction } from '@/utils/confirm';
 
 function PasswordField({
@@ -46,7 +43,6 @@ function PasswordField({
 }
 
 export default function ResidentChangePassword() {
-  const router = useRouter();
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -89,7 +85,7 @@ export default function ResidentChangePassword() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <TopNav />
+      <ResidentPageHeader fallbackPath="/profile" />
       <ScrollView
         contentInsetAdjustmentBehavior="automatic"
         showsVerticalScrollIndicator={false}
@@ -97,11 +93,6 @@ export default function ResidentChangePassword() {
       >
         <View style={styles.container}>
           
-          <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-            <Ionicons name="arrow-back" size={20} color="#23435D" />
-            <Text style={styles.backText}>Back to Profile</Text>
-          </TouchableOpacity>
-
           <View style={styles.hero}>
             <View style={styles.heroIcon}>
               <Ionicons name="shield-checkmark-outline" size={27} color="#FFFFFF" />
@@ -180,7 +171,6 @@ export default function ResidentChangePassword() {
           </View>
         </View>
       </ScrollView>
-      <BottomNav activeRoute="profile" />
     </SafeAreaView>
   );
 }
@@ -189,8 +179,6 @@ const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: '#F7F8FA' },
   scrollContent: { paddingBottom: 34 },
   container: { width: '100%', maxWidth: 720, alignSelf: 'center', padding: 16, gap: 15 },
-  backButton: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 },
-  backText: { color: '#23435D', fontSize: 14, fontWeight: '600' },
   hero: { flexDirection: 'row', alignItems: 'center', gap: 14, padding: 18, borderRadius: 15, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#EAEDF1' },
   heroIcon: { width: 52, height: 52, borderRadius: 26, alignItems: 'center', justifyContent: 'center', backgroundColor: '#23435D' },
   heroCopy: { flex: 1 },

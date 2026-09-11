@@ -1,5 +1,4 @@
 import { Slot, usePathname, useRouter } from "expo-router";
-import React from "react";
 import {
     LayoutAnimation,
     StyleSheet,
@@ -9,28 +8,17 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import BottomNav from "../../../components/BottomNav";
-import TopNav from "../../../components/TopNav";
+import ResidentPageHeader from "@/components/resident-page-header";
 
 export default function ComplaintsLayout() {
   const router = useRouter();
   const pathname = usePathname();
 
-  const [activeTab, setActiveTab] = React.useState<"create" | "all" | "my">(
-    "all",
-  );
-
-  React.useEffect(() => {
-    if (pathname.endsWith("create")) {
-      setActiveTab("create");
-    } else if (pathname.endsWith("my")) {
-      setActiveTab("my");
-    } else if (
-      pathname.endsWith("complaints") ||
-      pathname.endsWith("complaints/")
-    ) {
-      setActiveTab("all");
-    }
-  }, [pathname]);
+  const activeTab = pathname.endsWith("create")
+    ? "create"
+    : pathname.endsWith("my")
+      ? "my"
+      : "all";
 
   const handleTabPress = (path: string) => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -43,7 +31,7 @@ export default function ComplaintsLayout() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <TopNav />
+      <ResidentPageHeader />
 
       {/* Top Tab Navigation (Card Style) */}
       <View style={styles.tabWrapper}>

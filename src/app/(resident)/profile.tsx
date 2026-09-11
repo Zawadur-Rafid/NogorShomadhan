@@ -1,14 +1,13 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, useWindowDimensions, View, ActivityIndicator, Animated, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../../lib/supabase';
 
-import TopNav from '../../components/TopNav';
-import BottomNav from '../../components/BottomNav';
+import ResidentPageHeader from '@/components/resident-page-header';
 import { confirmAction } from '@/utils/confirm';
 
 function ProfileField({
@@ -60,7 +59,7 @@ export default function Profile() {
   const [isEditing, setIsEditing] = useState(false);
 
   const [showToast, setShowToast] = useState(false);
-  const slideAnim = useRef(new Animated.Value(400)).current;
+  const [slideAnim] = useState(() => new Animated.Value(400));
 
   const triggerToast = () => {
     setShowToast(true);
@@ -152,15 +151,18 @@ export default function Profile() {
 
   if (loading) {
     return (
-      <SafeAreaView style={[styles.safeArea, { justifyContent: 'center', alignItems: 'center' }]}>
-        <ActivityIndicator size="large" color="#23435D" />
+      <SafeAreaView style={styles.safeArea}>
+        <ResidentPageHeader />
+        <View style={styles.loadingState}>
+          <ActivityIndicator size="large" color="#23435D" />
+        </View>
       </SafeAreaView>
     );
   }
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <TopNav />
+      <ResidentPageHeader />
       {showToast && (
         <Animated.View style={[styles.toastContainer, { transform: [{ translateX: slideAnim }] }]}>
           <View style={styles.toastLeftBorder} />
@@ -238,13 +240,13 @@ export default function Profile() {
           </View>
         </View>
       </ScrollView>
-      <BottomNav activeRoute="profile" />
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: '#F7F8FA' },
+  loadingState: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   scrollContent: { paddingBottom: 34 },
   container: { width: '100%', maxWidth: 1040, alignSelf: 'center', padding: 16, gap: 15 },
   profileHero: { flexDirection: 'row', alignItems: 'center', gap: 15, padding: 18, borderRadius: 15, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#EAEDF1' },

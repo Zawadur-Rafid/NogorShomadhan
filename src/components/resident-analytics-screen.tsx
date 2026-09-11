@@ -1,14 +1,16 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { useMemo, useState, type ComponentProps, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useState, type ComponentProps, type ReactNode } from 'react';
 import { ActivityIndicator, Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { analyticsPeriods, buildAuthorityAnalytics, formatAnalyticsDays, type AnalyticsDistribution, type AnalyticsPeriod } from '@/components/authority/authority-analytics';
-import { useAuthorityComplaints } from '@/components/authority/authority-complaints-context';
-import AuthorityPageHeader from '@/components/authority/authority-page-header';
-import { generateAuthorityAnalyticsPdf } from '@/services/authority-analytics-report.service';
+import BottomNav from '@/components/BottomNav';
+import ResidentPageHeader from '@/components/resident-page-header';
+import { buildResidentAnalytics, residentAnalyticsPeriods, type ResidentAnalyticsDistribution, type ResidentAnalyticsPeriod } from '@/components/resident-analytics';
+import { generateResidentAnalyticsPdf } from '@/services/resident-analytics-report.service';
+import { getAnalyticsData, type ResidentAnalyticsComplaint } from '@/services/resident.service';
 
 type IconName = ComponentProps<typeof Ionicons>['name'];
+type AnalyticsScope = 'ALL' | 'MY';
 
 function Panel({ title, subtitle, icon, children }: { title: string; subtitle: string; icon: IconName; children: ReactNode }) {
   return (
@@ -34,7 +36,7 @@ function Empty({ text }: { text: string }) {
   );
 }
 
-function Distribution({ items, emptyText }: { items: AnalyticsDistribution[]; emptyText: string }) {
+function Distribution({ items, emptyText }: { items: ResidentAnalyticsDistribution[]; emptyText: string }) {
   if (items.length === 0) return <Empty text={emptyText} />;
   return (
     <View style={styles.distributionList}>
@@ -53,31 +55,67 @@ function Distribution({ items, emptyText }: { items: AnalyticsDistribution[]; em
   );
 }
 
-export default function AuthorityAnalytics() {
+export default function ResidentAnalyticsScreen() {
   const { width } = useWindowDimensions();
-  const { complaints, loading, error, refreshComplaints } = useAuthorityComplaints();
-  const [period, setPeriod] = useState<AnalyticsPeriod>('30 Days');
+  const [scope, setScope] = useState<AnalyticsScope>('ALL');
+  const [period, setPeriod] = useState<ResidentAnalyticsPeriod>('30 Days');
+  const [data, setData] = useState<{ all: ResidentAnalyticsComplaint[]; my: ResidentAnalyticsComplaint[] }>({ all: [], my: [] });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
-  const analytics = useMemo(() => buildAuthorityAnalytics(complaints, period), [complaints, period]);
+
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      setData(await getAnalyticsData());
+    } catch (loadError) {
+      setError(loadError instanceof Error ? loadError.message : 'Unable to load analytics.');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    getAnalyticsData()
+      .then((nextData) => {
+        if (!cancelled) setData(nextData);
+      })
+      .catch((loadError) => {
+        if (!cancelled) {
+          setError(loadError instanceof Error ? loadError.message : 'Unable to load analytics.');
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const complaints = scope === 'ALL' ? data.all : data.my;
+  const analytics = useMemo(() => buildResidentAnalytics(complaints, period), [complaints, period]);
   const wide = width >= 900;
+  const scopeLabel = scope === 'ALL' ? 'All Complaints' : 'My Complaints';
   const summary: { label: string; value: string; detail: string; icon: IconName; color: string; background: string }[] = [
-    { label: 'Total Complaints', value: String(analytics.total), detail: `Submitted during ${period.toLowerCase()}`, icon: 'documents-outline', color: '#3B82F6', background: '#EEF6FF' },
-    { label: 'In Progress', value: String(analytics.inProgress), detail: 'Current status among submissions in this period', icon: 'construct-outline', color: '#C67B00', background: '#FFF7E8' },
+    { label: 'Total Complaints', value: String(analytics.total), detail: `${scopeLabel} submitted during ${period.toLowerCase()}`, icon: 'documents-outline', color: '#3B82F6', background: '#EEF6FF' },
+    { label: 'Pending', value: String(analytics.pending), detail: 'Accepted and waiting for work to begin', icon: 'time-outline', color: '#E0524D', background: '#FEF2F2' },
+    { label: 'In Progress', value: String(analytics.inProgress), detail: 'Complaints currently being handled', icon: 'construct-outline', color: '#C67B00', background: '#FFF7E8' },
     { label: 'Resolution Rate', value: `${analytics.resolutionRate}%`, detail: `${analytics.resolved} of ${analytics.total} resolved`, icon: 'checkmark-done-outline', color: '#16845B', background: '#EAF8F1' },
-    { label: 'Average Resolution', value: formatAnalyticsDays(analytics.averageResolutionDays), detail: analytics.resolutionSampleSize === 0 ? 'No resolved records with valid timestamps' : `Based on ${analytics.resolutionSampleSize} resolved complaint${analytics.resolutionSampleSize === 1 ? '' : 's'}`, icon: 'timer-outline', color: '#7C6BC4', background: '#F2EFFE' },
   ];
 
   const handleGeneratePdf = async () => {
     if (analytics.total === 0 || isGeneratingPdf) return;
-
     setIsGeneratingPdf(true);
     try {
-      const result = await generateAuthorityAnalyticsPdf({ analytics, period });
-      if (result.uri && !result.shared) {
-        Alert.alert('PDF created', `The report was created at ${result.uri}`);
-      }
+      const result = await generateResidentAnalyticsPdf({ analytics, period, scope: scopeLabel });
+      if (result.uri && !result.shared) Alert.alert('PDF created', `The report was created at ${result.uri}`);
     } catch (reportError) {
-      console.error('Failed to generate authority analytics PDF:', reportError);
+      console.error('Failed to generate resident analytics PDF:', reportError);
       Alert.alert('Report failed', 'Unable to create the analytics PDF. Please try again.');
     } finally {
       setIsGeneratingPdf(false);
@@ -86,63 +124,66 @@ export default function AuthorityAnalytics() {
 
   return (
     <SafeAreaView edges={['top', 'left', 'right']} style={styles.safeArea}>
-      <AuthorityPageHeader />
+      <ResidentPageHeader />
       <ScrollView
-        showsVerticalScrollIndicator={false}
         contentInsetAdjustmentBehavior="automatic"
-        refreshControl={<RefreshControl refreshing={loading} onRefresh={() => void refreshComplaints()} colors={['#23435D']} tintColor="#23435D" />}
+        showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={loading} onRefresh={() => void loadData()} colors={['#23435D']} tintColor="#23435D" />}
         contentContainerStyle={styles.scrollContent}
       >
         <View style={styles.container}>
           <View style={styles.hero}>
             <View style={styles.heroIcon}><Ionicons name="analytics-outline" size={28} color="#FFFFFF" /></View>
             <View style={styles.heroCopy}>
-              <Text style={styles.eyebrow}>AUTHORITY PERFORMANCE</Text>
+              <Text style={styles.eyebrow}>COMMUNITY INSIGHTS</Text>
               <Text style={styles.title}>Complaint Analytics</Text>
-              <Text style={styles.subtitle}>Track complaint volume, current status, response time, and deadline performance.</Text>
+              <Text style={styles.subtitle}>Understand complaint status, resolution, categories, and affected areas.</Text>
             </View>
             <TouchableOpacity
               accessibilityRole="button"
-              accessibilityLabel="Download authority complaint report as PDF"
-              accessibilityHint="Creates a report for the selected reporting period"
+              accessibilityLabel={`Download ${scopeLabel.toLowerCase()} PDF`}
+              accessibilityHint="Creates a data report for the selected scope and reporting period"
               disabled={analytics.total === 0 || isGeneratingPdf}
               onPress={() => void handleGeneratePdf()}
-              style={[
-                styles.reportButton,
-                (analytics.total === 0 || isGeneratingPdf) && styles.reportButtonDisabled,
-              ]}
+              style={[styles.reportButton, (analytics.total === 0 || isGeneratingPdf) && styles.reportButtonDisabled]}
             >
-              {isGeneratingPdf ? (
-                <ActivityIndicator size="small" color="#FFFFFF" />
-              ) : (
-                <Ionicons name="document-text-outline" size={18} color="#FFFFFF" />
-              )}
-              <Text style={styles.reportButtonText}>
-                {isGeneratingPdf ? 'Preparing PDF…' : 'Download Report PDF'}
-              </Text>
+              {isGeneratingPdf ? <ActivityIndicator size="small" color="#FFFFFF" /> : <Ionicons name="document-text-outline" size={18} color="#FFFFFF" />}
+              <Text style={styles.reportButtonText}>{isGeneratingPdf ? 'Preparing PDF…' : scope === 'ALL' ? 'Download All PDF' : 'Download My PDF'}</Text>
             </TouchableOpacity>
           </View>
 
-          <View style={styles.periodRow}>
-            <View><Text style={styles.periodLabel}>Reporting period</Text><Text style={styles.periodHint}>Includes complaints submitted in this period</Text></View>
-            <View style={styles.periodButtons}>
-              {analyticsPeriods.map((item) => (
-                <Pressable key={item} accessibilityRole="button" accessibilityState={{ selected: period === item }} onPress={() => setPeriod(item)} style={[styles.periodButton, period === item && styles.periodButtonActive]}>
-                  <Text style={[styles.periodButtonText, period === item && styles.periodButtonTextActive]}>{item}</Text>
-                </Pressable>
-              ))}
+          <View style={styles.selectionPanel}>
+            <View>
+              <Text style={styles.selectionLabel}>Complaint scope</Text>
+              <View style={styles.scopeButtons}>
+                {(['ALL', 'MY'] as const).map((item) => (
+                  <Pressable key={item} onPress={() => setScope(item)} style={[styles.scopeButton, scope === item && styles.scopeButtonActive]}>
+                    <Text style={[styles.scopeButtonText, scope === item && styles.scopeButtonTextActive]}>{item === 'ALL' ? 'All Complaints' : 'My Complaints'}</Text>
+                  </Pressable>
+                ))}
+              </View>
+            </View>
+            <View>
+              <Text style={styles.selectionLabel}>Reporting period</Text>
+              <View style={styles.periodButtons}>
+                {residentAnalyticsPeriods.map((item) => (
+                  <Pressable key={item} onPress={() => setPeriod(item)} style={[styles.periodButton, period === item && styles.periodButtonActive]}>
+                    <Text style={[styles.periodButtonText, period === item && styles.periodButtonTextActive]}>{item}</Text>
+                  </Pressable>
+                ))}
+              </View>
             </View>
           </View>
 
           {error && (
             <View style={styles.errorBanner}>
               <Ionicons name="alert-circle-outline" size={20} color="#B42318" />
-              <View style={styles.errorCopy}><Text style={styles.errorTitle}>Analytics could not be refreshed</Text><Text style={styles.errorText}>{error}</Text></View>
-              <TouchableOpacity onPress={() => void refreshComplaints()} style={styles.retry}><Text style={styles.retryText}>Retry</Text></TouchableOpacity>
+              <View style={styles.errorCopy}><Text style={styles.errorTitle}>Analytics could not be loaded</Text><Text style={styles.errorText}>{error}</Text></View>
+              <TouchableOpacity onPress={() => void loadData()} style={styles.retry}><Text style={styles.retryText}>Retry</Text></TouchableOpacity>
             </View>
           )}
 
-          {loading && complaints.length === 0 ? (
+          {loading && data.all.length === 0 ? (
             <View style={styles.loading}><ActivityIndicator color="#23435D" /><Text style={styles.loadingText}>Loading complaint analytics…</Text></View>
           ) : (
             <>
@@ -157,8 +198,8 @@ export default function AuthorityAnalytics() {
                 ))}
               </View>
 
-              <Panel title="Current Status" subtitle={`${analytics.total} complaints submitted in this period`} icon="pie-chart-outline">
-                {analytics.total === 0 ? <Empty text="No complaints were submitted in this period." /> : (
+              <Panel title="Current Status" subtitle={`${analytics.total} ${scopeLabel.toLowerCase()} submitted in this period`} icon="pie-chart-outline">
+                {analytics.total === 0 ? <Empty text="No accepted complaints were submitted in this period." /> : (
                   <>
                     <View style={styles.statusBar}>{analytics.statusDistribution.map((item) => <View key={item.label} style={{ width: `${item.percent}%`, backgroundColor: item.color }} />)}</View>
                     <View style={styles.statusRows}>{analytics.statusDistribution.map((item) => (
@@ -176,22 +217,11 @@ export default function AuthorityAnalytics() {
                   <Distribution items={analytics.areaDistribution} emptyText="Avenue and road data will appear here." />
                 </Panel>
               </View>
-
-              <View style={[styles.grid, wide && styles.gridWide]}>
-                <Panel title="Operational Performance" subtitle="Response time and deadline compliance" icon="speedometer-outline">
-                  <View style={styles.performanceGrid}>
-                    <View style={styles.performanceStat}><Text style={styles.performanceValue}>{formatAnalyticsDays(analytics.averageStartDays)}</Text><Text style={styles.performanceLabel}>Average time to start</Text></View>
-                    <View style={styles.performanceStat}><Text style={[styles.performanceValue, analytics.overdueOpen > 0 && styles.warning]}>{analytics.overdueOpen}</Text><Text style={styles.performanceLabel}>Open complaints overdue</Text></View>
-                  </View>
-                  <View style={styles.performanceHeading}><Text style={styles.performanceHeadingText}>On-time resolved complaints</Text><Text style={styles.performanceRate}>{analytics.onTimeRate === null ? '—' : `${analytics.onTimeRate}%`}</Text></View>
-                  <View style={styles.performanceTrack}><View style={[styles.performanceBar, { width: `${analytics.onTimeRate ?? 0}%` }]} /></View>
-                  <Text style={styles.performanceFootnote}>{analytics.deadlineResolved === 0 ? 'No resolved complaints in this period have a recorded deadline.' : `${analytics.withinDeadline} of ${analytics.deadlineResolved} complaints with deadlines were resolved on time.`}</Text>
-                </Panel>
-              </View>
             </>
           )}
         </View>
       </ScrollView>
+      <BottomNav activeRoute="analytics" />
     </SafeAreaView>
   );
 }
@@ -200,11 +230,10 @@ const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: '#F6F8FA' }, scrollContent: { paddingBottom: 38 }, container: { width: '100%', maxWidth: 1120, alignSelf: 'center', padding: 16, gap: 16 },
   hero: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 15, padding: 20, borderRadius: 18, backgroundColor: '#FFF', borderWidth: 1, borderColor: '#EAEDF1' }, heroIcon: { width: 54, height: 54, borderRadius: 17, alignItems: 'center', justifyContent: 'center', backgroundColor: '#23435D' }, heroCopy: { flex: 1, minWidth: 210 }, eyebrow: { color: '#B9854B', fontSize: 9, fontWeight: '900', letterSpacing: 0.8 }, title: { color: '#111827', fontSize: 25, fontWeight: '800', marginTop: 2 }, subtitle: { maxWidth: 720, color: '#667085', fontSize: 10, lineHeight: 16, marginTop: 5 },
   reportButton: { minHeight: 42, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, paddingHorizontal: 15, borderRadius: 21, backgroundColor: '#23435D' }, reportButtonDisabled: { opacity: 0.5 }, reportButtonText: { color: '#FFFFFF', fontSize: 10, fontWeight: '800' },
-  periodRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 12 }, periodLabel: { color: '#344054', fontSize: 11, fontWeight: '800' }, periodHint: { color: '#98A2B3', fontSize: 8, marginTop: 3 }, periodButtons: { flexDirection: 'row', gap: 7 }, periodButton: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 17, backgroundColor: '#FFF', borderWidth: 1, borderColor: '#E2E6EB' }, periodButtonActive: { backgroundColor: '#23435D', borderColor: '#23435D' }, periodButtonText: { color: '#667085', fontSize: 10, fontWeight: '700' }, periodButtonTextActive: { color: '#FFF' },
+  selectionPanel: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12 }, selectionLabel: { color: '#344054', fontSize: 10, fontWeight: '800', marginBottom: 6 }, scopeButtons: { flexDirection: 'row', padding: 4, borderRadius: 18, backgroundColor: '#E8EDF4' }, scopeButton: { paddingHorizontal: 13, paddingVertical: 7, borderRadius: 14 }, scopeButtonActive: { backgroundColor: '#23435D' }, scopeButtonText: { color: '#667085', fontSize: 9, fontWeight: '700' }, scopeButtonTextActive: { color: '#FFFFFF' }, periodButtons: { flexDirection: 'row', gap: 7 }, periodButton: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 17, backgroundColor: '#FFF', borderWidth: 1, borderColor: '#E2E6EB' }, periodButtonActive: { backgroundColor: '#23435D', borderColor: '#23435D' }, periodButtonText: { color: '#667085', fontSize: 10, fontWeight: '700' }, periodButtonTextActive: { color: '#FFF' },
   errorBanner: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 13, borderRadius: 13, backgroundColor: '#FEF3F2', borderWidth: 1, borderColor: '#FECDCA' }, errorCopy: { flex: 1 }, errorTitle: { color: '#912018', fontSize: 11, fontWeight: '800' }, errorText: { color: '#B42318', fontSize: 9, marginTop: 2 }, retry: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 15, backgroundColor: '#FFF' }, retryText: { color: '#B42318', fontSize: 9, fontWeight: '800' }, loading: { minHeight: 180, alignItems: 'center', justifyContent: 'center', gap: 10, borderRadius: 15, backgroundColor: '#FFF' }, loadingText: { color: '#667085', fontSize: 10 },
   summaryGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 }, summaryCard: { backgroundColor: '#FFF', borderRadius: 14, padding: 15, borderWidth: 1, borderColor: '#ECEFF3', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }, summaryWide: { flex: 1, minWidth: 205 }, summaryCompact: { width: '48%', minWidth: 150 }, summaryIcon: { width: 39, height: 39, borderRadius: 12, alignItems: 'center', justifyContent: 'center' }, summaryLabel: { color: '#667085', fontSize: 10, fontWeight: '700', marginTop: 11 }, summaryValue: { color: '#1F2937', fontSize: 21, fontWeight: '900', marginTop: 3 }, summaryDetail: { color: '#98A2B3', fontSize: 8, lineHeight: 12, marginTop: 4 },
   grid: { gap: 14 }, gridWide: { flexDirection: 'row' }, panel: { flex: 1, minWidth: 0, backgroundColor: '#FFF', borderRadius: 15, padding: 16, borderWidth: 1, borderColor: '#ECEFF3', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }, panelHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 16 }, panelHeading: { flex: 1, minWidth: 0 }, panelTitle: { color: '#1F2937', fontSize: 15, fontWeight: '800' }, panelSubtitle: { color: '#8A93A1', fontSize: 9, lineHeight: 13, marginTop: 3 }, empty: { minHeight: 130, alignItems: 'center', justifyContent: 'center', gap: 8, paddingHorizontal: 20, borderRadius: 12, backgroundColor: '#F8FAFB' }, emptyText: { color: '#8A93A1', fontSize: 9, lineHeight: 14, textAlign: 'center' },
   statusBar: { height: 13, flexDirection: 'row', borderRadius: 7, overflow: 'hidden', backgroundColor: '#EEF1F4' }, statusRows: { gap: 11, marginTop: 17 }, statusRow: { flexDirection: 'row', alignItems: 'center' }, dot: { width: 8, height: 8, borderRadius: 4, marginRight: 8 }, statusLabel: { flex: 1, color: '#475467', fontSize: 11, fontWeight: '600' }, statusValue: { width: 34, color: '#1F2937', fontSize: 11, fontWeight: '800', textAlign: 'right' }, statusPercent: { width: 42, color: '#8A93A1', fontSize: 9, textAlign: 'right' },
   distributionList: { gap: 14 }, distributionRow: { gap: 6 }, distributionHeading: { flexDirection: 'row', alignItems: 'center', gap: 10 }, distributionLabel: { flex: 1, color: '#475467', fontSize: 10, fontWeight: '600' }, distributionValue: { color: '#1F2937', fontSize: 9, fontWeight: '800' }, track: { height: 7, borderRadius: 4, backgroundColor: '#EEF1F4', overflow: 'hidden' }, distributionBar: { height: '100%', minWidth: 3, borderRadius: 4 },
-  performanceGrid: { flexDirection: 'row', gap: 8, marginBottom: 18 }, performanceStat: { flex: 1, minHeight: 82, justifyContent: 'center', padding: 11, borderRadius: 11, backgroundColor: '#F8FAFB' }, performanceValue: { color: '#16845B', fontSize: 16, fontWeight: '900' }, warning: { color: '#E0524D' }, performanceLabel: { color: '#7A8493', fontSize: 8, lineHeight: 12, fontWeight: '700', marginTop: 5 }, performanceHeading: { flexDirection: 'row', justifyContent: 'space-between', gap: 10 }, performanceHeadingText: { color: '#475467', fontSize: 10, fontWeight: '700' }, performanceRate: { color: '#16845B', fontSize: 16, fontWeight: '900' }, performanceTrack: { height: 10, overflow: 'hidden', borderRadius: 5, backgroundColor: '#E6ECE9', marginTop: 8 }, performanceBar: { height: '100%', borderRadius: 5, backgroundColor: '#16845B' }, performanceFootnote: { color: '#8A93A1', fontSize: 8, lineHeight: 12, marginTop: 8 },
 });

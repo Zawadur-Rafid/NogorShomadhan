@@ -43,7 +43,7 @@ export default function NewComplaintForm() {
 
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
-  const slideAnim = useRef(new Animated.Value(400)).current;
+  const [slideAnim] = useState(() => new Animated.Value(400));
 
   const triggerToast = (message: string) => {
     setToastMessage(message);
@@ -63,7 +63,7 @@ export default function NewComplaintForm() {
     ]).start(() => setShowToast(false));
   };
 
-  const categorizeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const categorizeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const runCategorization = async (t: string, d: string) => {
     if (t.trim() === "" || d.trim() === "") return;

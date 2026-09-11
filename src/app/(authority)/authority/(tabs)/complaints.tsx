@@ -6,6 +6,7 @@ import {
 import { useMemo } from 'react';
 import {
   ActivityIndicator,
+  Modal,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -318,6 +319,9 @@ export default function AuthorityAllComplaints() {
     await refreshComplaints();
   };
 
+  const showInitialLoading =
+    loading && complaints.length === 0;
+
   return (
     <SafeAreaView
       edges={[
@@ -328,6 +332,36 @@ export default function AuthorityAllComplaints() {
       style={styles.safeArea}
     >
       <AuthorityPageHeader />
+
+      <Modal
+        transparent
+        animationType="fade"
+        visible={showInitialLoading}
+        statusBarTranslucent
+        onRequestClose={() => undefined}
+      >
+        <View style={styles.loadingBackdrop}>
+          <View
+            accessibilityViewIsModal
+            accessibilityRole="progressbar"
+            accessibilityLabel="Loading complaints"
+            style={styles.loadingDialog}
+          >
+            <ActivityIndicator
+              size="large"
+              color="#23435D"
+            />
+
+            <Text style={styles.loadingTitle}>
+              Loading complaints
+            </Text>
+
+            <Text style={styles.loadingText}>
+              Fetching verified complaints from the database...
+            </Text>
+          </View>
+        </View>
+      </Modal>
 
       <ScrollView
         contentInsetAdjustmentBehavior="automatic"
@@ -562,41 +596,6 @@ export default function AuthorityAllComplaints() {
               </ScrollView>
             </View>
           </View>
-
-          {/* Initial loading */}
-
-          {loading &&
-            complaints.length ===
-              0 && (
-              <View
-                style={
-                  styles.loadingState
-                }
-              >
-                <ActivityIndicator
-                  size="large"
-                  color="#23435D"
-                />
-
-                <Text
-                  style={
-                    styles.loadingTitle
-                  }
-                >
-                  Loading complaints
-                </Text>
-
-                <Text
-                  style={
-                    styles.loadingText
-                  }
-                >
-                  Fetching verified
-                  complaints from the
-                  database...
-                </Text>
-              </View>
-            )}
 
           {/* Initial database error */}
 
@@ -1330,18 +1329,30 @@ const styles =
       fontSize: 9,
     },
 
-    loadingState: {
-      minHeight: 230,
+    loadingBackdrop: {
+      flex: 1,
       alignItems: 'center',
       justifyContent:
         'center',
-      padding: 30,
-      borderRadius: 14,
+      padding: 24,
+      backgroundColor:
+        'rgba(17, 24, 39, 0.38)',
+    },
+
+    loadingDialog: {
+      width: '100%',
+      maxWidth: 340,
+      alignItems: 'center',
+      paddingHorizontal: 30,
+      paddingVertical: 32,
+      borderRadius: 18,
       backgroundColor:
         '#FFFFFF',
       borderWidth: 1,
       borderColor:
         '#ECEFF3',
+      boxShadow:
+        '0 14px 38px rgba(15, 23, 42, 0.22)',
     },
 
     loadingTitle: {

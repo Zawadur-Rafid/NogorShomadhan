@@ -4,20 +4,20 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
 
 interface BottomNavProps {
-  activeRoute: 'home' | 'complaints' | 'data' | 'forum' | 'profile';
+  activeRoute: 'home' | 'complaints' | 'analytics' | 'forum';
 }
 
 export default function BottomNav({ activeRoute }: BottomNavProps) {
   const router = useRouter();
 
-  const renderIcon = (name: any, route: string, iconActive: any, iconInactive: any, label: string, path?: string) => {
+  const renderIcon = (route: BottomNavProps['activeRoute'], iconActive: any, iconInactive: any, label: string, path: string) => {
     const isActive = activeRoute === route;
     return (
       <TouchableOpacity 
         style={styles.navItem} 
         onPress={() => {
-          if (path && !isActive) {
-            router.push(path as any);
+          if (!isActive) {
+            router.navigate(path as never);
           }
         }}
       >
@@ -33,29 +33,33 @@ export default function BottomNav({ activeRoute }: BottomNavProps) {
 
   return (
     <View style={styles.bottomNav}>
-      {renderIcon('home', 'home', 'home', 'home-outline', 'Home', '/(resident)/dashboard')}
-
-      {renderIcon('complaints', 'complaints', 'document-text', 'document-text-outline', 'Complaints', '/(resident)/complaints')}
-      {renderIcon('data', 'data', 'bar-chart', 'bar-chart-outline', 'Data', '/(resident)/analytics')}
-      {renderIcon('forum', 'forum', 'chatbubbles', 'chatbubbles-outline', 'Forum', '/(resident)/forum')}
-      {renderIcon('profile', 'profile', 'person', 'person-outline', 'Profile', '/(resident)/profile')}
+      {renderIcon('home', 'home', 'home-outline', 'Home', '/dashboard')}
+      {renderIcon('complaints', 'document-text', 'document-text-outline', 'Complaints', '/complaints')}
+      {renderIcon('analytics', 'bar-chart', 'bar-chart-outline', 'Analytics', '/analytics')}
+      {renderIcon('forum', 'chatbubbles', 'chatbubbles-outline', 'Forum', '/forum')}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   bottomNav: {
-    height: 60,
+    minHeight: 64,
     backgroundColor: "#fff",
     borderTopWidth: 1,
     borderTopColor: "#ECECEC",
     flexDirection: "row",
     justifyContent: "space-around",
     alignItems: "center",
+    paddingHorizontal: 4,
+    paddingTop: 7,
     paddingBottom: 4,
   },
   navItem: {
+    flex: 1,
+    minHeight: 50,
     alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 3,
   },
   activeNav: {
     marginTop: 2,

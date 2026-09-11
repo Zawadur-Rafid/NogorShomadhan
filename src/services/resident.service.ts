@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase';
 import { feedbackService } from './feedback.service';
 import { runDuplicateCheckFlow } from './duplicate.service';
 import { formatLocation } from '../utils/formatters';
+import { formatComplaintDisplayId } from '../utils/complaint-display-id';
 
 function getInitials(name: string) {
   if (!name || !name.trim()) return '?';
@@ -208,14 +209,18 @@ export async function getDashboardData(): Promise<DashboardData> {
     return formatLocation(c);
   };
 
-  const recentComplaints = complaints
-    .filter((c) => c.status.toLowerCase() !== 'unverified')
+  const acceptedComplaints = complaints.filter(
+    (c) => c.status.toLowerCase() !== 'unverified',
+  );
+
+  const recentComplaints = acceptedComplaints
     .slice(0, 3)
-    .map(c => {
+    .map((c, index) => {
     const d = new Date(c.timestamp || Date.now());
     const dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
     return {
       id: c.comp_id,
+      displayId: formatComplaintDisplayId(acceptedComplaints.length - index),
       title: c.title,
       description: c.description,
       date: dateStr,
@@ -266,12 +271,13 @@ export async function getFeedComplaints() {
     });
   }
 
-  return complaints.map(c => {
+  return complaints.map((c, index) => {
     const d = new Date(c.timestamp || Date.now());
     const dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
     
     return {
       id: c.comp_id,
+      displayId: formatComplaintDisplayId(complaints.length - index),
       title: c.title,
       description: c.description,
       date: dateStr,
@@ -300,6 +306,24 @@ export async function getMyFeedComplaints() {
   const complaints = data || [];
   if (complaints.length === 0) return [];
 
+  const { data: acceptedIdRows, error: acceptedIdError } = await supabase
+    .from('complaints')
+    .select('comp_id, timestamp')
+    .in('status', ['pending', 'in progress', 'resolved'])
+    .order('timestamp', { ascending: false });
+
+  if (acceptedIdError) {
+    throw new Error(`Failed to load complaint display IDs: ${acceptedIdError.message}`);
+  }
+
+  const acceptedRows = acceptedIdRows || [];
+  const displayIdMap = new Map(
+    acceptedRows.map((complaint, index) => [
+      complaint.comp_id,
+      formatComplaintDisplayId(acceptedRows.length - index),
+    ]),
+  );
+
   const complaintIds = complaints.map(c => c.comp_id);
   const { data: evidenceData } = await supabase
     .from('evidence')
@@ -324,6 +348,7 @@ export async function getMyFeedComplaints() {
     
     return {
       id: c.comp_id,
+      displayId: displayIdMap.get(c.comp_id) ?? 'Pending review',
       title: c.title,
       description: c.description,
       date: dateStr,
@@ -345,6 +370,19 @@ export async function getComplaintDetails(compId: string) {
 
   if (error || !complaintData) {
     throw new Error(`Failed to load complaint details: ${error?.message}`);
+  }
+
+  let displayId = 'Pending review';
+  if (complaintData.status?.toLowerCase() !== 'unverified') {
+    const { count, error: displayIdError } = await supabase
+      .from('complaints')
+      .select('comp_id', { count: 'exact', head: true })
+      .in('status', ['pending', 'in progress', 'resolved'])
+      .lte('timestamp', complaintData.timestamp);
+
+    if (!displayIdError && count) {
+      displayId = formatComplaintDisplayId(count);
+    }
   }
 
   const [
@@ -575,6 +613,7 @@ export async function getComplaintDetails(compId: string) {
 
   return {
     id: complaintData.comp_id,
+    displayId,
     title: complaintData.title,
     description: complaintData.description,
     date: dateStr,
@@ -636,18 +675,50 @@ export async function deleteComplaint(compId: string) {
   }
 }
 
-export async function getAnalyticsData() {
+export type ResidentAnalyticsComplaint = {
+  id: string;
+  displayId: string;
+  title: string;
+  description: string;
+  accId: string | null;
+  status: string;
+  category: string;
+  timestamp: string;
+  house: string | null;
+  road: string | null;
+  avenue: string | null;
+};
+
+export async function getAnalyticsData(): Promise<{
+  all: ResidentAnalyticsComplaint[];
+  my: ResidentAnalyticsComplaint[];
+}> {
   const accId = await AsyncStorage.getItem('acc_id');
   const { data, error } = await supabase
     .from('complaints')
-    .select('status, category, acc_id');
+    .select('comp_id, title, description, status, category, acc_id, timestamp, house, road, avenue')
+    .in('status', ['pending', 'in progress', 'resolved'])
+    .order('timestamp', { ascending: false });
 
   if (error) {
     throw new Error(`Failed to load analytics data: ${error.message}`);
   }
 
-  const all = data || [];
-  const my = all.filter((c) => c.acc_id === accId);
+  const acceptedComplaints = data || [];
+  const all = acceptedComplaints.map((complaint, index) => ({
+    id: complaint.comp_id,
+    displayId: formatComplaintDisplayId(acceptedComplaints.length - index),
+    title: complaint.title,
+    description: complaint.description,
+    accId: complaint.acc_id,
+    status: complaint.status.toUpperCase(),
+    category: complaint.category || 'Uncategorized',
+    timestamp: complaint.timestamp,
+    house: complaint.house,
+    road: complaint.road,
+    avenue: complaint.avenue,
+  }));
+  const my = all.filter((complaint) => complaint.accId === accId);
   
   return { all, my };
 }

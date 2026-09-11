@@ -1,7 +1,7 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import Animated, { FadeInDown, FadeOut } from 'react-native-reanimated';
 import {
   Pressable,
@@ -664,7 +664,13 @@ export default function ComplaintDetailScreen() {
 
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
-  const slideAnim = useRef(new RNAnimated.Value(400)).current;
+  const [slideAnim] = useState(() => new RNAnimated.Value(400));
+
+  const [feedbackRating, setFeedbackRating] = useState(0);
+  const [feedbackComment, setFeedbackComment] = useState('');
+  const [hasSubmittedFeedback, setHasSubmittedFeedback] = useState(false);
+  const [localFeedback, setLocalFeedback] = useState<any[]>([]);
+  const [hasUpvoted, setHasUpvoted] = useState(false);
 
   const triggerToast = (message: string, callback?: () => void) => {
     setToastMessage(message);
@@ -692,6 +698,7 @@ export default function ComplaintDetailScreen() {
       try {
         const data = await getComplaintDetails(complaintId);
         setComplaint(data);
+        setLocalFeedback(data.feedback || []);
       } catch (error) {
         if (error instanceof Error) Alert.alert('Error', error.message);
       } finally {
@@ -726,18 +733,6 @@ export default function ComplaintDetailScreen() {
   const wide = width >= 900;
   const mode = getDetailMode(complaint?.status);
   const theme = modeTheme[mode];
-
-  const [feedbackRating, setFeedbackRating] = useState(0);
-  const [feedbackComment, setFeedbackComment] = useState('');
-  const [hasSubmittedFeedback, setHasSubmittedFeedback] = useState(false);
-  const [localFeedback, setLocalFeedback] = useState(complaint?.feedback || []);
-  const [hasUpvoted, setHasUpvoted] = useState(false);
-
-  useEffect(() => {
-    if (complaint) {
-      setLocalFeedback(complaint.feedback || []);
-    }
-  }, [complaint]);
 
   if (loading) {
     return (
@@ -798,6 +793,9 @@ export default function ComplaintDetailScreen() {
                   {theme.label}
                 </Text>
               </View>
+              <Text selectable style={styles.complaintId}>
+                {complaint.displayId}
+              </Text>
             </View>
             <Text selectable style={styles.title}>
               {complaint.title}

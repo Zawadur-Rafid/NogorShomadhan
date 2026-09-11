@@ -12,6 +12,7 @@ import {
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import BottomNav from "@/components/BottomNav";
+import ResidentPageHeader from "@/components/resident-page-header";
 import { forumService } from "@/services/forum.service";
 import { confirmAction } from "@/utils/confirm";
 import {
@@ -173,7 +174,40 @@ export default function ResidentForumScreen() {
   };
 
   useEffect(() => {
-    loadPostsFromDb();
+    let cancelled = false;
+
+    forumService.fetchPosts()
+      .then((dbPosts) => {
+        if (!cancelled && dbPosts && dbPosts.length > 0) {
+          const formatted: ForumPostUI[] = dbPosts.map((p) => ({
+            id: p.post_id,
+            author: p.account?.full_name || (p.is_official ? "Authority" : "Resident"),
+            initials: getInitials(p.account?.full_name || (p.is_official ? "Authority" : "Resident")),
+            status: p.status,
+            title: p.title,
+            body: p.body,
+            time: formatTimeAgo(p.created_at),
+            official: p.is_official,
+            comments: (p.comments || []).map((c) => ({
+              id: c.comment_id,
+              author: c.account?.full_name || (c.is_official ? "Authority" : "Resident"),
+              initials: getInitials(c.account?.full_name || (c.is_official ? "Authority" : "Resident")),
+              text: c.content,
+              time: formatTimeAgo(c.created_at),
+              parent_comment_id: c.parent_comment_id,
+              official: c.is_official,
+            })),
+          }));
+          setPosts(formatted);
+        }
+      })
+      .catch((error) => {
+        console.warn("Could not load posts from Supabase:", error);
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const visiblePosts = useMemo(
@@ -193,7 +227,7 @@ export default function ResidentForumScreen() {
     setPostBody("");
 
     const newPostUI: ForumPostUI = {
-      id: `post-${Date.now()}`,
+      id: `pending-post-${posts.length + 1}`,
       author: "Resident",
       initials: "RS",
       status: "Update",
@@ -232,7 +266,7 @@ export default function ResidentForumScreen() {
     setReplyTarget((current) => ({ ...current, [postId]: null }));
 
     const newCommentUI: ForumCommentUI = {
-      id: `comment-${Date.now()}`,
+      id: `pending-comment-${postId}-${(posts.find((post) => post.id === postId)?.comments.length ?? 0) + 1}`,
       author: "Resident",
       initials: "RS",
       text,
@@ -269,6 +303,7 @@ export default function ResidentForumScreen() {
 
   return (
     <SafeAreaView style={styles.page}>
+      <ResidentPageHeader />
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.intro}>
           <Text style={styles.kicker}>Community Forum</Text>

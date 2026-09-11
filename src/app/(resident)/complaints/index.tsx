@@ -14,22 +14,6 @@ import {
 
 type StatusFilter = "All" | "Pending" | "In Progress" | "Resolved";
 
-const CATEGORIES = [
-  "All Categories",
-  "Road Damage",
-  "Garbage & Waste",
-  "Drainage & Waterlogging",
-  "Streetlight & Electrical",
-  "Water Supply",
-  "Sanitation & Public Toilets",
-  "Traffic & Illegal Parking",
-  "Public Safety & Encroachment",
-  "Noise & Environmental Pollution",
-  "Parks & Public Spaces",
-  "Animal-Related Issues",
-  "Other",
-];
-
 const theme = {
   background: "#f8f9fc",
   surface: "#ffffff",
@@ -63,6 +47,20 @@ export default function ResidentAllComplaintsScreen() {
 
   const [complaints, setComplaints] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const categoryFilters = useMemo(
+    () => [
+      "All Categories",
+      ...Array.from(
+        new Set(
+          complaints
+            .map((complaint) => complaint.category?.trim())
+            .filter((category): category is string => Boolean(category)),
+        ),
+      ).sort((first, second) => first.localeCompare(second)),
+    ],
+    [complaints],
+  );
 
   useEffect(() => {
     async function loadData() {
@@ -162,7 +160,7 @@ export default function ResidentAllComplaintsScreen() {
             style={styles.filterScroll}
             contentContainerStyle={styles.filterContainer}
           >
-            {CATEGORIES.map((cat) => {
+            {categoryFilters.map((cat) => {
               const isActive = activeCategoryFilter === cat;
               return (
                 <TouchableOpacity
@@ -268,7 +266,7 @@ export default function ResidentAllComplaintsScreen() {
                       <View style={styles.titleArea}>
                         <Text style={styles.cardTitle}>{item.title}</Text>
                         <Text style={styles.cardCategory}>
-                          {item.category} • {item.date}
+                          {item.displayId} · {item.category} • {item.date}
                         </Text>
                       </View>
                     </View>

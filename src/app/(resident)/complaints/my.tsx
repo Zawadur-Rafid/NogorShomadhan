@@ -217,7 +217,7 @@ export default function MyComplaintsScreen() {
                       <View style={styles.titleArea}>
                         <Text style={styles.cardTitle}>{item.title}</Text>
                         <Text style={styles.cardCategory}>
-                          {item.category} • {item.date}
+                          {item.displayId} · {item.category} • {item.date}
                         </Text>
                       </View>
                     </View>
