@@ -1,3 +1,4 @@
+import { markAdminNotificationRead } from "@/services/admin.service";
 import { notificationService } from "@/services/notification.service";
 import { confirmAction } from "@/utils/confirm";
 import Ionicons from "@expo/vector-icons/Ionicons";
@@ -14,6 +15,7 @@ const getNotificationRoute = (notification: {
   const title = (notification.title ?? "").toLowerCase();
 
   if (title.includes("account")) return "/(admin)/accounts/pending";
+  if (title.includes("duplicate")) return "/(admin)/dashboard";
   if (title.includes("complaint") || title.includes("review"))
     return "/(admin)/complaints/review";
   if (title.includes("announcement") || title.includes("forum"))
@@ -51,6 +53,17 @@ export default function AdminPageHeader() {
       current.filter((item) => item.id !== notification.id),
     );
     setNotificationsVisible(false);
+    if (
+      !notification.id.startsWith("account-") &&
+      !notification.id.startsWith("complaint-review-") &&
+      !notification.id.startsWith("forum-announcement-") &&
+      !notification.id.startsWith("complaint-status-") &&
+      !notification.id.startsWith("complaint-update-")
+    ) {
+      void markAdminNotificationRead(notification.id).catch((error) =>
+        console.warn("Could not mark admin notification as read:", error),
+      );
+    }
     router.push(route as any);
   };
 

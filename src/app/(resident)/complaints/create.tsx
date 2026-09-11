@@ -63,7 +63,9 @@ export default function NewComplaintForm() {
     ]).start(() => setShowToast(false));
   };
 
-  const categorizeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const categorizeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
 
   const runCategorization = async (t: string, d: string) => {
     if (t.trim() === "" || d.trim() === "") return;
@@ -82,7 +84,7 @@ export default function NewComplaintForm() {
     if (categorizeTimeoutRef.current) {
       clearTimeout(categorizeTimeoutRef.current);
     }
-    
+
     if (title.trim() === "" || description.trim() === "") {
       return;
     }

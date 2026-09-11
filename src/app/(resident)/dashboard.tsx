@@ -4,13 +4,13 @@ import { useEffect, useState } from "react";
 import {
     Alert,
     FlatList,
-  Modal,
-  Pressable,
+    Modal,
+    Pressable,
     ScrollView,
     StyleSheet,
     Text,
     TouchableOpacity,
-    View
+    View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -592,116 +592,120 @@ export default function Dashboard() {
             <Text style={styles.bigTitle}>Resident Dashboard</Text>
           </View>
 
-        {/* Stats */}
-        <View style={styles.statsRow}>
-          <View style={styles.whiteCard}>
-            <Ionicons name="document-text-outline" size={18} color="#3B82F6" />
-            <Text style={styles.cardLabel}>Total Issues</Text>
-            <Text style={styles.cardNumber}>{stats.total}</Text>
-          </View>
-          <View style={[styles.whiteCard, { backgroundColor: "#FFF1F1" }]}>
-            <Ionicons name="sad-outline" size={18} color="#EF4444" />
-            <Text style={[styles.cardLabel, { color: "#EF4444" }]}>
-              Pending
-            </Text>
-            <Text style={[styles.cardNumber, { color: "#EF4444" }]}>
-              {stats.pending}
-            </Text>
-          </View>
-        </View>
-
-        <View style={styles.statsRow}>
-          <View style={[styles.whiteCard, { backgroundColor: "#F8F2EA" }]}>
-            <Ionicons name="people-outline" size={18} color="#C67B00" />
-            <Text style={[styles.cardLabel, { color: "#C67B00" }]}>
-              In Progress
-            </Text>
-            <Text style={[styles.cardNumber, { color: "#C67B00" }]}>
-              {stats.inProgress}
-            </Text>
-          </View>
-          <View style={[styles.whiteCard, { backgroundColor: "#EEF6FF" }]}>
-            <Ionicons
-              name="checkmark-circle-outline"
-              size={18}
-              color="#2563EB"
-            />
-            <Text style={[styles.cardLabel, { color: "#2563EB" }]}>
-              Resolved
-            </Text>
-            <Text style={[styles.cardNumber, { color: "#2563EB" }]}>
-              {stats.resolved}
-            </Text>
-          </View>
-        </View>
-
-        {/* Recent Complaints */}
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Recent Complaints</Text>
-          <TouchableOpacity
-            onPress={() => router.push("/(resident)/complaints")}
-          >
-            <Text style={styles.viewAll}>View All</Text>
-          </TouchableOpacity>
-        </View>
-
-        <FlatList
-          scrollEnabled={false}
-          data={recentComplaints}
-          keyExtractor={(item) => item.id}
-          renderItem={renderComplaint}
-        />
-
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Community Forum</Text>
-          <TouchableOpacity onPress={() => router.push("/(resident)/forum")}>
-            <Text style={styles.viewAll}>Open</Text>
-          </TouchableOpacity>
-        </View>
-
-        <TouchableOpacity
-          activeOpacity={0.85}
-          style={styles.forumCard}
-          onPress={() => router.push("/(resident)/forum")}
-        >
-          <View style={styles.forumIcon}>
-            <Ionicons name="chatbubbles-outline" size={22} color="#2D6CDF" />
+          {/* Stats */}
+          <View style={styles.statsRow}>
+            <View style={styles.whiteCard}>
+              <Ionicons
+                name="document-text-outline"
+                size={18}
+                color="#3B82F6"
+              />
+              <Text style={styles.cardLabel}>Total Issues</Text>
+              <Text style={styles.cardNumber}>{stats.total}</Text>
+            </View>
+            <View style={[styles.whiteCard, { backgroundColor: "#FFF1F1" }]}>
+              <Ionicons name="sad-outline" size={18} color="#EF4444" />
+              <Text style={[styles.cardLabel, { color: "#EF4444" }]}>
+                Pending
+              </Text>
+              <Text style={[styles.cardNumber, { color: "#EF4444" }]}>
+                {stats.pending}
+              </Text>
+            </View>
           </View>
 
-          <View style={styles.forumCopy}>
-            <Text style={styles.forumTitle}>Join the resident forum</Text>
-            <Text style={styles.forumText}>
-              Share updates, ask questions, and discuss neighborhood issues with
-              other residents.
-            </Text>
+          <View style={styles.statsRow}>
+            <View style={[styles.whiteCard, { backgroundColor: "#F8F2EA" }]}>
+              <Ionicons name="people-outline" size={18} color="#C67B00" />
+              <Text style={[styles.cardLabel, { color: "#C67B00" }]}>
+                In Progress
+              </Text>
+              <Text style={[styles.cardNumber, { color: "#C67B00" }]}>
+                {stats.inProgress}
+              </Text>
+            </View>
+            <View style={[styles.whiteCard, { backgroundColor: "#EEF6FF" }]}>
+              <Ionicons
+                name="checkmark-circle-outline"
+                size={18}
+                color="#2563EB"
+              />
+              <Text style={[styles.cardLabel, { color: "#2563EB" }]}>
+                Resolved
+              </Text>
+              <Text style={[styles.cardNumber, { color: "#2563EB" }]}>
+                {stats.resolved}
+              </Text>
+            </View>
           </View>
 
-          <Ionicons name="chevron-forward" size={22} color="#888" />
-        </TouchableOpacity>
-
-        {/* Help Center */}
-        <View style={styles.helpCard}>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.helpTitle}>Need assistance?</Text>
-            <Text style={styles.helpText}>
-              Browse our FAQ or contact the municipal helpline directly for
-              urgent emergencies.
-            </Text>
+          {/* Recent Complaints */}
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Recent Complaints</Text>
             <TouchableOpacity
-              style={styles.helpButton}
-              onPress={() => {
-                setExpandedGuide(0);
-                setGuideVisible(true);
-              }}
-              activeOpacity={0.85}
+              onPress={() => router.push("/(resident)/complaints")}
             >
-              <Text style={styles.helpButtonText}>Help Center</Text>
+              <Text style={styles.viewAll}>View All</Text>
             </TouchableOpacity>
           </View>
-          <TouchableOpacity style={styles.plusButton}>
-            <Ionicons name="add" size={28} color="#fff" />
+
+          <FlatList
+            scrollEnabled={false}
+            data={recentComplaints}
+            keyExtractor={(item) => item.id}
+            renderItem={renderComplaint}
+          />
+
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Community Forum</Text>
+            <TouchableOpacity onPress={() => router.push("/(resident)/forum")}>
+              <Text style={styles.viewAll}>Open</Text>
+            </TouchableOpacity>
+          </View>
+
+          <TouchableOpacity
+            activeOpacity={0.85}
+            style={styles.forumCard}
+            onPress={() => router.push("/(resident)/forum")}
+          >
+            <View style={styles.forumIcon}>
+              <Ionicons name="chatbubbles-outline" size={22} color="#2D6CDF" />
+            </View>
+
+            <View style={styles.forumCopy}>
+              <Text style={styles.forumTitle}>Join the resident forum</Text>
+              <Text style={styles.forumText}>
+                Share updates, ask questions, and discuss neighborhood issues
+                with other residents.
+              </Text>
+            </View>
+
+            <Ionicons name="chevron-forward" size={22} color="#888" />
           </TouchableOpacity>
-        </View>
+
+          {/* Help Center */}
+          <View style={styles.helpCard}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.helpTitle}>Need assistance?</Text>
+              <Text style={styles.helpText}>
+                Browse our FAQ or contact the municipal helpline directly for
+                urgent emergencies.
+              </Text>
+              <TouchableOpacity
+                style={styles.helpButton}
+                onPress={() => {
+                  setExpandedGuide(0);
+                  setGuideVisible(true);
+                }}
+                activeOpacity={0.85}
+              >
+                <Text style={styles.helpButtonText}>Help Center</Text>
+              </TouchableOpacity>
+            </View>
+            <TouchableOpacity style={styles.plusButton}>
+              <Ionicons name="add" size={28} color="#fff" />
+            </TouchableOpacity>
+          </View>
         </ScrollView>
       )}
 

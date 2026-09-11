@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 function formatTimeAgo(dateString: string): string {
   const date = new Date(dateString);
@@ -30,7 +31,8 @@ export interface AdminNotification {
     | "account"
     | "complaint_review"
     | "forum_announcement"
-    | "complaint_update";
+    | "complaint_update"
+    | "duplicate_review";
   icon: string;
   title: string;
   message: string;
@@ -54,6 +56,46 @@ export const notificationService = {
   async fetchAdminNotifications(): Promise<AdminNotification[]> {
     try {
       const notifications: AdminNotification[] = [];
+
+      const adminAccountId = await AsyncStorage.getItem("acc_id");
+      if (adminAccountId) {
+        const { data: inboxNotifications, error: inboxError } = await supabase
+          .from("notifications")
+          .select(
+            "notification_id,type,title,body,action_path,created_at,entity_id,data,read_at",
+          )
+          .eq("recipient_acc_id", adminAccountId)
+          .is("read_at", null)
+          .order("created_at", { ascending: false })
+          .limit(40);
+
+        if (inboxError) {
+          console.warn(
+            "Error fetching persistent admin notifications:",
+            inboxError.message,
+          );
+        } else {
+          (inboxNotifications ?? []).forEach((notification) => {
+            const isDuplicate =
+              notification.type === "duplicate_review_required";
+            notifications.push({
+              id: notification.notification_id,
+              type: isDuplicate ? "duplicate_review" : "complaint_update",
+              icon: isDuplicate
+                ? "git-compare-outline"
+                : "notifications-outline",
+              title: notification.title,
+              message: notification.body,
+              time: formatTimeAgo(notification.created_at),
+              route:
+                isDuplicate && notification.data?.duplicate_id
+                  ? `/(admin)/duplicates/${notification.data.duplicate_id}`
+                  : (notification.action_path ?? "/(admin)/dashboard"),
+              createdAt: new Date(notification.created_at),
+            });
+          });
+        }
+      }
 
       const { data: newAccounts, error: accountsError } = await supabase
         .from("account")
