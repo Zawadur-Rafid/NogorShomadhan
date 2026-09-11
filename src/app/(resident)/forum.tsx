@@ -1,7 +1,9 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
-import { useEffect, useMemo, useState } from "react";
+import { useLocalSearchParams } from "expo-router";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
+  LayoutChangeEvent,
   ScrollView,
   StyleSheet,
   Text,
@@ -130,6 +132,16 @@ const statusStyle: Record<ForumStatus, { background: string; color: string }> = 
 };
 
 export default function ResidentForumScreen() {
+  const { postId: postIdParam, commentId: commentIdParam } = useLocalSearchParams<{
+    postId?: string | string[];
+    commentId?: string | string[];
+  }>();
+  const targetPostId = Array.isArray(postIdParam) ? postIdParam[0] : postIdParam;
+  const targetCommentId = Array.isArray(commentIdParam) ? commentIdParam[0] : commentIdParam;
+  const scrollViewRef = useRef<ScrollView>(null);
+  const postOffsetsRef = useRef<Record<string, number>>({});
+  const commentOffsetsRef = useRef<Record<string, number>>({});
+  const scrolledTargetRef = useRef<string | null>(null);
   const [posts, setPosts] = useState<ForumPostUI[]>(initialPosts);
   const [postTitle, setPostTitle] = useState("");
   const [postBody, setPostBody] = useState("");
@@ -210,10 +222,59 @@ export default function ResidentForumScreen() {
     };
   }, []);
 
+  const displayedFilter = targetPostId ? 'All' : activeFilter;
   const visiblePosts = useMemo(
-    () => (activeFilter === "All" ? posts : posts.filter((post) => post.status === activeFilter)),
-    [activeFilter, posts],
+    () =>
+      displayedFilter === "All"
+        ? posts
+        : posts.filter((post) => post.status === displayedFilter),
+    [displayedFilter, posts],
   );
+
+  const scrollToNotificationTarget = useCallback(() => {
+    if (!targetPostId) return;
+
+    const targetKey = `${targetPostId}:${targetCommentId ?? ''}`;
+    if (scrolledTargetRef.current === targetKey) return;
+
+    const postOffset = postOffsetsRef.current[targetPostId];
+    if (postOffset === undefined) return;
+
+    const commentOffset = targetCommentId
+      ? commentOffsetsRef.current[`${targetPostId}:${targetCommentId}`]
+      : 0;
+    if (targetCommentId && commentOffset === undefined) return;
+
+    scrolledTargetRef.current = targetKey;
+    requestAnimationFrame(() => {
+      scrollViewRef.current?.scrollTo({
+        y: Math.max(0, postOffset + (commentOffset ?? 0) - 18),
+        animated: true,
+      });
+    });
+  }, [targetCommentId, targetPostId]);
+
+  useEffect(() => {
+    if (!targetPostId) return;
+    scrolledTargetRef.current = null;
+    requestAnimationFrame(scrollToNotificationTarget);
+  }, [posts, scrollToNotificationTarget, targetPostId]);
+
+  const recordPostOffset = (postId: string, event: LayoutChangeEvent) => {
+    postOffsetsRef.current[postId] = event.nativeEvent.layout.y;
+    if (postId === targetPostId) scrollToNotificationTarget();
+  };
+
+  const recordCommentOffset = (
+    postId: string,
+    commentId: string,
+    event: LayoutChangeEvent,
+  ) => {
+    commentOffsetsRef.current[`${postId}:${commentId}`] = event.nativeEvent.layout.y;
+    if (postId === targetPostId && commentId === targetCommentId) {
+      scrollToNotificationTarget();
+    }
+  };
 
   const publishPost = async () => {
     if (!postTitle.trim() || !postBody.trim()) return;
@@ -248,7 +309,7 @@ export default function ResidentForumScreen() {
         is_official: false,
       });
       loadPostsFromDb();
-    } catch (e) {
+    } catch {
       console.log("Local resident post created; database sync skipped.");
     }
   };
@@ -296,7 +357,7 @@ export default function ResidentForumScreen() {
         is_official: false,
       });
       loadPostsFromDb();
-    } catch (e) {
+    } catch {
       console.log("Local resident comment added; database sync skipped.");
     }
   };
@@ -304,7 +365,11 @@ export default function ResidentForumScreen() {
   return (
     <SafeAreaView style={styles.page}>
       <ResidentPageHeader />
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        ref={scrollViewRef}
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.intro}>
           <Text style={styles.kicker}>Community Forum</Text>
           <Text style={styles.title}>Resident discussions</Text>
@@ -346,15 +411,22 @@ export default function ResidentForumScreen() {
             <TouchableOpacity
               key={filter}
               onPress={() => setActiveFilter(filter)}
-              style={[styles.filter, activeFilter === filter && styles.activeFilter]}
+              style={[styles.filter, displayedFilter === filter && styles.activeFilter]}
             >
-              <Text style={[styles.filterText, activeFilter === filter && styles.activeFilterText]}>{filter}</Text>
+              <Text style={[styles.filterText, displayedFilter === filter && styles.activeFilterText]}>{filter}</Text>
             </TouchableOpacity>
           ))}
         </ScrollView>
 
         {visiblePosts.map((post) => (
-          <View key={post.id} style={styles.post}>
+          <View
+            key={post.id}
+            onLayout={(event) => recordPostOffset(post.id, event)}
+            style={[
+              styles.post,
+              post.id === targetPostId && styles.postHighlighted,
+            ]}
+          >
             <View style={styles.postHeader}>
               <View style={styles.authorRow}>
                 <View style={styles.avatar}>
@@ -425,7 +497,12 @@ export default function ResidentForumScreen() {
             {post.comments.map((comment) => (
               <View
                 key={comment.id}
-                style={[styles.comment, comment.parent_comment_id && styles.replyComment]}
+                onLayout={(event) => recordCommentOffset(post.id, comment.id, event)}
+                style={[
+                  styles.comment,
+                  comment.parent_comment_id && styles.replyComment,
+                  comment.id === targetCommentId && styles.commentHighlighted,
+                ]}
               >
                 <View style={styles.commentAvatar}>
                   <Text style={styles.commentAvatarText}>{comment.initials}</Text>
@@ -556,6 +633,16 @@ const styles = StyleSheet.create({
   filterText: { color: "#40484D", fontSize: 12, fontWeight: "600" },
   activeFilterText: { color: "#FFFFFF" },
   post: { padding: 16, borderRadius: 14, backgroundColor: "#FFFFFF", borderWidth: 1, borderColor: "#DDE3E8" },
+  postHighlighted: {
+    borderWidth: 2,
+    borderColor: "#2E78A6",
+    backgroundColor: "#F8FBFF",
+    shadowColor: "#2E78A6",
+    shadowOpacity: 0.14,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 3,
+  },
   postHeader: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", gap: 10 },
   authorRow: { flexDirection: "row", alignItems: "center", gap: 9, flex: 1 },
   avatar: { width: 36, height: 36, alignItems: "center", justifyContent: "center", borderRadius: 18, backgroundColor: "#E1EBF8" },
@@ -569,6 +656,11 @@ const styles = StyleSheet.create({
   commentHeading: { flexDirection: "row", alignItems: "center", gap: 5, marginTop: 16, marginBottom: 8 },
   commentHeadingText: { color: "#667085", fontSize: 12, fontWeight: "600" },
   comment: { flexDirection: "row", alignItems: "flex-start", gap: 8, marginTop: 8, padding: 9, borderRadius: 9, backgroundColor: "#F7F8FA" },
+  commentHighlighted: {
+    borderWidth: 2,
+    borderColor: "#2E78A6",
+    backgroundColor: "#EAF4FF",
+  },
   replyComment: { marginLeft: 20, backgroundColor: "#EFF6FF", borderLeftWidth: 2, borderLeftColor: "#00475E" },
   commentAvatar: { width: 27, height: 27, alignItems: "center", justifyContent: "center", borderRadius: 14, backgroundColor: "#EAF3FF" },
   commentAvatarText: { color: "#304B6B", fontSize: 9, fontWeight: "700" },

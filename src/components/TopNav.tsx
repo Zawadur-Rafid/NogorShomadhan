@@ -1,40 +1,39 @@
 import { confirmAction } from "@/utils/confirm";
 import { Ionicons } from "@expo/vector-icons";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import { useFocusEffect, useRouter } from "expo-router";
+import { useCallback, useState } from "react";
 import {
     Image,
-    ScrollView,
     StyleSheet,
     Text,
     TouchableOpacity,
     View,
 } from "react-native";
-import {
-    ForumNotification,
-    notificationService,
-} from "../services/notification.service";
+import { notificationService } from "../services/notification.service";
 
 export default function TopNav() {
   const router = useRouter();
   const [menuVisible, setMenuVisible] = useState(false);
-  const [notifVisible, setNotifVisible] = useState(false);
-  const [notifications, setNotifications] = useState<ForumNotification[]>([]);
+  const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
 
-  useEffect(() => {
-    async function loadNotifs() {
-      const accId = await AsyncStorage.getItem("acc_id");
-      if (accId) {
-        const notifs = await notificationService.fetchForumNotifications(
-          "resident",
-          accId,
-        );
-        setNotifications(notifs);
-      }
-    }
-    loadNotifs();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      let active = true;
+
+      void notificationService
+        .fetchUnreadCount()
+        .then((unreadCount) => {
+          if (active) setUnreadNotificationCount(unreadCount);
+        })
+        .catch((error) => {
+          console.warn("Could not load resident unread count:", error);
+        });
+
+      return () => {
+        active = false;
+      };
+    }, []),
+  );
 
   return (
     <View style={styles.header}>
@@ -47,48 +46,23 @@ export default function TopNav() {
       </View>
       <View style={styles.rightSection}>
         <View style={{ zIndex: 50 }}>
-          <TouchableOpacity onPress={() => setNotifVisible(!notifVisible)}>
+          <TouchableOpacity
+            accessibilityRole="button"
+            accessibilityLabel={`Notifications, ${unreadNotificationCount} unread`}
+            onPress={() => {
+              setMenuVisible(false);
+              router.push("/(resident)/notifications" as never);
+            }}
+          >
             <Ionicons name="notifications-outline" size={20} color="#23435D" />
-            {notifications.length > 0 && (
+            {unreadNotificationCount > 0 && (
               <View style={styles.badge}>
-                <Text style={styles.badgeText}>{notifications.length}</Text>
+                <Text style={styles.badgeText}>
+                  {unreadNotificationCount > 99 ? "99+" : unreadNotificationCount}
+                </Text>
               </View>
             )}
           </TouchableOpacity>
-          {notifVisible && (
-            <View style={styles.notifMenu}>
-              <View style={styles.notifHeader}>
-                <Text style={styles.notifTitle}>Notifications</Text>
-              </View>
-              <ScrollView style={{ maxHeight: 300 }}>
-                {notifications.length === 0 ? (
-                  <Text style={styles.emptyText}>No new notifications</Text>
-                ) : (
-                  notifications.map((n) => (
-                    <TouchableOpacity
-                      key={n.id}
-                      style={styles.notifItem}
-                      onPress={() => {
-                        setNotifVisible(false);
-                        router.push("/(resident)/forum");
-                      }}
-                    >
-                      <Ionicons
-                        name={n.icon as any}
-                        size={16}
-                        color="#23435D"
-                      />
-                      <View style={styles.notifContent}>
-                        <Text style={styles.notifItemTitle}>{n.title}</Text>
-                        <Text style={styles.notifMessage}>{n.message}</Text>
-                        <Text style={styles.notifTime}>{n.time}</Text>
-                      </View>
-                    </TouchableOpacity>
-                  ))
-                )}
-              </ScrollView>
-            </View>
-          )}
         </View>
 
         <View style={{ zIndex: 50 }}>
@@ -166,78 +140,20 @@ const styles = StyleSheet.create({
   },
   badge: {
     position: "absolute",
-    top: -5,
-    right: -5,
+    top: -7,
+    right: -9,
     backgroundColor: "#D92D20",
-    borderRadius: 10,
-    width: 14,
-    height: 14,
+    borderRadius: 9,
+    minWidth: 17,
+    height: 17,
+    paddingHorizontal: 4,
     justifyContent: "center",
     alignItems: "center",
   },
   badgeText: {
     color: "#fff",
-    fontSize: 8,
-    fontWeight: "bold",
-  },
-  notifMenu: {
-    position: "absolute",
-    top: 30,
-    right: 0,
-    backgroundColor: "#fff",
-    borderRadius: 8,
-    width: 260,
-    shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 5,
-    zIndex: 1000,
-  },
-  notifHeader: {
-    padding: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: "#F0F0F0",
-  },
-  notifTitle: {
-    fontWeight: "700",
-    color: "#333",
-    fontFamily: "System",
-  },
-  notifItem: {
-    flexDirection: "row",
-    padding: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: "#F0F0F0",
-  },
-  notifContent: {
-    marginLeft: 10,
-    flex: 1,
-  },
-  notifItemTitle: {
-    fontWeight: "600",
-    fontSize: 12,
-    color: "#333",
-    fontFamily: "System",
-  },
-  notifMessage: {
-    fontSize: 11,
-    color: "#666",
-    marginTop: 2,
-    fontFamily: "System",
-  },
-  notifTime: {
     fontSize: 9,
-    color: "#999",
-    marginTop: 4,
-    fontFamily: "System",
-  },
-  emptyText: {
-    padding: 15,
-    textAlign: "center",
-    color: "#888",
-    fontSize: 12,
-    fontFamily: "System",
+    fontWeight: "bold",
   },
   dropdownMenu: {
     position: "absolute",
