@@ -1,7 +1,7 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useState, useEffect } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import Animated, { FadeInDown, FadeOut } from 'react-native-reanimated';
 import {
   Pressable,
@@ -14,9 +14,11 @@ import {
   TextInput,
   ActivityIndicator,
   Alert,
-  Animated as RNAnimated
+  Animated as RNAnimated,
+  LayoutChangeEvent,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import ResidentPageHeader from '@/components/resident-page-header';
 import { getComplaintDetails, deleteComplaint } from '@/services/resident.service';
 import { feedbackService } from '@/services/feedback.service';
 import { confirmAction } from '@/utils/confirm';
@@ -55,6 +57,10 @@ function getDetailMode(status?: string): ComplaintDetailMode {
   if (status === 'IN PROGRESS') return 'in-progress';
   if (status === 'RESOLVED') return 'resolved';
   return 'pending';
+}
+
+function firstParam(value?: string | string[]): string | undefined {
+  return Array.isArray(value) ? value[0] : value;
 }
 
 function DetailItem({
@@ -113,7 +119,13 @@ function EvidenceGrid({
   );
 }
 
-function WorkActivityTimeline({ updates }: { updates: any[] }) {
+function WorkActivityTimeline({
+  updates,
+  targetUpdateId,
+}: {
+  updates: any[];
+  targetUpdateId?: string;
+}) {
   if (!updates || updates.length === 0) {
     return (
       <View style={styles.emptyPhaseActivity}>
@@ -128,7 +140,13 @@ function WorkActivityTimeline({ updates }: { updates: any[] }) {
   return (
     <View style={styles.timeline}>
       {updates.map((update, index) => (
-        <View key={update.id} style={styles.timelineRow}>
+        <View
+          key={update.id}
+          style={[
+            styles.timelineRow,
+            update.id === targetUpdateId && styles.timelineRowFocused,
+          ]}
+        >
           <View style={styles.timelineTrack}>
             <View
               style={[
@@ -215,8 +233,14 @@ function ContractorAssignmentRow({
 
 function ComplaintTimeline({
   complaint,
+  highlighted,
+  targetUpdateId,
+  onLayout,
 }: {
   complaint: any;
+  highlighted?: boolean;
+  targetUpdateId?: string;
+  onLayout?: (event: LayoutChangeEvent) => void;
 }) {
   const updates = complaint.updates || [];
   const assignments = complaint.contractorAssignments || [];
@@ -226,7 +250,10 @@ function ComplaintTimeline({
   );
 
   return (
-    <View style={styles.panel}>
+    <View
+      onLayout={onLayout}
+      style={[styles.panel, highlighted && styles.notificationFocus]}
+    >
       <View style={styles.panelHeading}>
         <View style={styles.panelHeadingCopy}>
           <Text style={styles.panelTitle}>Work History</Text>
@@ -250,7 +277,10 @@ function ComplaintTimeline({
               </View>
             </View>
             {unassignedUpdates.length > 0 ? (
-              <WorkActivityTimeline updates={unassignedUpdates} />
+              <WorkActivityTimeline
+                updates={unassignedUpdates}
+                targetUpdateId={targetUpdateId}
+              />
             ) : (
               <View style={styles.emptyPhaseActivity}>
                 <Ionicons name="document-text-outline" size={17} color="#98A2B3" />
@@ -287,7 +317,10 @@ function ComplaintTimeline({
                     WORK DURING THIS ASSIGNMENT
                   </Text>
                 </View>
-                <WorkActivityTimeline updates={assignmentUpdates} />
+                <WorkActivityTimeline
+                  updates={assignmentUpdates}
+                  targetUpdateId={targetUpdateId}
+                />
               </View>
 
               {nextAssignment && (
@@ -432,11 +465,24 @@ function InteractiveStarRating({ rating, setRating, size = 28 }: { rating: numbe
   );
 }
 
-function FeedbackCard({ feedback }: { feedback: any }) {
+function FeedbackCard({
+  feedback,
+  targetFeedbackId,
+  targetReplyId,
+}: {
+  feedback: any;
+  targetFeedbackId?: string;
+  targetReplyId?: string;
+}) {
   const replies = feedback.replies || [];
 
   return (
-    <View style={styles.feedbackCard}>
+    <View
+      style={[
+        styles.feedbackCard,
+        feedback.id === targetFeedbackId && styles.feedbackCardFocused,
+      ]}
+    >
       <View style={styles.feedbackAvatar}>
         <Text style={styles.feedbackAvatarText}>{feedback.residentInitials}</Text>
       </View>
@@ -455,7 +501,13 @@ function FeedbackCard({ feedback }: { feedback: any }) {
         {replies.length > 0 && (
           <View style={styles.repliesList}>
             {replies.map((reply: any) => (
-              <View key={reply.id} style={styles.authorityReplyBox}>
+              <View
+                key={reply.id}
+                style={[
+                  styles.authorityReplyBox,
+                  reply.id === targetReplyId && styles.authorityReplyFocused,
+                ]}
+              >
                 <View style={styles.authorityReplyHeader}>
                   <View style={styles.authorityBadgeRow}>
                     <Ionicons name="shield-checkmark" size={13} color="#2F6B5F" />
@@ -486,6 +538,10 @@ function ResidentFeedback({
   setComment,
   hasSubmitted,
   onSubmit,
+  highlighted,
+  targetFeedbackId,
+  targetReplyId,
+  onLayout,
 }: {
   feedback: any[];
   rating: number;
@@ -494,6 +550,10 @@ function ResidentFeedback({
   setComment: (c: string) => void;
   hasSubmitted: boolean;
   onSubmit: () => void;
+  highlighted?: boolean;
+  targetFeedbackId?: string;
+  targetReplyId?: string;
+  onLayout?: (event: LayoutChangeEvent) => void;
 }) {
   const average =
     feedback.length === 0
@@ -501,7 +561,10 @@ function ResidentFeedback({
       : feedback.reduce((total, item) => total + item.rating, 0) / feedback.length;
 
   return (
-    <View style={styles.panel}>
+    <View
+      onLayout={onLayout}
+      style={[styles.panel, highlighted && styles.notificationFocus]}
+    >
       <View style={styles.panelHeading}>
         <View>
           <Text style={styles.panelTitle}>Resident Feedback</Text>
@@ -555,7 +618,12 @@ function ResidentFeedback({
           </View>
           <View style={styles.feedbackList}>
             {feedback.map((item) => (
-              <FeedbackCard key={item.id} feedback={item} />
+              <FeedbackCard
+                key={item.id}
+                feedback={item}
+                targetFeedbackId={targetFeedbackId}
+                targetReplyId={targetReplyId}
+              />
             ))}
           </View>
         </>
@@ -564,13 +632,28 @@ function ResidentFeedback({
   );
 }
 
-function ReporterProfile({ complaint }: { complaint: any }) {
+function ReporterProfile({
+  complaint,
+  highlighted,
+  onLayout,
+}: {
+  complaint: any;
+  highlighted?: boolean;
+  onLayout?: (event: LayoutChangeEvent) => void;
+}) {
   const [expanded, setExpanded] = useState(false);
   const otherReporters = complaint.otherReporters || [];
   const reporterCount = otherReporters.length;
+  const isExpanded = expanded || Boolean(highlighted);
 
   return (
-    <View style={styles.reporterPanel}>
+    <View
+      onLayout={onLayout}
+      style={[
+        styles.reporterPanel,
+        highlighted && styles.notificationFocus,
+      ]}
+    >
       <View style={styles.reporterCard}>
         <View style={styles.avatar}>
           <Text style={styles.avatarText}>{complaint.reporterInitials || 'MR'}</Text>
@@ -594,8 +677,8 @@ function ReporterProfile({ complaint }: { complaint: any }) {
         <>
           <Pressable
             accessibilityRole="button"
-            accessibilityState={{ expanded }}
-            accessibilityLabel={`${expanded ? 'Hide' : 'Show'} ${reporterCount} other reporters`}
+            accessibilityState={{ expanded: isExpanded }}
+            accessibilityLabel={`${isExpanded ? 'Hide' : 'Show'} ${reporterCount} other reporters`}
             onPress={() => setExpanded((current) => !current)}
             style={({ pressed }) => [
               styles.otherReportersToggle,
@@ -617,13 +700,13 @@ function ReporterProfile({ complaint }: { complaint: any }) {
               </Text>
             </View>
             <Ionicons
-              name={expanded ? 'chevron-up' : 'chevron-down'}
+              name={isExpanded ? 'chevron-up' : 'chevron-down'}
               size={18}
               color="#607A9A"
             />
           </Pressable>
 
-          {expanded && (
+          {isExpanded && (
             <Animated.View
               entering={FadeInDown.duration(180)}
               exiting={FadeOut.duration(120)}
@@ -655,7 +738,28 @@ function ReporterProfile({ complaint }: { complaint: any }) {
 
 export default function ComplaintDetailScreen() {
   const router = useRouter();
-  const { complaintId } = useLocalSearchParams<{ complaintId: string }>();
+  const params = useLocalSearchParams<{
+    complaintId?: string | string[];
+    section?: string | string[];
+    feedbackId?: string | string[];
+    replyId?: string | string[];
+    updateId?: string | string[];
+    duplicateId?: string | string[];
+  }>();
+  const complaintId = firstParam(params.complaintId) ?? '';
+  const targetFeedbackId = firstParam(params.feedbackId);
+  const targetReplyId = firstParam(params.replyId);
+  const targetUpdateId = firstParam(params.updateId);
+  const targetSection = firstParam(params.section) ??
+    (targetFeedbackId || targetReplyId
+      ? 'feedback'
+      : targetUpdateId
+        ? 'work'
+        : undefined);
+  const scrollViewRef = useRef<ScrollView>(null);
+  const pageGridOffsetRef = useRef(0);
+  const sectionOffsetsRef = useRef<Record<string, number>>({});
+  const scrolledSectionRef = useRef<string | null>(null);
   const { width } = useWindowDimensions();
 
   const [complaint, setComplaint] = useState<any>(null);
@@ -670,7 +774,39 @@ export default function ComplaintDetailScreen() {
   const [feedbackComment, setFeedbackComment] = useState('');
   const [hasSubmittedFeedback, setHasSubmittedFeedback] = useState(false);
   const [localFeedback, setLocalFeedback] = useState<any[]>([]);
-  const [hasUpvoted, setHasUpvoted] = useState(false);
+
+  const scrollToNotificationSection = useCallback(() => {
+    if (!targetSection || scrolledSectionRef.current === targetSection) return;
+
+    const localOffset = sectionOffsetsRef.current[targetSection];
+    if (localOffset === undefined) return;
+
+    const targetOffset =
+      targetSection === 'overview'
+        ? localOffset
+        : pageGridOffsetRef.current + localOffset;
+
+    scrolledSectionRef.current = targetSection;
+    requestAnimationFrame(() => {
+      scrollViewRef.current?.scrollTo({
+        y: Math.max(0, targetOffset - 16),
+        animated: true,
+      });
+    });
+  }, [targetSection]);
+
+  const recordSectionOffset = (
+    section: 'overview' | 'work' | 'reporters' | 'feedback',
+    event: LayoutChangeEvent,
+  ) => {
+    sectionOffsetsRef.current[section] = event.nativeEvent.layout.y;
+    if (section === targetSection) scrollToNotificationSection();
+  };
+
+  useEffect(() => {
+    scrolledSectionRef.current = null;
+    if (complaint && targetSection) requestAnimationFrame(scrollToNotificationSection);
+  }, [complaint, scrollToNotificationSection, targetSection]);
 
   const triggerToast = (message: string, callback?: () => void) => {
     setToastMessage(message);
@@ -737,6 +873,7 @@ export default function ComplaintDetailScreen() {
   if (loading) {
     return (
       <SafeAreaView style={styles.safeArea}>
+        <ResidentPageHeader />
         <View style={styles.notFound}>
           <ActivityIndicator size="large" color="#23435D" />
           <Text style={styles.notFoundTitle}>Loading complaint details...</Text>
@@ -748,6 +885,7 @@ export default function ComplaintDetailScreen() {
   if (!complaint) {
     return (
       <SafeAreaView style={styles.safeArea}>
+        <ResidentPageHeader />
         <View style={styles.notFound}>
           <Ionicons name="document-text-outline" size={38} color="#98A2B3" />
           <Text style={styles.notFoundTitle}>Complaint not found</Text>
@@ -765,6 +903,7 @@ export default function ComplaintDetailScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
+      <ResidentPageHeader />
       {showToast && (
         <RNAnimated.View style={[styles.toastContainer, { transform: [{ translateX: slideAnim }] }]}>
           <View style={styles.toastLeftBorder} />
@@ -780,12 +919,19 @@ export default function ComplaintDetailScreen() {
       )}
 
       <ScrollView
+        ref={scrollViewRef}
         contentInsetAdjustmentBehavior="automatic"
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
         <View style={styles.container}>
-          <View style={styles.hero}>
+          <View
+            onLayout={(event) => recordSectionOffset('overview', event)}
+            style={[
+              styles.hero,
+              targetSection === 'overview' && styles.notificationFocus,
+            ]}
+          >
             <View style={styles.heroTopRow}>
               <View style={[styles.statusBadge, { backgroundColor: theme.background }]}>
                 <Ionicons name={theme.icon} size={15} color={theme.color} />
@@ -821,7 +967,13 @@ export default function ComplaintDetailScreen() {
             )}
           </View>
 
-          <View style={[styles.pageGrid, wide && styles.pageGridWide]}>
+          <View
+            onLayout={(event) => {
+              pageGridOffsetRef.current = event.nativeEvent.layout.y;
+              scrollToNotificationSection();
+            }}
+            style={[styles.pageGrid, wide && styles.pageGridWide]}
+          >
             <View style={styles.mainColumn}>
               <View style={styles.panel}>
                 <View style={styles.panelHeading}>
@@ -873,7 +1025,12 @@ export default function ComplaintDetailScreen() {
 
 
 
-              <ComplaintTimeline complaint={complaint} />
+              <ComplaintTimeline
+                complaint={complaint}
+                highlighted={targetSection === 'work'}
+                targetUpdateId={targetUpdateId}
+                onLayout={(event) => recordSectionOffset('work', event)}
+              />
 
               {mode === 'resolved' && (
                 <View style={[styles.panel, styles.resolutionPanel]}>
@@ -925,7 +1082,11 @@ export default function ComplaintDetailScreen() {
             </View>
 
             <View style={styles.sideColumn}>
-              <ReporterProfile complaint={complaint} />
+              <ReporterProfile
+                complaint={complaint}
+                highlighted={targetSection === 'reporters'}
+                onLayout={(event) => recordSectionOffset('reporters', event)}
+              />
 
               {mode !== 'pending' && (
                 <ContractorAssignments complaint={complaint} mode={mode} />
@@ -943,6 +1104,10 @@ export default function ComplaintDetailScreen() {
                   comment={feedbackComment}
                   setComment={setFeedbackComment}
                   hasSubmitted={hasSubmittedFeedback}
+                  highlighted={targetSection === 'feedback'}
+                  targetFeedbackId={targetFeedbackId}
+                  targetReplyId={targetReplyId}
+                  onLayout={(event) => recordSectionOffset('feedback', event)}
                   onSubmit={() => {
                     if (feedbackRating === 0 || feedbackComment.trim() === '') return;
                     confirmAction('Are you sure you want to submit this feedback?', async () => {
@@ -1129,6 +1294,16 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 2 },
     elevation: 2,
+  },
+  notificationFocus: {
+    borderWidth: 2,
+    borderColor: '#2E78A6',
+    backgroundColor: '#F8FBFF',
+    shadowColor: '#2E78A6',
+    shadowOpacity: 0.14,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 3,
   },
   panelHeading: {
     flexDirection: 'row',
@@ -1533,6 +1708,14 @@ const styles = StyleSheet.create({
   contractorDateRangeText: { flex: 1, color: '#607A9A', fontSize: 8, lineHeight: 12 },
   timeline: { gap: 0 },
   timelineRow: { flexDirection: 'row', gap: 11 },
+  timelineRowFocused: {
+    marginHorizontal: -7,
+    padding: 7,
+    borderWidth: 2,
+    borderColor: '#2E78A6',
+    borderRadius: 10,
+    backgroundColor: '#EAF4FF',
+  },
   timelineTrack: { width: 28, alignItems: 'center' },
   timelineDot: {
     width: 27,
@@ -1672,6 +1855,11 @@ const styles = StyleSheet.create({
     borderRadius: 11,
     backgroundColor: '#F9FAFB',
   },
+  feedbackCardFocused: {
+    borderWidth: 2,
+    borderColor: '#2E78A6',
+    backgroundColor: '#EAF4FF',
+  },
   feedbackAvatar: {
     width: 36,
     height: 36,
@@ -1735,6 +1923,11 @@ const styles = StyleSheet.create({
     padding: 8,
     borderLeftWidth: 3,
     borderLeftColor: '#23435D',
+  },
+  authorityReplyFocused: {
+    borderWidth: 2,
+    borderColor: '#16845B',
+    backgroundColor: '#EAF8F1',
   },
   authorityReplyHeader: {
     flexDirection: 'row',

@@ -797,7 +797,7 @@ DECLARE
     recipient RECORD;
 BEGIN
     IF NOT NEW.is_official
-       OR NEW.status::TEXT NOT IN ('Announcement', 'Alert') THEN
+       OR NEW.status::TEXT NOT IN ('Announcement', 'Update', 'Alert') THEN
         RETURN NEW;
     END IF;
 
@@ -813,10 +813,12 @@ BEGIN
             'official_announcement',
             'forum_post',
             NEW.post_id,
-            'forum-post:' || NEW.post_id::TEXT || ':announcement',
+            'forum-post:' || NEW.post_id::TEXT || ':official-post',
             CASE
                 WHEN NEW.status::TEXT = 'Alert'
                     THEN 'Important community alert'
+                WHEN NEW.status::TEXT = 'Update'
+                    THEN 'New community update'
                 ELSE 'Community announcement'
             END,
             NEW.title,
