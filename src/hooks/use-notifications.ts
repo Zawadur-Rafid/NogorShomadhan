@@ -72,7 +72,7 @@ export function useNotifications(options: UseNotificationsOptions = {}) {
   );
 
   useEffect(() => {
-    void loadNotifications();
+    void Promise.resolve().then(() => loadNotifications());
   }, [loadNotifications]);
 
   const refresh = useCallback(

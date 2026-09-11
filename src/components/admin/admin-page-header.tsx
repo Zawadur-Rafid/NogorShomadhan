@@ -6,36 +6,12 @@ import { useCallback, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-const getNotificationRoute = (notification: {
-  route?: string;
-  title?: string;
-}) => {
-  if (notification.route) return notification.route;
-
-  const title = (notification.title ?? "").toLowerCase();
-
-  if (title.includes("account")) return "/(admin)/accounts/pending";
-  if (title.includes("duplicate")) return "/(admin)/dashboard";
-  if (title.includes("complaint") || title.includes("review"))
-    return "/(admin)/complaints/review";
-  if (title.includes("announcement") || title.includes("forum"))
-    return "/(admin)/forum";
-  if (
-    title.includes("status") ||
-    title.includes("progress") ||
-    title.includes("work")
-  )
-    return "/(admin)/complaints/all";
-
-  return "/(admin)/dashboard";
-};
-
 /** Shared top bar for every screen in the admin route group. */
 export default function AdminPageHeader() {
   const router = useRouter();
   const pathname = usePathname();
   const insets = useSafeAreaInsets();
-  const isDashboard = pathname === "/dashboard";
+  const isDashboard = pathname === "/dashboard" || pathname === "/(admin)/dashboard";
   const [menuVisible, setMenuVisible] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
 
@@ -91,7 +67,7 @@ export default function AdminPageHeader() {
       {isDashboard ? (
         <View style={styles.actions}>
           <Pressable
-            accessibilityLabel="View notifications"
+            accessibilityLabel={`Notifications, ${unreadCount} unread`}
             accessibilityRole="button"
             hitSlop={10}
             onPress={() => router.push("/(admin)/notifications" as any)}
@@ -101,7 +77,7 @@ export default function AdminPageHeader() {
             {unreadCount > 0 ? (
               <View style={styles.notificationCount}>
                 <Text style={styles.notificationCountText}>
-                  {unreadCount > 9 ? "9+" : unreadCount}
+                  {unreadCount > 99 ? "99+" : unreadCount}
                 </Text>
               </View>
             ) : null}

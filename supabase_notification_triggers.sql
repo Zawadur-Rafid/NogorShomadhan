@@ -272,7 +272,7 @@ BEGIN
             candidate_label || ' — "' ||
                 COALESCE(candidate_title, 'Submitted complaint') ||
                 '" may be a duplicate of ' || canonical_label || '.',
-            '/(admin)/complaints/' || NEW.comp_id::TEXT,
+            '/(admin)/duplicates/' || NEW.dup_id::TEXT,
             JSONB_BUILD_OBJECT(
                 'duplicate_id', NEW.dup_id,
                 'candidate_complaint_id', NEW.comp_id,
