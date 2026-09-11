@@ -92,7 +92,7 @@ export default function AdminPageHeader() {
           accessibilityLabel="View notifications"
           accessibilityRole="button"
           hitSlop={10}
-          onPress={() => setNotificationsVisible((visible) => !visible)}
+          onPress={() => router.push("/(admin)/notifications" as any)}
           style={[styles.iconButton, styles.notificationButton]}
         >
           <Ionicons name="notifications-outline" size={24} color="#23435D" />
