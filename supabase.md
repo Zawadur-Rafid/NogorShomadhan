@@ -12,6 +12,7 @@
 - `notification_type`: ENUM ('account_review_required', 'account_approved', 'account_rejected', 'complaint_review_required', 'complaint_accepted', 'complaint_rejected', 'complaint_work_started', 'complaint_progress_updated', 'complaint_deadline_changed', 'complaint_deadline_milestone', 'complaint_overdue', 'complaint_resolved', 'complaint_feedback_received', 'complaint_feedback_replied', 'forum_comment_received', 'forum_reply_received', 'official_announcement', 'system_alert')
 - `notification_entity_type`: ENUM ('account', 'complaint', 'feedback', 'forum_post', 'forum_comment', 'system')
 - `notification_priority`: ENUM ('low', 'normal', 'high', 'urgent')
+- `duplicate_review_status`: ENUM ('pending', 'confirmed', 'rejected')
 
 ## Tables
 
@@ -53,6 +54,12 @@
 - `acc_id`: UUID (Foreign Key to account.acc_id)
 - `comp_id`: UUID (Foreign Key to complaints.comp_id)
 - `timestamp`: TIMESTAMPTZ (Default: CURRENT_TIMESTAMP)
+- `matched_comp_id`: UUID (Foreign Key to complaints.comp_id)
+- `ai_score`: NUMERIC
+- `ai_reason`: TEXT
+- `admin_status`: duplicate_review_status (Default: 'pending')
+- `reviewed_at`: TIMESTAMPTZ
+- `admin_note`: TEXT
 
 ### complaint_status_history
 - history_id: UUID (Primary Key, Default: gen_random_uuid())
