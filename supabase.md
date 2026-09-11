@@ -9,6 +9,9 @@
 - `complaint_status`: ENUM ('unverified', 'pending', 'in progress', 'resolved')
 - `complaint_category`: ENUM ('Road Damage', 'Garbage & Waste', 'Drainage & Waterlogging', 'Streetlight & Electrical', 'Water Supply', 'Sanitation & Public Toilets', 'Traffic & Illegal Parking', 'Public Safety & Encroachment', 'Noise & Environmental Pollution', 'Parks & Public Spaces', 'Animal-Related Issues', 'Other')
 - `forum_post_type`: ENUM ('Announcement', 'Update', 'Alert')
+- `notification_type`: ENUM ('account_review_required', 'account_approved', 'account_rejected', 'complaint_review_required', 'complaint_accepted', 'complaint_rejected', 'complaint_work_started', 'complaint_progress_updated', 'complaint_deadline_changed', 'complaint_deadline_milestone', 'complaint_overdue', 'complaint_resolved', 'complaint_feedback_received', 'complaint_feedback_replied', 'forum_comment_received', 'forum_reply_received', 'official_announcement', 'system_alert')
+- `notification_entity_type`: ENUM ('account', 'complaint', 'feedback', 'forum_post', 'forum_comment', 'system')
+- `notification_priority`: ENUM ('low', 'normal', 'high', 'urgent')
 
 ## Tables
 
@@ -154,5 +157,33 @@ Purpose:
 
 Purpose:
 - Stores responses from community authority to resident feedback comments.
+
+### `notifications`
+- `notification_id`: UUID (Primary Key, Default: gen_random_uuid())
+- `recipient_acc_id`: UUID (Foreign Key to account.acc_id, ON DELETE CASCADE, NOT NULL)
+- `actor_acc_id`: UUID (Foreign Key to account.acc_id, ON DELETE SET NULL)
+- `type`: notification_type (NOT NULL)
+- `entity_type`: notification_entity_type (NOT NULL)
+- `entity_id`: UUID (Generic reference to the related account, complaint, feedback, forum post, or comment)
+- `event_key`: TEXT (NOT NULL; unique per recipient for deduplication)
+- `title`: TEXT (NOT NULL)
+- `body`: TEXT (NOT NULL)
+- `action_path`: TEXT (Nullable internal Expo Router path)
+- `data`: JSONB (Default: empty object, NOT NULL)
+- `priority`: notification_priority (Default: 'normal', NOT NULL)
+- `created_at`: TIMESTAMPTZ (Default: CURRENT_TIMESTAMP, NOT NULL)
+- `seen_at`: TIMESTAMPTZ (Nullable)
+- `read_at`: TIMESTAMPTZ (Nullable)
+- `push_sent_at`: TIMESTAMPTZ (Nullable)
+
+Purpose:
+- Stores one persistent notification per recipient across resident, admin, and authority roles.
+- Prevents duplicate delivery with a unique `(recipient_acc_id, event_key)` constraint.
+- Supports unread counts, read state, future push delivery, and role-aware deep links.
+
+Security:
+- Row Level Security is enabled with public select, insert, and update policies to match the current anonymous-client access model documented in `rls.md`.
+- The app must filter reads and updates by `recipient_acc_id`; stronger recipient-scoped enforcement remains in the security-hardening backlog.
+- No public delete policy is provided, so notification history is retained.
 
 

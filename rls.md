@@ -98,6 +98,18 @@
   - `Enable update for public`: Allows editing feedback replies.
   - `Enable delete for public`: Allows deleting feedback replies.
 
+### `notifications`
+- **RLS Enabled:** Yes
+- **Policies:**
+  - `Enable select for public`: Allows the app to read notifications and filter them by the locally stored recipient account ID.
+  - `Enable insert for public`: Allows notification records to be generated under the project's current anonymous-client access model.
+  - `Enable update for public`: Allows the app to update `seen_at` and `read_at` when notifications are viewed or marked as read.
+- **No delete policy:** Notification history is retained instead of being removed by clients.
+- **Expected app behavior:**
+  - Every notification query filters by `recipient_acc_id`.
+  - Clients update read-state timestamps but do not delete notification rows.
+  - `event_key` prevents the same event from being inserted twice for one recipient.
+
 Security hardening backlog:
 1. Migrate to Supabase Auth and map auth user to account.acc_id.
 2. Replace public policies with role-based policies for resident, admin, and authority.
