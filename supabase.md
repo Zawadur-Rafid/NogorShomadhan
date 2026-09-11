@@ -52,9 +52,9 @@
 ### `duplicate`
 - `dup_id`: UUID (Primary Key, Default: gen_random_uuid())
 - `acc_id`: UUID (Foreign Key to account.acc_id)
-- `comp_id`: UUID (Foreign Key to complaints.comp_id; canonical/original complaint)
+- `comp_id`: UUID (Nullable Foreign Key to complaints.comp_id, ON DELETE SET NULL; newly submitted candidate complaint)
 - `timestamp`: TIMESTAMPTZ (Default: CURRENT_TIMESTAMP)
-- `matched_comp_id`: UUID (Nullable Foreign Key to complaints.comp_id, ON DELETE SET NULL; newly submitted candidate complaint)
+- `matched_comp_id`: UUID (Foreign Key to complaints.comp_id, NOT NULL; canonical/original complaint)
 - `ai_score`: NUMERIC
 - `ai_reason`: TEXT
 - `admin_status`: duplicate_review_status (Default: 'pending')
@@ -62,9 +62,10 @@
 - `admin_note`: TEXT
 
 Notification integration assumptions:
-- `comp_id` identifies the canonical complaint that remains active.
-- `matched_comp_id` identifies the newly submitted candidate complaint and becomes null if that complaint is deleted.
+- `comp_id` identifies the newly submitted candidate complaint and becomes null if that complaint is deleted.
+- `matched_comp_id` identifies the canonical complaint that remains active.
 - `acc_id` identifies the resident who submitted the candidate complaint.
+- Admin review should set `admin_status` to `confirmed` before deleting the candidate complaint so the confirmation notification can include both complaint references.
 - Notification triggers observe duplicate inserts and `admin_status` changes; they do not decide the duplicate status or delete complaint/duplicate records.
 
 ### complaint_status_history

@@ -4,14 +4,27 @@
 --   2. supabase_notification_types_update.sql
 --
 -- Duplicate relationship used by these triggers:
---   duplicate.comp_id = canonical/original complaint
---   duplicate.matched_comp_id = newly submitted candidate complaint
+--   duplicate.comp_id = newly submitted candidate complaint
+--   duplicate.matched_comp_id = canonical/original complaint
 --   duplicate.acc_id = resident who submitted the candidate
 
 -- Keep the confirmed duplicate row after its temporary candidate complaint is
--- removed. The canonical complaint remains referenced by duplicate.comp_id.
+-- removed. The canonical complaint remains referenced by duplicate.matched_comp_id.
 ALTER TABLE duplicate
-    ALTER COLUMN matched_comp_id DROP NOT NULL;
+    ALTER COLUMN comp_id DROP NOT NULL;
+
+ALTER TABLE duplicate
+    DROP CONSTRAINT IF EXISTS duplicate_comp_id_fkey;
+
+ALTER TABLE duplicate
+    ADD CONSTRAINT duplicate_comp_id_fkey
+    FOREIGN KEY (comp_id)
+    REFERENCES complaints(comp_id)
+    ON DELETE SET NULL;
+
+-- The matched complaint is the canonical complaint and must remain available.
+ALTER TABLE duplicate
+    ALTER COLUMN matched_comp_id SET NOT NULL;
 
 ALTER TABLE duplicate
     DROP CONSTRAINT IF EXISTS duplicate_matched_comp_id_fkey;
@@ -19,8 +32,7 @@ ALTER TABLE duplicate
 ALTER TABLE duplicate
     ADD CONSTRAINT duplicate_matched_comp_id_fkey
     FOREIGN KEY (matched_comp_id)
-    REFERENCES complaints(comp_id)
-    ON DELETE SET NULL;
+    REFERENCES complaints(comp_id);
 
 CREATE OR REPLACE FUNCTION notification_complaint_label(p_comp_id UUID)
 RETURNS TEXT
@@ -229,19 +241,19 @@ BEGIN
         RETURN NEW;
     END IF;
 
-    canonical_label := notification_complaint_label(NEW.comp_id);
-    candidate_label := notification_complaint_label(NEW.matched_comp_id);
+    canonical_label := notification_complaint_label(NEW.matched_comp_id);
+    candidate_label := notification_complaint_label(NEW.comp_id);
 
     SELECT title
     INTO candidate_title
     FROM complaints
-    WHERE comp_id = NEW.matched_comp_id;
+    WHERE comp_id = NEW.comp_id;
 
     -- A potential duplicate has its own review notification, so remove the ordinary
     -- complaint-review notification created for the candidate in the same workflow.
     DELETE FROM notifications
     WHERE type = 'complaint_review_required'
-      AND entity_id = NEW.matched_comp_id;
+      AND entity_id = NEW.comp_id;
 
     FOR admin_id IN
         SELECT acc_id
@@ -254,18 +266,18 @@ BEGIN
             NEW.acc_id,
             'duplicate_review_required',
             'complaint',
-            NEW.matched_comp_id,
+            NEW.comp_id,
             'duplicate:' || NEW.dup_id::TEXT || ':review',
             'Possible duplicate complaint',
             candidate_label || ' — "' ||
                 COALESCE(candidate_title, 'Submitted complaint') ||
                 '" may be a duplicate of ' || canonical_label || '.',
-            '/(admin)/complaints/' || NEW.matched_comp_id::TEXT,
+            '/(admin)/complaints/' || NEW.comp_id::TEXT,
             JSONB_BUILD_OBJECT(
                 'duplicate_id', NEW.dup_id,
-                'candidate_complaint_id', NEW.matched_comp_id,
+                'candidate_complaint_id', NEW.comp_id,
                 'candidate_complaint_label', candidate_label,
-                'canonical_complaint_id', NEW.comp_id,
+                'canonical_complaint_id', NEW.matched_comp_id,
                 'canonical_complaint_label', canonical_label,
                 'ai_score', NEW.ai_score,
                 'ai_reason', NEW.ai_reason
@@ -300,20 +312,20 @@ BEGIN
         RETURN NEW;
     END IF;
 
-    canonical_label := notification_complaint_label(NEW.comp_id);
-    candidate_label := notification_complaint_label(NEW.matched_comp_id);
+    canonical_label := notification_complaint_label(NEW.matched_comp_id);
+    candidate_label := notification_complaint_label(NEW.comp_id);
 
     SELECT title
     INTO canonical_title
     FROM complaints
-    WHERE comp_id = NEW.comp_id;
+    WHERE comp_id = NEW.matched_comp_id;
 
     PERFORM enqueue_notification(
         NEW.acc_id,
         NULL,
         'complaint_duplicate_confirmed',
         'complaint',
-        NEW.comp_id,
+        NEW.matched_comp_id,
         'duplicate:' || NEW.dup_id::TEXT || ':confirmed',
         'Complaint linked to an existing report',
         'Your report ' || candidate_label ||
@@ -321,12 +333,12 @@ BEGIN
             canonical_label || ' — "' ||
             COALESCE(canonical_title, 'Existing complaint') ||
             '". You will now receive updates for ' || canonical_label || '.',
-        '/(resident)/complaints/' || NEW.comp_id::TEXT,
+        '/(resident)/complaints/' || NEW.matched_comp_id::TEXT,
         JSONB_BUILD_OBJECT(
             'duplicate_id', NEW.dup_id,
-            'candidate_complaint_id', NEW.matched_comp_id,
+            'candidate_complaint_id', NEW.comp_id,
             'candidate_complaint_label', candidate_label,
-            'canonical_complaint_id', NEW.comp_id,
+            'canonical_complaint_id', NEW.matched_comp_id,
             'canonical_complaint_label', canonical_label
         ),
         'normal'
@@ -411,7 +423,7 @@ BEGIN
                 UNION ALL
                 SELECT d.acc_id
                 FROM duplicate AS d
-                WHERE d.comp_id = NEW.comp_id
+                WHERE d.matched_comp_id = NEW.comp_id
                   AND d.admin_status::TEXT = 'confirmed'
             ) AS audience
             WHERE audience.acc_id IS NOT NULL
@@ -445,7 +457,7 @@ BEGIN
                       OR EXISTS (
                           SELECT 1
                           FROM duplicate AS d
-                          WHERE d.comp_id = NEW.comp_id
+                          WHERE d.matched_comp_id = NEW.comp_id
                             AND d.acc_id = resident.acc_id
                             AND d.admin_status::TEXT = 'confirmed'
                       )
@@ -552,7 +564,7 @@ BEGIN
             UNION ALL
             SELECT d.acc_id
             FROM duplicate AS d
-            WHERE d.comp_id = NEW.comp_id
+            WHERE d.matched_comp_id = NEW.comp_id
               AND d.admin_status::TEXT = 'confirmed'
         ) AS audience
         WHERE audience.acc_id IS NOT NULL
