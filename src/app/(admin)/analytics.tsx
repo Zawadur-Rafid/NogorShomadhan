@@ -1,408 +1,234 @@
-import Ionicons from "@expo/vector-icons/Ionicons";
-import * as Print from "expo-print";
-import * as Sharing from "expo-sharing";
-import { useMemo, useState } from "react";
+import Ionicons from '@expo/vector-icons/Ionicons';
+import { useMemo, useState, type ComponentProps, type ReactNode } from 'react';
 import {
-    Alert,
-    Platform,
-    Pressable,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    useWindowDimensions,
-    View,
-} from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+  ActivityIndicator,
+  Alert,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  useWindowDimensions,
+  View,
+} from 'react-native';
 
-import AdminBottomNav from "@/components/AdminBottomNav";
-import { useAuthorityComplaints } from "@/components/authority/authority-complaints-context";
-import type { AuthorityComplaintDetail } from "@/components/authority/store-authority-complaint-details";
+import AdminBottomNav from '@/components/AdminBottomNav';
+import {
+  analyticsPeriods,
+  buildAuthorityAnalytics,
+  formatAnalyticsDays,
+  type AnalyticsDistribution,
+  type AnalyticsPeriod,
+} from '@/components/authority/authority-analytics';
+import { useAuthorityComplaints } from '@/components/authority/authority-complaints-context';
+import { generateAdminAnalyticsPdf } from '@/services/admin-analytics-report.service';
 
-const periods = ["7 Days", "30 Days", "This Year"] as const;
-const distributionColors = [
-  "#23435D",
-  "#3B82F6",
-  "#B9854B",
-  "#26A69A",
-  "#7C6BC4",
-];
+type IconName = ComponentProps<typeof Ionicons>['name'];
 
-const getComplaintArea = (location: string) =>
-  location.match(/Block\s+[A-Z0-9-]+/i)?.[0] ??
-  location.split(",").at(-1)?.trim() ??
-  location;
-
-const parseAuthorityDate = (value?: string) => {
-  if (!value) return Number.NaN;
-  return Date.parse(value.replace(",", ""));
-};
-
-const escapeHtml = (value: string) =>
-  value.replace(
-    /[&<>'"]/g,
-    (character) =>
-      ({
-        "&": "&amp;",
-        "<": "&lt;",
-        ">": "&gt;",
-        "'": "&#39;",
-        '"': "&quot;",
-      })[character] ?? character,
+function Panel({
+  title,
+  subtitle,
+  icon,
+  children,
+}: {
+  title: string;
+  subtitle: string;
+  icon: IconName;
+  children: ReactNode;
+}) {
+  return (
+    <View style={styles.panel}>
+      <View style={styles.panelHeader}>
+        <View style={styles.panelHeading}>
+          <Text style={styles.panelTitle}>{title}</Text>
+          <Text style={styles.panelSubtitle}>{subtitle}</Text>
+        </View>
+        <Ionicons name={icon} size={21} color="#23435D" />
+      </View>
+      {children}
+    </View>
   );
-
-function buildTrendData(
-  period: (typeof periods)[number],
-  complaints: AuthorityComplaintDetail[],
-) {
-  if (period === "7 Days") {
-    return [15, 16, 17, 18, 19, 20, 21].map((day) => ({
-      label: `${day} Jul`,
-      value: complaints.filter(
-        (item) => Number(item.submittedAt.match(/^\d+/)?.[0]) === day,
-      ).length,
-    }));
-  }
-
-  if (period === "30 Days") {
-    return [
-      { label: "Week 1", start: 1, end: 7 },
-      { label: "Week 2", start: 8, end: 14 },
-      { label: "Week 3", start: 15, end: 21 },
-      { label: "Week 4", start: 22, end: 31 },
-    ].map((week) => ({
-      label: week.label,
-      value: complaints.filter((item) => {
-        const day = Number(item.submittedAt.match(/^\d+/)?.[0]);
-        return day >= week.start && day <= week.end;
-      }).length,
-    }));
-  }
-
-  const months = [
-    "Jan",
-    "Feb",
-    "Mar",
-    "Apr",
-    "May",
-    "Jun",
-    "Jul",
-    "Aug",
-    "Sep",
-    "Oct",
-    "Nov",
-    "Dec",
-  ];
-  return months.map((month) => ({
-    label: month,
-    value: complaints.filter((item) => item.submittedAt.includes(month)).length,
-  }));
 }
 
-export default function AuthorityAnalytics() {
+function Empty({ text }: { text: string }) {
+  return (
+    <View style={styles.empty}>
+      <Ionicons name="bar-chart-outline" size={24} color="#A7AFBA" />
+      <Text style={styles.emptyText}>{text}</Text>
+    </View>
+  );
+}
+
+function Distribution({
+  items,
+  emptyText,
+}: {
+  items: AnalyticsDistribution[];
+  emptyText: string;
+}) {
+  if (items.length === 0) return <Empty text={emptyText} />;
+
+  return (
+    <View style={styles.distributionList}>
+      {items.map((item) => (
+        <View key={item.label} style={styles.distributionRow}>
+          <View style={styles.distributionHeading}>
+            <Text numberOfLines={1} style={styles.distributionLabel}>
+              {item.label}
+            </Text>
+            <Text style={styles.distributionValue}>
+              {item.value} · {item.percent}%
+            </Text>
+          </View>
+          <View style={styles.track}>
+            <View
+              style={[
+                styles.distributionBar,
+                { width: `${item.percent}%`, backgroundColor: item.color },
+              ]}
+            />
+          </View>
+        </View>
+      ))}
+    </View>
+  );
+}
+
+export default function AdminAnalyticsScreen() {
   const { width } = useWindowDimensions();
-  const { complaints } = useAuthorityComplaints();
-  const [period, setPeriod] = useState<(typeof periods)[number]>("30 Days");
-  const [reportGenerated, setReportGenerated] = useState(false);
-  const [isGeneratingReport, setIsGeneratingReport] = useState(false);
-  const wide = width >= 900;
-  const {
-    authorityAnalyticsSummary,
-    authorityCategoryDistribution,
-    authorityResolutionPerformance,
-    authorityStatusDistribution,
-    authorityZoneDistribution,
-  } = useMemo(() => {
-    const total = complaints.length;
-    const resolvedComplaints = complaints.filter(
-      (item) => item.status === "RESOLVED",
-    );
-    const statusDistribution = [
-      { label: "Pending", status: "PENDING", color: "#EF4444" },
-      { label: "In Progress", status: "IN PROGRESS", color: "#C67B00" },
-      { label: "Resolved", status: "RESOLVED", color: "#2563EB" },
-    ].map((item) => {
-      const value = complaints.filter(
-        (complaint) => complaint.status === item.status,
-      ).length;
-      return {
-        label: item.label,
-        value,
-        percent: total === 0 ? 0 : Math.round((value / total) * 100),
-        color: item.color,
-      };
-    });
-
-    const categoryCounts = Object.entries(
-      complaints.reduce<Record<string, number>>((counts, item) => {
-        counts[item.category] = (counts[item.category] ?? 0) + 1;
-        return counts;
-      }, {}),
-    ).sort((first, second) => second[1] - first[1]);
-    const maxCategory = Math.max(
-      1,
-      ...categoryCounts.map(([, count]) => count),
-    );
-    const categoryDistribution = categoryCounts.map(
-      ([label, value], index) => ({
-        label,
-        value,
-        percent: Math.round((value / maxCategory) * 100),
-        color: distributionColors[index % distributionColors.length],
-      }),
-    );
-
-    const zoneCounts = Object.entries(
-      complaints.reduce<Record<string, number>>((counts, item) => {
-        const area = getComplaintArea(item.location);
-        counts[area] = (counts[area] ?? 0) + 1;
-        return counts;
-      }, {}),
-    ).sort((first, second) => second[1] - first[1]);
-    const maxZone = Math.max(1, ...zoneCounts.map(([, count]) => count));
-    const zoneDistribution = zoneCounts.map(([label, value], index) => ({
-      label,
-      value,
-      percent: Math.round((value / maxZone) * 100),
-      color: distributionColors[index % distributionColors.length],
-    }));
-
-    const resolvedDurations = resolvedComplaints
-      .map((item) => {
-        const submitted = parseAuthorityDate(item.submittedAt);
-        const completed = parseAuthorityDate(item.completedAt);
-        return Number.isNaN(submitted) || Number.isNaN(completed)
-          ? Number.NaN
-          : Math.max(0, (completed - submitted) / 86_400_000);
-      })
-      .filter((value) => !Number.isNaN(value));
-    const averageDays =
-      resolvedDurations.length === 0
-        ? 0
-        : resolvedDurations.reduce((sum, value) => sum + value, 0) /
-          resolvedDurations.length;
-    const withinDeadline = resolvedComplaints.filter((item) => {
-      const completed = parseAuthorityDate(item.completedAt);
-      const deadline = parseAuthorityDate(item.deadline);
-      return (
-        !Number.isNaN(completed) &&
-        !Number.isNaN(deadline) &&
-        completed <= deadline + 86_399_999
-      );
-    }).length;
-    const overdue = Math.max(0, resolvedComplaints.length - withinDeadline);
-    const onTimeRate =
-      resolvedComplaints.length === 0
-        ? 0
-        : Math.round((withinDeadline / resolvedComplaints.length) * 100);
-    const resolutionRate =
-      total === 0 ? 0 : Math.round((resolvedComplaints.length / total) * 100);
-
-    return {
-      authorityAnalyticsSummary: [
-        {
-          label: "Total Complaints",
-          value: String(total),
-          change: "Live assigned records",
-          icon: "documents-outline" as const,
-          color: "#3B82F6",
-          background: "#EEF6FF",
-        },
-        {
-          label: "Resolution Rate",
-          value: `${resolutionRate}%`,
-          change: `${resolvedComplaints.length} resolved`,
-          icon: "checkmark-done-outline" as const,
-          color: "#16845B",
-          background: "#EAF8F1",
-        },
-        {
-          label: "Average Resolution",
-          value: `${averageDays.toFixed(1)} days`,
-          change: "From submission to completion",
-          icon: "timer-outline" as const,
-          color: "#C67B00",
-          background: "#FFF7E8",
-        },
-      ],
-      authorityStatusDistribution: statusDistribution,
-      authorityCategoryDistribution: categoryDistribution,
-      authorityZoneDistribution: zoneDistribution,
-
-      authorityResolutionPerformance: {
-        resolved: resolvedComplaints.length,
-        withinDeadline,
-        overdue,
-        onTimeRate,
-        averageDays: Number(averageDays.toFixed(1)),
-        targetDays: 4,
-      },
-    };
-  }, [complaints]);
-  const trendData = useMemo(
-    () => buildTrendData(period, complaints),
+  const { complaints, loading, error, refreshComplaints } = useAuthorityComplaints();
+  const [period, setPeriod] = useState<AnalyticsPeriod>('30 Days');
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+  const analytics = useMemo(
+    () => buildAuthorityAnalytics(complaints, period),
     [complaints, period],
   );
-  const maxTrend = useMemo(
-    () => Math.max(1, ...trendData.map((item) => item.value)),
-    [trendData],
-  );
-  const trendTitle =
-    period === "7 Days"
-      ? "Daily Complaint Trend"
-      : period === "30 Days"
-        ? "Weekly Complaint Trend"
-        : "Monthly Complaint Trend";
+  const wide = width >= 900;
+  const summary: {
+    label: string;
+    value: string;
+    detail: string;
+    icon: IconName;
+    color: string;
+    background: string;
+  }[] = [
+    {
+      label: 'Total Complaints',
+      value: String(analytics.total),
+      detail: `Accepted complaints submitted during ${period.toLowerCase()}`,
+      icon: 'documents-outline',
+      color: '#3B82F6',
+      background: '#EEF6FF',
+    },
+    {
+      label: 'In Progress',
+      value: String(analytics.inProgress),
+      detail: 'Complaints currently being handled',
+      icon: 'construct-outline',
+      color: '#C67B00',
+      background: '#FFF7E8',
+    },
+    {
+      label: 'Resolution Rate',
+      value: `${analytics.resolutionRate}%`,
+      detail: `${analytics.resolved} of ${analytics.total} resolved`,
+      icon: 'checkmark-done-outline',
+      color: '#16845B',
+      background: '#EAF8F1',
+    },
+    {
+      label: 'Average Resolution',
+      value: formatAnalyticsDays(analytics.averageResolutionDays),
+      detail:
+        analytics.resolutionSampleSize === 0
+          ? 'No resolved records with valid timestamps'
+          : `Based on ${analytics.resolutionSampleSize} resolved complaint${analytics.resolutionSampleSize === 1 ? '' : 's'}`,
+      icon: 'timer-outline',
+      color: '#7C6BC4',
+      background: '#F2EFFE',
+    },
+  ];
 
-  const handleGenerateReport = async () => {
-    setIsGeneratingReport(true);
+  const handleGeneratePdf = async () => {
+    if (analytics.total === 0 || isGeneratingPdf) return;
 
-    const summaryRows = authorityAnalyticsSummary
-      .map(
-        (item) =>
-          `<tr><td>${escapeHtml(item.label)}</td><td>${escapeHtml(item.value)}</td><td>${escapeHtml(item.change)}</td></tr>`,
-      )
-      .join("");
-    const statusRows = authorityStatusDistribution
-      .map(
-        (item) =>
-          `<tr><td>${escapeHtml(item.label)}</td><td>${item.value}</td><td>${item.percent}%</td></tr>`,
-      )
-      .join("");
-    const categoryRows = authorityCategoryDistribution
-      .map(
-        (item) =>
-          `<tr><td>${escapeHtml(item.label)}</td><td>${item.value}</td></tr>`,
-      )
-      .join("");
-    const zoneRows = authorityZoneDistribution
-      .map(
-        (item) =>
-          `<tr><td>${escapeHtml(item.label)}</td><td>${item.value}</td></tr>`,
-      )
-      .join("");
-    const trendRows = trendData
-      .map(
-        (item) =>
-          `<tr><td>${escapeHtml(item.label)}</td><td>${item.value}</td></tr>`,
-      )
-      .join("");
-
-    const html = `<!doctype html>
-      <html><head><meta charset="utf-8" /><style>
-        @page { margin: 28px; }
-        body { font-family: Arial, sans-serif; color: #1F2937; }
-        h1 { color: #23435D; margin-bottom: 4px; }
-        h2 { color: #23435D; margin: 24px 0 8px; font-size: 18px; }
-        p { color: #667085; margin-top: 4px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 8px; }
-        th { background: #23435D; color: white; text-align: left; }
-        th, td { border: 1px solid #D0D5DD; padding: 8px; font-size: 12px; }
-        .meta { color: #667085; font-size: 12px; }
-      </style></head><body>
-        <h1>Nogor Shomadhan Analytics Report</h1>
-        <p class="meta">Authority performance report | Period: ${escapeHtml(period)} | Generated: ${escapeHtml(new Date().toLocaleString())}</p>
-        <h2>Summary</h2>
-        <table><tr><th>Metric</th><th>Value</th><th>Details</th></tr>${summaryRows}</table>
-        <h2>Status Distribution</h2>
-        <table><tr><th>Status</th><th>Complaints</th><th>Share</th></tr>${statusRows}</table>
-        <h2>Complaints by Category</h2>
-        <table><tr><th>Category</th><th>Complaints</th></tr>${categoryRows || '<tr><td colspan="2">No data available</td></tr>'}</table>
-        <h2>Complaints by Zone</h2>
-        <table><tr><th>Area</th><th>Complaints</th></tr>${zoneRows || '<tr><td colspan="2">No data available</td></tr>'}</table>
-        <h2>${escapeHtml(trendTitle)}</h2>
-        <table><tr><th>Period</th><th>Complaints</th></tr>${trendRows}</table>
-        <h2>Resolution Performance</h2>
-        <table><tr><th>Resolved</th><th>Within Deadline</th><th>Overdue</th><th>On-time Rate</th><th>Average Days</th></tr>
-          <tr><td>${authorityResolutionPerformance.resolved}</td><td>${authorityResolutionPerformance.withinDeadline}</td><td>${authorityResolutionPerformance.overdue}</td><td>${authorityResolutionPerformance.onTimeRate}%</td><td>${authorityResolutionPerformance.averageDays}</td></tr>
-        </table>
-      </body></html>`;
-
+    setIsGeneratingPdf(true);
     try {
-      if (Platform.OS === "web") {
-        await Print.printAsync({ html });
-      } else {
-        const { uri } = await Print.printToFileAsync({ html });
-        const canShare = await Sharing.isAvailableAsync();
-        if (!canShare) {
-          Alert.alert("Report created", `The PDF was created at ${uri}`);
-        } else {
-          await Sharing.shareAsync(uri, {
-            mimeType: "application/pdf",
-            dialogTitle: "Save analytics report",
-            UTI: "com.adobe.pdf",
-          });
-        }
+      const result = await generateAdminAnalyticsPdf({ analytics, period });
+      if (result.uri && !result.shared) {
+        Alert.alert('PDF created', `The report was created at ${result.uri}`);
       }
-      setReportGenerated(true);
-    } catch (error) {
-      console.error("Failed to generate analytics report:", error);
-      Alert.alert(
-        "Report failed",
-        "Unable to create the analytics PDF. Please try again.",
-      );
+    } catch (reportError) {
+      console.error('Failed to generate administration analytics PDF:', reportError);
+      Alert.alert('Report failed', 'Unable to create the analytics PDF. Please try again.');
     } finally {
-      setIsGeneratingReport(false);
+      setIsGeneratingPdf(false);
     }
   };
 
   return (
-    <SafeAreaView edges={["left", "right"]} style={styles.safeArea}>
+    <View style={styles.safeArea}>
       <ScrollView
         contentInsetAdjustmentBehavior="automatic"
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={loading}
+            onRefresh={() => void refreshComplaints()}
+            colors={['#23435D']}
+            tintColor="#23435D"
+          />
+        }
         contentContainerStyle={styles.scrollContent}
       >
         <View style={styles.container}>
-          <View style={[styles.hero, !wide && styles.heroCompact]}>
+          <View style={styles.hero}>
+            <View style={styles.heroIcon}>
+              <Ionicons name="analytics-outline" size={28} color="#FFFFFF" />
+            </View>
             <View style={styles.heroCopy}>
-              <Text style={styles.eyebrow}>AUTHORITY PERFORMANCE</Text>
-              <Text style={styles.title}>Analytics & Reports</Text>
+              <Text style={styles.eyebrow}>ADMINISTRATION OVERVIEW</Text>
+              <Text style={styles.title}>Complaint Analytics</Text>
               <Text style={styles.subtitle}>
-                Review complaint trends, resolution performance and urgency
-                hotspots.
+                Monitor accepted complaint volume, current status, response time, and deadline performance.
               </Text>
             </View>
             <TouchableOpacity
+              accessibilityRole="button"
+              accessibilityLabel="Download administration complaint report as PDF"
+              accessibilityHint="Creates a data report for the selected reporting period"
+              disabled={analytics.total === 0 || isGeneratingPdf}
+              onPress={() => void handleGeneratePdf()}
               style={[
                 styles.reportButton,
-                isGeneratingReport && styles.reportButtonDisabled,
+                (analytics.total === 0 || isGeneratingPdf) && styles.reportButtonDisabled,
               ]}
-              onPress={handleGenerateReport}
-              disabled={isGeneratingReport}
             >
-              <Ionicons
-                name={
-                  isGeneratingReport
-                    ? "refresh-outline"
-                    : reportGenerated
-                      ? "checkmark-circle-outline"
-                      : "document-text-outline"
-                }
-                size={19}
-                color="#FFFFFF"
-              />
+              {isGeneratingPdf ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                <Ionicons name="document-text-outline" size={18} color="#FFFFFF" />
+              )}
               <Text style={styles.reportButtonText}>
-                {isGeneratingReport
-                  ? "Preparing PDF..."
-                  : reportGenerated
-                    ? "Generate Again"
-                    : "Generate Total Report"}
+                {isGeneratingPdf ? 'Preparing PDF…' : 'Download Report PDF'}
               </Text>
             </TouchableOpacity>
           </View>
 
           <View style={styles.periodRow}>
-            <Text style={styles.periodLabel}>Report period</Text>
+            <View>
+              <Text style={styles.periodLabel}>Reporting period</Text>
+              <Text style={styles.periodHint}>Includes complaints submitted in this period</Text>
+            </View>
             <View style={styles.periodButtons}>
-              {periods.map((item) => (
+              {analyticsPeriods.map((item) => (
                 <Pressable
                   key={item}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: period === item }}
                   onPress={() => setPeriod(item)}
-                  style={[
-                    styles.periodButton,
-                    period === item && styles.periodButtonActive,
-                  ]}
+                  style={[styles.periodButton, period === item && styles.periodButtonActive]}
                 >
                   <Text
                     style={[
@@ -417,579 +243,215 @@ export default function AuthorityAnalytics() {
             </View>
           </View>
 
-          <View style={styles.summaryGrid}>
-            {authorityAnalyticsSummary.map((item) => (
-              <View
-                key={item.label}
-                style={[
-                  styles.summaryCard,
-                  wide ? styles.summaryCardWide : styles.summaryCardCompact,
-                ]}
-              >
-                <View
-                  style={[
-                    styles.summaryIcon,
-                    { backgroundColor: item.background },
-                  ]}
-                >
-                  <Ionicons name={item.icon} size={21} color={item.color} />
-                </View>
-                <Text style={styles.summaryLabel}>{item.label}</Text>
-                <Text style={styles.summaryValue}>{item.value}</Text>
-                <Text style={[styles.summaryChange, { color: item.color }]}>
-                  {item.change}
-                </Text>
+          {error ? (
+            <View style={styles.errorBanner}>
+              <Ionicons name="alert-circle-outline" size={20} color="#B42318" />
+              <View style={styles.errorCopy}>
+                <Text style={styles.errorTitle}>Analytics could not be refreshed</Text>
+                <Text style={styles.errorText}>{error}</Text>
               </View>
-            ))}
-          </View>
-
-          {reportGenerated && (
-            <View style={styles.generatedReport}>
-              <View style={styles.generatedIcon}>
-                <Ionicons name="document-text" size={23} color="#FFFFFF" />
-              </View>
-              <View style={styles.generatedCopy}>
-                <Text style={styles.generatedTitle}>
-                  Total authority report generated
-                </Text>
-                <Text style={styles.generatedText}>
-                  The {period.toLowerCase()} report includes {complaints.length}{" "}
-                  complaints, status distribution, category trends, resolution
-                  performance, and urgency hotspots.
-                </Text>
-              </View>
-              <View style={styles.readyBadge}>
-                <Text style={styles.readyText}>READY</Text>
-              </View>
+              <TouchableOpacity onPress={() => void refreshComplaints()} style={styles.retry}>
+                <Text style={styles.retryText}>Retry</Text>
+              </TouchableOpacity>
             </View>
-          )}
+          ) : null}
 
-          <View
-            style={[styles.analyticsGrid, wide && styles.analyticsGridWide]}
-          >
-            <View style={styles.panel}>
-              <View style={styles.panelHeader}>
-                <View>
-                  <Text style={styles.panelTitle}>Status Distribution</Text>
-                  <Text style={styles.panelSubtitle}>
-                    {complaints.length} assigned complaints
-                  </Text>
-                </View>
-                <Ionicons name="pie-chart-outline" size={21} color="#23435D" />
-              </View>
-              <View style={styles.statusBar}>
-                {authorityStatusDistribution.map((item) => (
+          {loading && complaints.length === 0 ? (
+            <View style={styles.loading}>
+              <ActivityIndicator color="#23435D" />
+              <Text style={styles.loadingText}>Loading complaint analytics…</Text>
+            </View>
+          ) : (
+            <>
+              <View style={styles.summaryGrid}>
+                {summary.map((item) => (
                   <View
                     key={item.label}
-                    style={{
-                      width: `${item.percent}%`,
-                      backgroundColor: item.color,
-                    }}
+                    style={[styles.summaryCard, wide ? styles.summaryWide : styles.summaryCompact]}
+                  >
+                    <View style={[styles.summaryIcon, { backgroundColor: item.background }]}>
+                      <Ionicons name={item.icon} size={21} color={item.color} />
+                    </View>
+                    <Text style={styles.summaryLabel}>{item.label}</Text>
+                    <Text style={styles.summaryValue}>{item.value}</Text>
+                    <Text style={styles.summaryDetail}>{item.detail}</Text>
+                  </View>
+                ))}
+              </View>
+
+              <Panel
+                title="Current Status"
+                subtitle={`${analytics.total} accepted complaints submitted in this period`}
+                icon="pie-chart-outline"
+              >
+                {analytics.total === 0 ? (
+                  <Empty text="No accepted complaints were submitted in this period." />
+                ) : (
+                  <>
+                    <View style={styles.statusBar}>
+                      {analytics.statusDistribution.map((item) => (
+                        <View
+                          key={item.label}
+                          style={{ width: `${item.percent}%`, backgroundColor: item.color }}
+                        />
+                      ))}
+                    </View>
+                    <View style={styles.statusRows}>
+                      {analytics.statusDistribution.map((item) => (
+                        <View key={item.label} style={styles.statusRow}>
+                          <View style={[styles.dot, { backgroundColor: item.color }]} />
+                          <Text style={styles.statusLabel}>{item.label}</Text>
+                          <Text style={styles.statusValue}>{item.value}</Text>
+                          <Text style={styles.statusPercent}>{item.percent}%</Text>
+                        </View>
+                      ))}
+                    </View>
+                  </>
+                )}
+              </Panel>
+
+              <View style={[styles.grid, wide && styles.gridWide]}>
+                <Panel
+                  title="Top Complaint Categories"
+                  subtitle="Up to six categories by share of accepted complaints"
+                  icon="layers-outline"
+                >
+                  <Distribution
+                    items={analytics.categoryDistribution}
+                    emptyText="Category data will appear when complaints are accepted."
                   />
-                ))}
+                </Panel>
+                <Panel
+                  title="Top Complaint Areas"
+                  subtitle="Up to six affected areas; avenue first, otherwise road"
+                  icon="location-outline"
+                >
+                  <Distribution
+                    items={analytics.areaDistribution}
+                    emptyText="Avenue and road data will appear here."
+                  />
+                </Panel>
               </View>
-              <View style={styles.statusRows}>
-                {authorityStatusDistribution.map((item) => (
-                  <View key={item.label} style={styles.statusRow}>
-                    <View
-                      style={[styles.dot, { backgroundColor: item.color }]}
-                    />
-                    <Text style={styles.statusLabel}>{item.label}</Text>
-                    <Text style={styles.statusValue}>{item.value}</Text>
-                    <Text style={styles.statusPercent}>{item.percent}%</Text>
+
+              <Panel
+                title="Operational Performance"
+                subtitle="Work start time and deadline compliance"
+                icon="speedometer-outline"
+              >
+                <View style={styles.performanceGrid}>
+                  <View style={styles.performanceStat}>
+                    <Text style={styles.performanceValue}>
+                      {formatAnalyticsDays(analytics.averageStartDays)}
+                    </Text>
+                    <Text style={styles.performanceLabel}>Average time to start</Text>
                   </View>
-                ))}
-              </View>
-            </View>
-
-            <View style={styles.panel}>
-              <View style={styles.panelHeader}>
-                <View>
-                  <Text style={styles.panelTitle}>{trendTitle}</Text>
-                  <Text style={styles.panelSubtitle}>
-                    Reports received during {period.toLowerCase()}
-                  </Text>
-                </View>
-                <Ionicons
-                  name="trending-up-outline"
-                  size={21}
-                  color="#23435D"
-                />
-              </View>
-              <View style={styles.chart}>
-                {trendData.map((item) => (
-                  <View key={item.label} style={styles.chartColumn}>
-                    <Text style={styles.chartValue}>{item.value}</Text>
-                    <View style={styles.chartTrack}>
-                      <View
-                        style={[
-                          styles.chartBar,
-                          {
-                            height: `${Math.round((item.value / maxTrend) * 100)}%`,
-                          },
-                        ]}
-                      />
-                    </View>
-                    <Text style={styles.chartLabel}>{item.label}</Text>
+                  <View style={styles.performanceStat}>
+                    <Text
+                      style={[
+                        styles.performanceValue,
+                        analytics.overdueOpen > 0 && styles.warning,
+                      ]}
+                    >
+                      {analytics.overdueOpen}
+                    </Text>
+                    <Text style={styles.performanceLabel}>Open complaints overdue</Text>
                   </View>
-                ))}
-              </View>
-            </View>
-          </View>
-
-          <View
-            style={[styles.analyticsGrid, wide && styles.analyticsGridWide]}
-          >
-            <View style={styles.panel}>
-              <View style={styles.panelHeader}>
-                <View>
-                  <Text style={styles.panelTitle}>Top Categories</Text>
-                  <Text style={styles.panelSubtitle}>
-                    Complaint volume by issue type
+                </View>
+                <View style={styles.performanceHeading}>
+                  <Text style={styles.performanceHeadingText}>On-time resolved complaints</Text>
+                  <Text style={styles.performanceRate}>
+                    {analytics.onTimeRate === null ? '—' : `${analytics.onTimeRate}%`}
                   </Text>
                 </View>
-                <Ionicons name="layers-outline" size={21} color="#23435D" />
-              </View>
-              <View style={styles.categoryList}>
-                {authorityCategoryDistribution.map((item) => (
-                  <View key={item.label} style={styles.categoryRow}>
-                    <View style={styles.categoryTopLine}>
-                      <Text style={styles.categoryLabel}>{item.label}</Text>
-                      <Text style={styles.categoryValue}>{item.value}</Text>
-                    </View>
-                    <View style={styles.categoryTrack}>
-                      <View
-                        style={[
-                          styles.categoryBar,
-                          {
-                            width: `${item.percent}%`,
-                            backgroundColor: item.color,
-                          },
-                        ]}
-                      />
-                    </View>
-                  </View>
-                ))}
-              </View>
-            </View>
-          </View>
-
-          <View
-            style={[styles.analyticsGrid, wide && styles.analyticsGridWide]}
-          >
-            <View style={styles.panel}>
-              <View style={styles.panelHeader}>
-                <View>
-                  <Text style={styles.panelTitle}>Area-wise Distribution</Text>
-                  <Text style={styles.panelSubtitle}>
-                    Assigned complaints by community block
-                  </Text>
+                <View style={styles.performanceTrack}>
+                  <View
+                    style={[styles.performanceBar, { width: `${analytics.onTimeRate ?? 0}%` }]}
+                  />
                 </View>
-                <Ionicons name="map-outline" size={21} color="#23435D" />
-              </View>
-              <View style={styles.categoryList}>
-                {authorityZoneDistribution.map((item) => (
-                  <View key={item.label} style={styles.categoryRow}>
-                    <View style={styles.categoryTopLine}>
-                      <Text style={styles.categoryLabel}>{item.label}</Text>
-                      <Text style={styles.categoryValue}>{item.value}</Text>
-                    </View>
-                    <View style={styles.categoryTrack}>
-                      <View
-                        style={[
-                          styles.categoryBar,
-                          {
-                            width: `${item.percent}%`,
-                            backgroundColor: item.color,
-                          },
-                        ]}
-                      />
-                    </View>
-                  </View>
-                ))}
-              </View>
-            </View>
-
-            <View style={styles.panel}>
-              <View style={styles.panelHeader}>
-                <View>
-                  <Text style={styles.panelTitle}>Resolution Performance</Text>
-                  <Text style={styles.panelSubtitle}>
-                    Deadline compliance for resolved complaints
-                  </Text>
-                </View>
-                <Ionicons
-                  name="speedometer-outline"
-                  size={21}
-                  color="#16845B"
-                />
-              </View>
-
-              <View style={styles.performanceGrid}>
-                <View style={styles.performanceStat}>
-                  <Text style={styles.performanceValue}>
-                    {authorityResolutionPerformance.withinDeadline}
-                  </Text>
-                  <Text style={styles.performanceLabel}>Within deadline</Text>
-                </View>
-                <View style={styles.performanceStat}>
-                  <Text style={[styles.performanceValue, styles.overdueValue]}>
-                    {authorityResolutionPerformance.overdue}
-                  </Text>
-                  <Text style={styles.performanceLabel}>Overdue</Text>
-                </View>
-                <View style={styles.performanceStat}>
-                  <Text style={styles.performanceValue}>
-                    {authorityResolutionPerformance.averageDays}d
-                  </Text>
-                  <Text style={styles.performanceLabel}>Average time</Text>
-                </View>
-              </View>
-
-              <View style={styles.performanceHeading}>
-                <Text style={styles.performanceHeadingText}>
-                  On-time resolution rate
-                </Text>
-                <Text style={styles.performanceRate}>
-                  {authorityResolutionPerformance.onTimeRate}%
-                </Text>
-              </View>
-              <View style={styles.performanceTrack}>
-                <View
-                  style={[
-                    styles.performanceBar,
-                    { width: `${authorityResolutionPerformance.onTimeRate}%` },
-                  ]}
-                />
-              </View>
-              <View style={styles.performanceFooter}>
                 <Text style={styles.performanceFootnote}>
-                  {authorityResolutionPerformance.resolved} complaints resolved
+                  {analytics.deadlineResolved === 0
+                    ? 'No resolved complaints in this period have a recorded deadline.'
+                    : `${analytics.withinDeadline} of ${analytics.deadlineResolved} complaints with deadlines were resolved on time.`}
                 </Text>
-                <Text style={styles.performanceTarget}>
-                  Target: ≤ {authorityResolutionPerformance.targetDays} days
-                </Text>
-              </View>
-            </View>
-          </View>
+              </Panel>
+            </>
+          )}
         </View>
       </ScrollView>
       <AdminBottomNav activeRoute="analytics" />
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: "#F7F8FA" },
-  scrollContent: { paddingBottom: 102 },
-  container: {
-    width: "100%",
-    maxWidth: 1180,
-    alignSelf: "center",
-    padding: 16,
-    gap: 18,
-  },
-  hero: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 18,
-  },
-  heroCompact: { alignItems: "flex-start", flexDirection: "column" },
-  heroCopy: { flex: 1 },
-  eyebrow: {
-    color: "#B9854B",
-    fontSize: 12,
-    fontWeight: "600",
-    letterSpacing: 0.8,
-  },
-  title: {
-    color: "#00475E",
-    fontSize: 32,
-    fontWeight: "700",
-    letterSpacing: -0.5,
-    marginTop: 3,
-  },
-  subtitle: { color: "#40484D", fontSize: 14, lineHeight: 20, marginTop: 5 },
-  reportButton: {
-    minHeight: 44,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    paddingHorizontal: 17,
-    borderRadius: 22,
-    backgroundColor: "#23435D",
-  },
-  reportButtonDisabled: { opacity: 0.65 },
-  reportButtonText: { color: "#FFFFFF", fontSize: 12, fontWeight: "700" },
-  periodRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 10,
-  },
-  periodLabel: { color: "#40484D", fontSize: 14, fontWeight: "600" },
-  periodButtons: { flexDirection: "row", gap: 7 },
-  periodButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 16,
-    backgroundColor: "#FFFFFF",
-    borderWidth: 1,
-    borderColor: "#E2E6EB",
-  },
-  periodButtonActive: { backgroundColor: "#23435D", borderColor: "#23435D" },
-  periodButtonText: { color: "#40484D", fontSize: 12, fontWeight: "600" },
-  periodButtonTextActive: { color: "#FFFFFF" },
-  summaryGrid: { flexDirection: "row", flexWrap: "wrap", gap: 12 },
-  summaryCard: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 13,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: "#ECEFF3",
-    boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
-  },
-  summaryCardWide: { flex: 1, minWidth: 190 },
-  summaryCardCompact: { width: "48%", minWidth: 150 },
-  summaryIcon: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  summaryLabel: {
-    color: "#667085",
-    fontSize: 12,
-    fontWeight: "600",
-    marginTop: 10,
-  },
-  summaryValue: {
-    color: "#1F2937",
-    fontSize: 30,
-    fontWeight: "700",
-    marginTop: 3,
-    fontVariant: ["tabular-nums"],
-  },
-  summaryChange: { fontSize: 12, fontWeight: "600", marginTop: 4 },
-  generatedReport: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    padding: 14,
-    borderRadius: 13,
-    backgroundColor: "#EAF8F1",
-    borderWidth: 1,
-    borderColor: "#CDEBDE",
-  },
-  generatedIcon: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#16845B",
-  },
-  generatedCopy: { flex: 1 },
-  generatedTitle: { color: "#165C43", fontSize: 16, fontWeight: "600" },
-  generatedText: {
-    color: "#4C7565",
-    fontSize: 12,
-    lineHeight: 18,
-    marginTop: 3,
-  },
-  readyBadge: {
-    paddingHorizontal: 9,
-    paddingVertical: 5,
-    borderRadius: 11,
-    backgroundColor: "#D5F0E4",
-  },
-  readyText: { color: "#16845B", fontSize: 11, fontWeight: "700" },
-  analyticsGrid: { gap: 14 },
-  analyticsGridWide: { flexDirection: "row" },
-  panel: {
-    flex: 1,
-    backgroundColor: "#FFFFFF",
-    borderRadius: 14,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: "#ECEFF3",
-    boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
-  },
-  panelHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 12,
-    marginBottom: 15,
-  },
-  panelTitle: { color: "#191C1E", fontSize: 20, fontWeight: "600" },
-  panelSubtitle: { color: "#70787D", fontSize: 12, marginTop: 3 },
-  statusBar: {
-    height: 13,
-    flexDirection: "row",
-    borderRadius: 7,
-    overflow: "hidden",
-    backgroundColor: "#EEF1F4",
-  },
+  safeArea: { flex: 1, backgroundColor: '#F6F8FA' },
+  scrollContent: { paddingBottom: 38 },
+  container: { width: '100%', maxWidth: 1120, alignSelf: 'center', padding: 16, gap: 16 },
+  hero: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 15, padding: 20, borderRadius: 18, backgroundColor: '#FFF', borderWidth: 1, borderColor: '#EAEDF1' },
+  heroIcon: { width: 54, height: 54, borderRadius: 17, alignItems: 'center', justifyContent: 'center', backgroundColor: '#23435D' },
+  heroCopy: { flex: 1, minWidth: 210 },
+  eyebrow: { color: '#B9854B', fontSize: 9, fontWeight: '900', letterSpacing: 0.8 },
+  title: { color: '#111827', fontSize: 25, fontWeight: '800', marginTop: 2 },
+  subtitle: { maxWidth: 720, color: '#667085', fontSize: 10, lineHeight: 16, marginTop: 5 },
+  reportButton: { minHeight: 42, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, paddingHorizontal: 15, borderRadius: 21, backgroundColor: '#23435D' },
+  reportButtonDisabled: { opacity: 0.5 },
+  reportButtonText: { color: '#FFFFFF', fontSize: 10, fontWeight: '800' },
+  periodRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
+  periodLabel: { color: '#344054', fontSize: 11, fontWeight: '800' },
+  periodHint: { color: '#98A2B3', fontSize: 8, marginTop: 3 },
+  periodButtons: { flexDirection: 'row', gap: 7 },
+  periodButton: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 17, backgroundColor: '#FFF', borderWidth: 1, borderColor: '#E2E6EB' },
+  periodButtonActive: { backgroundColor: '#23435D', borderColor: '#23435D' },
+  periodButtonText: { color: '#667085', fontSize: 10, fontWeight: '700' },
+  periodButtonTextActive: { color: '#FFF' },
+  errorBanner: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 13, borderRadius: 13, backgroundColor: '#FEF3F2', borderWidth: 1, borderColor: '#FECDCA' },
+  errorCopy: { flex: 1 },
+  errorTitle: { color: '#912018', fontSize: 11, fontWeight: '800' },
+  errorText: { color: '#B42318', fontSize: 9, marginTop: 2 },
+  retry: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 15, backgroundColor: '#FFF' },
+  retryText: { color: '#B42318', fontSize: 9, fontWeight: '800' },
+  loading: { minHeight: 180, alignItems: 'center', justifyContent: 'center', gap: 10, borderRadius: 15, backgroundColor: '#FFF' },
+  loadingText: { color: '#667085', fontSize: 10 },
+  summaryGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
+  summaryCard: { backgroundColor: '#FFF', borderRadius: 14, padding: 15, borderWidth: 1, borderColor: '#ECEFF3', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' },
+  summaryWide: { flex: 1, minWidth: 205 },
+  summaryCompact: { width: '48%', minWidth: 150 },
+  summaryIcon: { width: 39, height: 39, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  summaryLabel: { color: '#667085', fontSize: 10, fontWeight: '700', marginTop: 11 },
+  summaryValue: { color: '#1F2937', fontSize: 21, fontWeight: '900', marginTop: 3 },
+  summaryDetail: { color: '#98A2B3', fontSize: 8, lineHeight: 12, marginTop: 4 },
+  grid: { gap: 14 },
+  gridWide: { flexDirection: 'row' },
+  panel: { flex: 1, minWidth: 0, backgroundColor: '#FFF', borderRadius: 15, padding: 16, borderWidth: 1, borderColor: '#ECEFF3', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' },
+  panelHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 16 },
+  panelHeading: { flex: 1, minWidth: 0 },
+  panelTitle: { color: '#1F2937', fontSize: 15, fontWeight: '800' },
+  panelSubtitle: { color: '#8A93A1', fontSize: 9, lineHeight: 13, marginTop: 3 },
+  empty: { minHeight: 130, alignItems: 'center', justifyContent: 'center', gap: 8, paddingHorizontal: 20, borderRadius: 12, backgroundColor: '#F8FAFB' },
+  emptyText: { color: '#8A93A1', fontSize: 9, lineHeight: 14, textAlign: 'center' },
+  statusBar: { height: 13, flexDirection: 'row', borderRadius: 7, overflow: 'hidden', backgroundColor: '#EEF1F4' },
   statusRows: { gap: 11, marginTop: 17 },
-  statusRow: { flexDirection: "row", alignItems: "center" },
+  statusRow: { flexDirection: 'row', alignItems: 'center' },
   dot: { width: 8, height: 8, borderRadius: 4, marginRight: 8 },
-  statusLabel: { flex: 1, color: "#40484D", fontSize: 12, fontWeight: "600" },
-  statusValue: {
-    width: 34,
-    color: "#1F2937",
-    fontSize: 12,
-    fontWeight: "700",
-    textAlign: "right",
-    fontVariant: ["tabular-nums"],
-  },
-  statusPercent: {
-    width: 38,
-    color: "#8A93A1",
-    fontSize: 12,
-    textAlign: "right",
-    fontVariant: ["tabular-nums"],
-  },
-  chart: {
-    height: 190,
-    flexDirection: "row",
-    alignItems: "flex-end",
-    justifyContent: "space-between",
-    gap: 7,
-  },
-  chartColumn: {
-    flex: 1,
-    height: "100%",
-    alignItems: "center",
-    justifyContent: "flex-end",
-  },
-  chartValue: {
-    color: "#5C6676",
-    fontSize: 11,
-    fontWeight: "600",
-    marginBottom: 5,
-  },
-  chartTrack: {
-    width: "72%",
-    flex: 1,
-    justifyContent: "flex-end",
-    borderRadius: 7,
-    overflow: "hidden",
-    backgroundColor: "#F0F3F6",
-  },
-  chartBar: {
-    width: "100%",
-    minHeight: 8,
-    borderRadius: 7,
-    backgroundColor: "#3B82F6",
-  },
-  chartLabel: { color: "#70787D", fontSize: 11, marginTop: 6 },
-  categoryList: { gap: 13 },
-  categoryRow: { gap: 5 },
-  categoryTopLine: { flexDirection: "row", justifyContent: "space-between" },
-  categoryLabel: { color: "#40484D", fontSize: 12, fontWeight: "600" },
-  categoryValue: {
-    color: "#1F2937",
-    fontSize: 12,
-    fontWeight: "700",
-    fontVariant: ["tabular-nums"],
-  },
-  categoryTrack: {
-    height: 7,
-    borderRadius: 4,
-    backgroundColor: "#EEF1F4",
-    overflow: "hidden",
-  },
-  categoryBar: { height: "100%", borderRadius: 4 },
-  performanceGrid: { flexDirection: "row", gap: 8, marginBottom: 18 },
-  performanceStat: {
-    flex: 1,
-    minHeight: 72,
-    justifyContent: "center",
-    padding: 11,
-    borderRadius: 11,
-    backgroundColor: "#F8FAFB",
-  },
-  performanceValue: {
-    color: "#16845B",
-    fontSize: 24,
-    fontWeight: "700",
-    fontVariant: ["tabular-nums"],
-  },
-  overdueValue: { color: "#E0524D" },
-  performanceLabel: {
-    color: "#7A8493",
-    fontSize: 12,
-    fontWeight: "600",
-    marginTop: 4,
-  },
-  performanceHeading: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 10,
-  },
-  performanceHeadingText: { color: "#40484D", fontSize: 12, fontWeight: "600" },
-  performanceRate: { color: "#16845B", fontSize: 20, fontWeight: "700" },
-  performanceTrack: {
-    height: 10,
-    overflow: "hidden",
-    borderRadius: 5,
-    backgroundColor: "#E6ECE9",
-    marginTop: 8,
-  },
-  performanceBar: {
-    height: "100%",
-    borderRadius: 5,
-    backgroundColor: "#16845B",
-  },
-  performanceFooter: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    gap: 10,
-    marginTop: 8,
-  },
-  performanceFootnote: { color: "#70787D", fontSize: 11 },
-  performanceTarget: { color: "#16845B", fontSize: 11, fontWeight: "700" },
-  hotspotList: { gap: 10 },
-  hotspotRow: {
-    minHeight: 58,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    padding: 10,
-    borderRadius: 11,
-    backgroundColor: "#FAFBFC",
-  },
-  hotspotRank: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#FFF1E5",
-  },
-  hotspotRankText: { color: "#C57C1B", fontSize: 12, fontWeight: "700" },
-  hotspotCopy: { flex: 1 },
-  hotspotLocation: { color: "#191C1E", fontSize: 12, fontWeight: "600" },
-  hotspotCategory: { color: "#70787D", fontSize: 11, marginTop: 3 },
-  signalBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 5,
-    borderRadius: 12,
-    backgroundColor: "#FFF7E8",
-  },
-  signalText: {
-    color: "#A7640C",
-    fontSize: 12,
-    fontWeight: "700",
-    fontVariant: ["tabular-nums"],
-  },
+  statusLabel: { flex: 1, color: '#475467', fontSize: 11, fontWeight: '600' },
+  statusValue: { width: 34, color: '#1F2937', fontSize: 11, fontWeight: '800', textAlign: 'right' },
+  statusPercent: { width: 42, color: '#8A93A1', fontSize: 9, textAlign: 'right' },
+  distributionList: { gap: 14 },
+  distributionRow: { gap: 6 },
+  distributionHeading: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  distributionLabel: { flex: 1, color: '#475467', fontSize: 10, fontWeight: '600' },
+  distributionValue: { color: '#1F2937', fontSize: 9, fontWeight: '800' },
+  track: { height: 7, borderRadius: 4, backgroundColor: '#EEF1F4', overflow: 'hidden' },
+  distributionBar: { height: '100%', minWidth: 3, borderRadius: 4 },
+  performanceGrid: { flexDirection: 'row', gap: 8, marginBottom: 18 },
+  performanceStat: { flex: 1, minHeight: 82, justifyContent: 'center', padding: 11, borderRadius: 11, backgroundColor: '#F8FAFB' },
+  performanceValue: { color: '#16845B', fontSize: 16, fontWeight: '900' },
+  warning: { color: '#E0524D' },
+  performanceLabel: { color: '#7A8493', fontSize: 8, lineHeight: 12, fontWeight: '700', marginTop: 5 },
+  performanceHeading: { flexDirection: 'row', justifyContent: 'space-between', gap: 10 },
+  performanceHeadingText: { color: '#475467', fontSize: 10, fontWeight: '700' },
+  performanceRate: { color: '#16845B', fontSize: 16, fontWeight: '900' },
+  performanceTrack: { height: 10, overflow: 'hidden', borderRadius: 5, backgroundColor: '#E6ECE9', marginTop: 8 },
+  performanceBar: { height: '100%', borderRadius: 5, backgroundColor: '#16845B' },
+  performanceFootnote: { color: '#8A93A1', fontSize: 8, lineHeight: 12, marginTop: 8 },
 });
