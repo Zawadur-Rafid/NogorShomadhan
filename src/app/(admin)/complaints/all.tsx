@@ -711,11 +711,6 @@ export function ComplaintsListScreen({
                           </TouchableOpacity>
                         </>
                       ) : null}
-                      {!reviewMode && normalItem!.status === "RESOLVED" && (
-                        <TouchableOpacity style={styles.closedBtn} disabled>
-                          <Text style={styles.closedBtnText}>Case Closed</Text>
-                        </TouchableOpacity>
-                      )}
                     </View>
                   </View>
                 );
@@ -958,20 +953,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   deleteBtnText: { color: "#B42318", fontSize: 12, fontWeight: "600" },
-  closedBtn: {
-    flex: 1,
-    paddingVertical: 8,
-    borderRadius: 8,
-    backgroundColor: theme.surfaceContainer + "80",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  closedBtnText: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: theme.onSurfaceVariant,
-    // No fontFamily - uses system default (SF Pro/Roboto)
-  },
   emptyState: {
     paddingVertical: 64,
     alignItems: "center",
