@@ -37,10 +37,12 @@ export function buildAuthorityAnalyticsReportHtml({
   analytics,
   period,
   generatedAt = new Date(),
+  reportOwner = 'Community Authority',
 }: {
   analytics: AuthorityAnalyticsSnapshot;
   period: AnalyticsPeriod;
   generatedAt?: Date;
+  reportOwner?: string;
 }) {
   const pending =
     analytics.statusDistribution.find((item) => item.label === 'Pending')?.value ?? 0;
@@ -106,7 +108,7 @@ export function buildAuthorityAnalyticsReportHtml({
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Nogor Shomadhan - Authority Complaint Report</title>
+    <title>Nogor Shomadhan - ${escapeHtml(reportOwner)} Complaint Report</title>
     <style>
       @page { size: A4; margin: 24mm 18mm; }
       * { box-sizing: border-box; }
@@ -135,7 +137,7 @@ export function buildAuthorityAnalyticsReportHtml({
     </style>
   </head>
   <body>
-    <h1>Community Authority Complaint Analytics</h1>
+    <h1>${escapeHtml(reportOwner)} Complaint Analytics</h1>
     <p class="meta">Reporting period: ${escapeHtml(period)} (grouped by complaint submission date)</p>
     <p class="meta">Generated: ${escapeHtml(generatedAt.toLocaleString())}</p>
 

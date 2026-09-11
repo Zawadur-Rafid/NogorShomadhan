@@ -2,12 +2,10 @@ import AdminBottomNav from "@/components/AdminBottomNav";
 import { supabase } from "@/lib/supabase";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { confirmAction } from "@/utils/confirm";
 import {
-    Alert,
     Image,
-    Platform,
     ScrollView,
     StyleSheet,
     Text,
@@ -122,15 +120,15 @@ export function ComplaintsListScreen({
     return "report-problem";
   };
 
-  const formatComplaintDate = (dateValue: string | null) => {
+  const formatComplaintDate = useCallback((dateValue: string | null) => {
     if (!dateValue) return "Unknown date";
     const parsed = new Date(dateValue);
     if (Number.isNaN(parsed.getTime())) return "Unknown date";
 
     return parsed.toLocaleString();
-  };
+  }, []);
 
-  const fetchAllComplaints = async () => {
+  const fetchAllComplaints = useCallback(async () => {
     setComplaintsLoading(true);
     setComplaintsError(null);
 
@@ -146,10 +144,10 @@ export function ComplaintsListScreen({
       return;
     }
 
-    const rows = (complaintData ?? []) as Array<{
+    const rows = (complaintData ?? []) as {
       comp_id: string; title: string; description: string; category: string;
       status: string; house?: string; road?: string; avenue?: string; nearby_landmark?: string; additional_location_details?: string; timestamp: string | null;
-    }>;
+    }[];
     const complaintIds = rows.map((item) => item.comp_id);
     const { data: evidenceData, error: evidenceError } = complaintIds.length
       ? await supabase.from("evidence").select("comp_id,img_url").in("comp_id", complaintIds)
@@ -162,7 +160,7 @@ export function ComplaintsListScreen({
     }
 
     const firstEvidence = new Map<string, string>();
-    for (const evidence of (evidenceData ?? []) as Array<{ comp_id: string; img_url: string }>) {
+    for (const evidence of (evidenceData ?? []) as { comp_id: string; img_url: string }[]) {
       if (!firstEvidence.has(evidence.comp_id)) firstEvidence.set(evidence.comp_id, evidence.img_url);
     }
 
@@ -184,8 +182,8 @@ export function ComplaintsListScreen({
       image: firstEvidence.get(item.comp_id) ?? "",
     })));
     setComplaintsLoading(false);
-  };
-  const fetchReviewComplaints = async () => {
+  }, [formatComplaintDate]);
+  const fetchReviewComplaints = useCallback(async () => {
     setReviewLoading(true);
     setReviewError(null);
 
@@ -202,7 +200,7 @@ export function ComplaintsListScreen({
       return;
     }
 
-    const complaintRows = (complaintsData ?? []) as Array<{
+    const complaintRows = (complaintsData ?? []) as {
       comp_id: string;
       acc_id: string | null;
       title: string;
@@ -215,7 +213,7 @@ export function ComplaintsListScreen({
       nearby_landmark?: string;
       additional_location_details?: string;
       timestamp: string | null;
-    }>;
+    }[];
 
     const accountIds = Array.from(
       new Set(
@@ -263,10 +261,10 @@ export function ComplaintsListScreen({
     );
     const evidenceMap = new Map<string, string[]>();
 
-    for (const row of (evidenceData ?? []) as Array<{
+    for (const row of (evidenceData ?? []) as {
       comp_id: string;
       img_url: string;
-    }>) {
+    }[]) {
       const current = evidenceMap.get(row.comp_id) ?? [];
       current.push(row.img_url);
       evidenceMap.set(row.comp_id, current);
@@ -299,15 +297,19 @@ export function ComplaintsListScreen({
 
     setReviewComplaints(mapped);
     setReviewLoading(false);
-  };
+  }, []);
 
   useEffect(() => {
-    if (reviewMode) {
-      void fetchReviewComplaints();
-    } else {
-      void fetchAllComplaints();
-    }
-  }, [reviewMode]);
+    const frame = requestAnimationFrame(() => {
+      if (reviewMode) {
+        void fetchReviewComplaints();
+      } else {
+        void fetchAllComplaints();
+      }
+    });
+
+    return () => cancelAnimationFrame(frame);
+  }, [fetchAllComplaints, fetchReviewComplaints, reviewMode]);
 
   const filteredComplaints = useMemo(() => {
     if (activeFilter === "All") {
@@ -646,12 +648,12 @@ export function ComplaintsListScreen({
                       </View>
                     </View>
 
-                    {itemImage && (
+                    {Boolean(itemImage) ? (
                       <Image
                         source={{ uri: itemImage }}
                         style={styles.evidenceImage}
                       />
-                    )}
+                    ) : null}
 
                     <Text style={styles.cardDesc} numberOfLines={2}>
                       {itemDescription}

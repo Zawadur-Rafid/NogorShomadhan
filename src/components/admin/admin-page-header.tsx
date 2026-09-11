@@ -1,11 +1,9 @@
-import { markAdminNotificationRead } from "@/services/admin.service";
 import { notificationService } from "@/services/notification.service";
 import { confirmAction } from "@/utils/confirm";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useRouter } from "expo-router";
-import { useEffect, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useState } from "react";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 
 const getNotificationRoute = (notification: {
   route?: string;
@@ -34,40 +32,28 @@ const getNotificationRoute = (notification: {
 /** Shared top bar for every screen in the admin route group. */
 export default function AdminPageHeader() {
   const router = useRouter();
-  const insets = useSafeAreaInsets();
   const [menuVisible, setMenuVisible] = useState(false);
-  const [notificationsVisible, setNotificationsVisible] = useState(false);
-  const [notifications, setNotifications] = useState<any[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
 
-  useEffect(() => {
-    async function fetchNotifs() {
-      const dbNotifications =
-        await notificationService.fetchAdminNotifications();
-      setNotifications(dbNotifications);
-    }
+  useFocusEffect(
+    useCallback(() => {
+      if (!isDashboard) return;
 
-    fetchNotifs();
-  }, []);
+      let active = true;
+      void notificationService
+        .fetchUnreadCount()
+        .then((count) => {
+          if (active) setUnreadCount(count);
+        })
+        .catch((error) => {
+          console.warn("Could not load Admin unread count:", error);
+        });
 
-  const handleNotificationPress = (notification: any) => {
-    const route = getNotificationRoute(notification);
-    setNotifications((current) =>
-      current.filter((item) => item.id !== notification.id),
-    );
-    setNotificationsVisible(false);
-    if (
-      !notification.id.startsWith("account-") &&
-      !notification.id.startsWith("complaint-review-") &&
-      !notification.id.startsWith("forum-announcement-") &&
-      !notification.id.startsWith("complaint-status-") &&
-      !notification.id.startsWith("complaint-update-")
-    ) {
-      void markAdminNotificationRead(notification.id).catch((error) =>
-        console.warn("Could not mark admin notification as read:", error),
-      );
-    }
-    router.push(route as any);
-  };
+      return () => {
+        active = false;
+      };
+    }, [isDashboard]),
+  );
 
   const confirmLogout = () => {
     setMenuVisible(false);
@@ -76,6 +62,15 @@ export default function AdminPageHeader() {
       () => router.replace("/"),
       "Log Out",
     );
+  };
+
+  const handleBack = () => {
+    setMenuVisible(false);
+    if (router.canGoBack()) {
+      router.back();
+      return;
+    }
+    router.replace("/(admin)/dashboard" as never);
   };
 
   return (
@@ -98,6 +93,13 @@ export default function AdminPageHeader() {
           style={[styles.iconButton, styles.notificationButton]}
         >
           <Ionicons name="notifications-outline" size={24} color="#23435D" />
+          {notifications.length > 0 ? (
+            <View style={styles.notificationCount}>
+              <Text style={styles.notificationCountText}>
+                {notifications.length > 9 ? "9" : notifications.length}
+              </Text>
+            </View>
+          ) : null}
         </Pressable>
         <Pressable
           accessibilityLabel="Open account menu"
@@ -109,7 +111,7 @@ export default function AdminPageHeader() {
         </Pressable>
       </View>
 
-      {menuVisible ? (
+      {isDashboard && menuVisible ? (
         <View style={styles.accountMenu}>
           <Pressable
             accessibilityRole="button"
@@ -125,61 +127,6 @@ export default function AdminPageHeader() {
         </View>
       ) : null}
 
-      {notificationsVisible ? (
-        <View style={styles.notificationsMenu}>
-          <View style={styles.notificationsHeading}>
-            <Text style={styles.notificationsTitle}>Notifications</Text>
-            <Text style={styles.notificationsNew}>
-              {notifications.length} new
-            </Text>
-          </View>
-
-          {notifications.length === 0 ? (
-            <View style={styles.emptyState}>
-              <Text style={styles.emptyText}>No new notifications</Text>
-            </View>
-          ) : (
-            <ScrollView
-              style={styles.notificationScroll}
-              contentContainerStyle={styles.notificationListContent}
-              showsVerticalScrollIndicator={false}
-            >
-              {notifications.map((notification) => (
-                <Pressable
-                  key={notification.id}
-                  onPress={() => handleNotificationPress(notification)}
-                  style={({ pressed }) => [
-                    styles.notificationItem,
-                    pressed && styles.notificationPressed,
-                  ]}
-                >
-                  <View style={styles.notificationIcon}>
-                    <Ionicons
-                      name={notification.icon}
-                      size={17}
-                      color="#304B6B"
-                    />
-                  </View>
-                  <View style={styles.notificationCopy}>
-                    <Text numberOfLines={1} style={styles.notificationTitle}>
-                      {notification.title}
-                    </Text>
-                    <Text numberOfLines={2} style={styles.notificationMessage}>
-                      {notification.message}
-                    </Text>
-                    <Text style={styles.notificationTime}>
-                      {notification.time}
-                    </Text>
-                  </View>
-                  <View style={styles.unreadDot} />
-                </Pressable>
-              ))}
-            </ScrollView>
-          )}
-        </View>
-      ) : null}
-
-      {null}
     </View>
   );
 }
@@ -247,6 +194,17 @@ const styles = StyleSheet.create({
     borderColor: "#FFFFFF",
   },
   avatarText: { color: "#304B6B", fontSize: 12, fontWeight: "700" },
+  backButton: {
+    minHeight: 38,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 7,
+    paddingHorizontal: 12,
+    borderRadius: 19,
+    backgroundColor: "#F2F6F8",
+  },
+  backButtonPressed: { opacity: 0.65 },
+  backText: { color: "#23435D", fontSize: 11, fontWeight: "700" },
   accountMenu: {
     position: "absolute",
     top: "100%",
@@ -263,7 +221,7 @@ const styles = StyleSheet.create({
   },
   notificationsMenu: {
     position: "absolute",
-    top: "100%",
+    top: 58,
     right: 16,
     width: 320,
     paddingVertical: 6,
