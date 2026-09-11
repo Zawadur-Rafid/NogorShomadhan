@@ -148,6 +148,7 @@ export default function ResidentForumScreen() {
   const [commentDrafts, setCommentDrafts] = useState<Record<string, string>>({});
   const [replyTarget, setReplyTarget] = useState<Record<string, string | null>>({});
   const [activeFilter, setActiveFilter] = useState<ForumCategory>("All");
+  const [dismissedTargetKey, setDismissedTargetKey] = useState<string | null>(null);
   const [selectedEventPost, setSelectedEventPost] = useState<{
     title: string;
     event: EventData;
@@ -187,7 +188,13 @@ export default function ResidentForumScreen() {
     void Promise.resolve().then(loadPostsFromDb);
   }, [loadPostsFromDb]);
 
-  const displayedFilter = targetPostId ? 'All' : activeFilter;
+  const targetKey = targetPostId
+    ? `${targetPostId}:${targetCommentId ?? ''}`
+    : null;
+  const targetPending = Boolean(
+    targetKey && dismissedTargetKey !== targetKey,
+  );
+  const displayedFilter = targetPending ? 'All' : activeFilter;
   const visiblePosts = useMemo(
     () =>
       displayedFilter === "All"
@@ -199,8 +206,8 @@ export default function ResidentForumScreen() {
   const scrollToNotificationTarget = useCallback(() => {
     if (!targetPostId) return;
 
-    const targetKey = `${targetPostId}:${targetCommentId ?? ''}`;
-    if (scrolledTargetRef.current === targetKey) return;
+    const nextTargetKey = `${targetPostId}:${targetCommentId ?? ''}`;
+    if (scrolledTargetRef.current === nextTargetKey) return;
 
     const postOffset = postOffsetsRef.current[targetPostId];
     if (postOffset === undefined) return;
@@ -210,7 +217,7 @@ export default function ResidentForumScreen() {
       : 0;
     if (targetCommentId && commentOffset === undefined) return;
 
-    scrolledTargetRef.current = targetKey;
+    scrolledTargetRef.current = nextTargetKey;
     requestAnimationFrame(() => {
       scrollViewRef.current?.scrollTo({
         y: Math.max(0, postOffset + (commentOffset ?? 0) - 18),
@@ -221,9 +228,16 @@ export default function ResidentForumScreen() {
 
   useEffect(() => {
     if (!targetPostId) return;
-    scrolledTargetRef.current = null;
     requestAnimationFrame(scrollToNotificationTarget);
   }, [posts, scrollToNotificationTarget, targetPostId]);
+
+  const changeFilter = (filter: ForumCategory) => {
+    if (targetKey) {
+      scrolledTargetRef.current = targetKey;
+      setDismissedTargetKey(targetKey);
+    }
+    setActiveFilter(filter);
+  };
 
   const recordPostOffset = (postId: string, event: LayoutChangeEvent) => {
     postOffsetsRef.current[postId] = event.nativeEvent.layout.y;
@@ -375,7 +389,7 @@ export default function ResidentForumScreen() {
           {forumCategories.map((filter) => (
             <TouchableOpacity
               key={filter}
-              onPress={() => setActiveFilter(filter)}
+              onPress={() => changeFilter(filter)}
               style={[styles.filter, displayedFilter === filter && styles.activeFilter]}
             >
               <Text style={[styles.filterText, displayedFilter === filter && styles.activeFilterText]}>{filter}</Text>

@@ -158,6 +158,7 @@ export default function AuthorityForumScreen() {
   const [postBody, setPostBody] = useState('');
   const [postStatus, setPostStatus] = useState<ForumStatus>('Announcement');
   const [activeFilter, setActiveFilter] = useState<ForumCategory>('All');
+  const [dismissedTargetKey, setDismissedTargetKey] = useState<string | null>(null);
   const [replyDrafts, setReplyDrafts] = useState<Record<string, string>>({});
   const [replyTarget, setReplyTarget] = useState<Record<string, string | null>>({});
   const [createEventModalVisible, setCreateEventModalVisible] = useState(false);
@@ -210,18 +211,24 @@ export default function AuthorityForumScreen() {
         : undefined),
     [posts, requestedPostId, targetCommentId],
   );
+  const targetKey = targetPostId
+    ? `${targetPostId}:${targetCommentId ?? ''}`
+    : null;
+  const targetPending = Boolean(
+    targetKey && dismissedTargetKey !== targetKey,
+  );
+  const displayedFilter: ForumCategory = targetPending ? 'All' : activeFilter;
   const visiblePosts = useMemo(
     () =>
-      targetPostId || targetCommentId
+      targetPending
         ? posts
-        : activeFilter === 'All'
+        : displayedFilter === 'All'
           ? posts
-          : posts.filter((post) => getForumCategory(post) === activeFilter),
-    [activeFilter, posts, targetCommentId, targetPostId],
+          : posts.filter((post) => getForumCategory(post) === displayedFilter),
+    [displayedFilter, posts, targetPending],
   );
 
   const scrollToTargetForumItem = useCallback(() => {
-    const targetKey = targetCommentId ?? targetPostId;
     if (
       !targetKey ||
       !targetPostId ||
@@ -249,14 +256,20 @@ export default function AuthorityForumScreen() {
         animated: true,
       });
     });
-  }, [targetCommentId, targetPostId]);
+  }, [targetCommentId, targetKey, targetPostId]);
 
   useEffect(() => {
     if (!targetPostId && !targetCommentId) return;
-
-    scrolledTargetRef.current = null;
     requestAnimationFrame(scrollToTargetForumItem);
   }, [scrollToTargetForumItem, targetCommentId, targetPostId]);
+
+  const changeFilter = (filter: ForumCategory) => {
+    if (targetKey) {
+      scrolledTargetRef.current = targetKey;
+      setDismissedTargetKey(targetKey);
+    }
+    setActiveFilter(filter);
+  };
 
   const authorityPostCount = posts.filter((post) => post.official).length;
   const authorityResponseCount = posts.reduce(
@@ -477,10 +490,10 @@ export default function AuthorityForumScreen() {
             {forumCategories.map((filter) => (
               <TouchableOpacity
                 key={filter}
-                onPress={() => setActiveFilter(filter)}
-                style={[styles.filter, activeFilter === filter && styles.activeFilter]}
+                onPress={() => changeFilter(filter)}
+                style={[styles.filter, displayedFilter === filter && styles.activeFilter]}
               >
-                <Text style={[styles.filterText, activeFilter === filter && styles.activeFilterText]}>
+                <Text style={[styles.filterText, displayedFilter === filter && styles.activeFilterText]}>
                   {filter}
                 </Text>
               </TouchableOpacity>
