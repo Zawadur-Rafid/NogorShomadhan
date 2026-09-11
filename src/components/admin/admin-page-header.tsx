@@ -1,9 +1,10 @@
 import { notificationService } from "@/services/notification.service";
 import { confirmAction } from "@/utils/confirm";
 import Ionicons from "@expo/vector-icons/Ionicons";
-import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useFocusEffect, usePathname, useRouter } from "expo-router";
+import { useCallback, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const getNotificationRoute = (notification: {
   route?: string;
@@ -32,6 +33,9 @@ const getNotificationRoute = (notification: {
 /** Shared top bar for every screen in the admin route group. */
 export default function AdminPageHeader() {
   const router = useRouter();
+  const pathname = usePathname();
+  const insets = useSafeAreaInsets();
+  const isDashboard = pathname === "/dashboard";
   const [menuVisible, setMenuVisible] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
 
@@ -84,32 +88,47 @@ export default function AdminPageHeader() {
         </Text>
       </View>
 
-      <View style={styles.actions}>
+      {isDashboard ? (
+        <View style={styles.actions}>
+          <Pressable
+            accessibilityLabel="View notifications"
+            accessibilityRole="button"
+            hitSlop={10}
+            onPress={() => router.push("/(admin)/notifications" as any)}
+            style={[styles.iconButton, styles.notificationButton]}
+          >
+            <Ionicons name="notifications-outline" size={24} color="#23435D" />
+            {unreadCount > 0 ? (
+              <View style={styles.notificationCount}>
+                <Text style={styles.notificationCountText}>
+                  {unreadCount > 9 ? "9+" : unreadCount}
+                </Text>
+              </View>
+            ) : null}
+          </Pressable>
+          <Pressable
+            accessibilityLabel="Open account menu"
+            accessibilityRole="button"
+            onPress={() => setMenuVisible((visible) => !visible)}
+            style={styles.avatar}
+          >
+            <Text style={styles.avatarText}>AD</Text>
+          </Pressable>
+        </View>
+      ) : (
         <Pressable
-          accessibilityLabel="View notifications"
           accessibilityRole="button"
-          hitSlop={10}
-          onPress={() => router.push("/(admin)/notifications" as any)}
-          style={[styles.iconButton, styles.notificationButton]}
+          accessibilityLabel="Go back"
+          onPress={handleBack}
+          style={({ pressed }) => [
+            styles.backButton,
+            pressed && styles.backButtonPressed,
+          ]}
         >
-          <Ionicons name="notifications-outline" size={24} color="#23435D" />
-          {notifications.length > 0 ? (
-            <View style={styles.notificationCount}>
-              <Text style={styles.notificationCountText}>
-                {notifications.length > 9 ? "9" : notifications.length}
-              </Text>
-            </View>
-          ) : null}
+          <Ionicons name="arrow-back" size={17} color="#23435D" />
+          <Text style={styles.backText}>Back</Text>
         </Pressable>
-        <Pressable
-          accessibilityLabel="Open account menu"
-          accessibilityRole="button"
-          onPress={() => setMenuVisible((visible) => !visible)}
-          style={styles.avatar}
-        >
-          <Text style={styles.avatarText}>AD</Text>
-        </Pressable>
-      </View>
+      )}
 
       {isDashboard && menuVisible ? (
         <View style={styles.accountMenu}>
