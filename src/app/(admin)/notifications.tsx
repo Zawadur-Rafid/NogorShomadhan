@@ -189,6 +189,14 @@ export default function AdminNotificationsScreen() {
         }
         contentContainerStyle={styles.content}
       >
+        <Pressable
+          style={styles.backButton}
+          onPress={() => router.replace("/(admin)/dashboard" as never)}
+        >
+          <Ionicons name="arrow-back" size={18} color="#23435D" />
+          <Text style={styles.backText}>Back to Dashboard</Text>
+        </Pressable>
+
         <View style={styles.headingRow}>
           <View style={styles.headingCopy}>
             <Text style={styles.eyebrow}>ADMIN INBOX</Text>
@@ -422,4 +430,15 @@ const styles = StyleSheet.create({
   empty: { alignItems: "center", paddingVertical: 70, gap: 8 },
   emptyTitle: { color: "#1F2937", fontSize: 18, fontWeight: "800" },
   emptyText: { color: "#667085", fontSize: 13 },
+  backButton: {
+    alignSelf: "flex-start",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 20,
+    backgroundColor: "#F2F6F8",
+  },
+  backText: { color: "#23435D", fontSize: 13, fontWeight: "700" },
 });
