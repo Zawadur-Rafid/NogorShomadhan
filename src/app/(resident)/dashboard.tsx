@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import {
     Alert,
     FlatList,
+  Modal,
+  Pressable,
     ScrollView,
     StyleSheet,
     Text,
@@ -22,10 +24,55 @@ import {
 
 import SkeletonDashboard from "../../components/SkeletonDashboard";
 
+const guideItems = [
+  {
+    icon: "report-problem-outline" as const,
+    question: "How do I create a complaint?",
+    answer:
+      "Open New Complaint, choose the issue category, add the location and urgency, describe the problem clearly, and attach a photo if helpful. Review the details and submit.",
+    route: "/(resident)/complaints/create",
+    action: "Create a complaint",
+  },
+  {
+    icon: "timeline-outline" as const,
+    question: "How do I track my complaint?",
+    answer:
+      "Open My Complaints to see your submitted issues. Select any complaint to view its current status, timeline, authority updates, and resolution details.",
+    route: "/(resident)/complaints/my",
+    action: "View my complaints",
+  },
+  {
+    icon: "chatbubble-ellipses-outline" as const,
+    question: "How do I give feedback?",
+    answer:
+      "Open a resolved complaint from My Complaints, scroll to the feedback section, choose your rating, write a short comment, and submit it.",
+    route: "/(resident)/complaints/my",
+    action: "Open my complaints",
+  },
+  {
+    icon: "people-outline" as const,
+    question: "How do I join the community forum?",
+    answer:
+      "Open the Community Forum to ask questions, share local updates, and discuss neighborhood issues with other residents.",
+    route: "/(resident)/forum",
+    action: "Open community forum",
+  },
+  {
+    icon: "person-outline" as const,
+    question: "How do I update my profile?",
+    answer:
+      "Open your profile from the account icon in the top bar, update the available information, and save your changes.",
+    route: "/(resident)/profile",
+    action: "Open my profile",
+  },
+];
+
 export default function Dashboard() {
   const router = useRouter();
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [guideVisible, setGuideVisible] = useState(false);
+  const [expandedGuide, setExpandedGuide] = useState(0);
 
   useEffect(() => {
     async function loadData() {
@@ -338,6 +385,112 @@ export default function Dashboard() {
       fontSize: 12,
       fontFamily: "System",
     },
+    guideOverlay: {
+      flex: 1,
+      justifyContent: "flex-end",
+      backgroundColor: "rgba(15, 23, 42, 0.48)",
+    },
+    guideSheet: {
+      maxHeight: "88%",
+      backgroundColor: "#F7F8FA",
+      borderTopLeftRadius: 26,
+      borderTopRightRadius: 26,
+      paddingTop: 10,
+      paddingHorizontal: 16,
+      paddingBottom: 24,
+    },
+    guideHandle: {
+      width: 42,
+      height: 4,
+      borderRadius: 2,
+      backgroundColor: "#CBD5E1",
+      alignSelf: "center",
+      marginBottom: 16,
+    },
+    guideHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      marginBottom: 6,
+    },
+    guideHeading: {
+      color: "#23435D",
+      fontSize: 23,
+      fontWeight: "800",
+      fontFamily: "System",
+    },
+    guideClose: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      backgroundColor: "#E8EDF4",
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    guideIntro: {
+      color: "#667085",
+      fontSize: 13,
+      lineHeight: 19,
+      fontFamily: "System",
+      marginBottom: 14,
+    },
+    guideList: {
+      paddingBottom: 8,
+    },
+    guideItem: {
+      backgroundColor: "#FFFFFF",
+      borderRadius: 14,
+      marginBottom: 10,
+      borderWidth: 1,
+      borderColor: "#E5EAF0",
+      overflow: "hidden",
+    },
+    guideQuestion: {
+      minHeight: 58,
+      flexDirection: "row",
+      alignItems: "center",
+      paddingHorizontal: 14,
+      gap: 11,
+    },
+    guideIcon: {
+      width: 34,
+      height: 34,
+      borderRadius: 17,
+      backgroundColor: "#EAF3FF",
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    guideQuestionText: {
+      flex: 1,
+      color: "#1F2937",
+      fontSize: 14,
+      fontWeight: "700",
+      fontFamily: "System",
+    },
+    guideAnswer: {
+      paddingHorizontal: 59,
+      paddingRight: 18,
+      paddingBottom: 13,
+      color: "#667085",
+      fontSize: 13,
+      lineHeight: 19,
+      fontFamily: "System",
+    },
+    guideAction: {
+      alignSelf: "flex-end",
+      marginRight: 18,
+      marginBottom: 14,
+      paddingHorizontal: 12,
+      paddingVertical: 7,
+      borderRadius: 16,
+      backgroundColor: "#23435D",
+    },
+    guideActionText: {
+      color: "#FFFFFF",
+      fontSize: 11,
+      fontWeight: "700",
+      fontFamily: "System",
+    },
     plusButton: {
       width: 48,
       height: 48,
@@ -534,7 +687,14 @@ export default function Dashboard() {
               Browse our FAQ or contact the municipal helpline directly for
               urgent emergencies.
             </Text>
-            <TouchableOpacity style={styles.helpButton}>
+            <TouchableOpacity
+              style={styles.helpButton}
+              onPress={() => {
+                setExpandedGuide(0);
+                setGuideVisible(true);
+              }}
+              activeOpacity={0.85}
+            >
               <Text style={styles.helpButtonText}>Help Center</Text>
             </TouchableOpacity>
           </View>
@@ -544,6 +704,89 @@ export default function Dashboard() {
         </View>
         </ScrollView>
       )}
+
+      <Modal
+        visible={guideVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setGuideVisible(false)}
+      >
+        <Pressable
+          style={styles.guideOverlay}
+          onPress={() => setGuideVisible(false)}
+        >
+          <Pressable
+            style={styles.guideSheet}
+            onPress={(event) => event.stopPropagation()}
+          >
+            <View style={styles.guideHandle} />
+            <View style={styles.guideHeader}>
+              <Text style={styles.guideHeading}>Resident Guide</Text>
+              <TouchableOpacity
+                style={styles.guideClose}
+                onPress={() => setGuideVisible(false)}
+                accessibilityLabel="Close resident guide"
+              >
+                <Ionicons name="close" size={20} color="#23435D" />
+              </TouchableOpacity>
+            </View>
+            <Text style={styles.guideIntro}>
+              Quick answers for the things you can do in Nogor Shomadhan.
+            </Text>
+            <ScrollView
+              style={styles.guideList}
+              showsVerticalScrollIndicator={false}
+            >
+              {guideItems.map((item, index) => {
+                const expanded = expandedGuide === index;
+                return (
+                  <View key={item.question} style={styles.guideItem}>
+                    <TouchableOpacity
+                      style={styles.guideQuestion}
+                      onPress={() => setExpandedGuide(expanded ? -1 : index)}
+                      activeOpacity={0.75}
+                      accessibilityRole="button"
+                      accessibilityState={{ expanded }}
+                    >
+                      <View style={styles.guideIcon}>
+                        <Ionicons
+                          name={item.icon as keyof typeof Ionicons.glyphMap}
+                          size={18}
+                          color="#2D6CDF"
+                        />
+                      </View>
+                      <Text style={styles.guideQuestionText}>
+                        {item.question}
+                      </Text>
+                      <Ionicons
+                        name={expanded ? "chevron-up" : "chevron-down"}
+                        size={19}
+                        color="#667085"
+                      />
+                    </TouchableOpacity>
+                    {expanded && (
+                      <>
+                        <Text style={styles.guideAnswer}>{item.answer}</Text>
+                        <TouchableOpacity
+                          style={styles.guideAction}
+                          onPress={() => {
+                            setGuideVisible(false);
+                            router.push(item.route as any);
+                          }}
+                        >
+                          <Text style={styles.guideActionText}>
+                            {item.action}
+                          </Text>
+                        </TouchableOpacity>
+                      </>
+                    )}
+                  </View>
+                );
+              })}
+            </ScrollView>
+          </Pressable>
+        </Pressable>
+      </Modal>
 
       {/* Bottom Navigation */}
       <BottomNav activeRoute="home" />

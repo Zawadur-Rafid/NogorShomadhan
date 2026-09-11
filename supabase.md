@@ -9,7 +9,7 @@
 - `complaint_status`: ENUM ('unverified', 'pending', 'in progress', 'resolved')
 - `complaint_category`: ENUM ('Road Damage', 'Garbage & Waste', 'Drainage & Waterlogging', 'Streetlight & Electrical', 'Water Supply', 'Sanitation & Public Toilets', 'Traffic & Illegal Parking', 'Public Safety & Encroachment', 'Noise & Environmental Pollution', 'Parks & Public Spaces', 'Animal-Related Issues', 'Other')
 - `forum_post_type`: ENUM ('Announcement', 'Update', 'Alert')
-- `notification_type`: ENUM ('account_review_required', 'account_approved', 'account_rejected', 'complaint_review_required', 'duplicate_review_required', 'complaint_accepted', 'complaint_rejected', 'complaint_duplicate_confirmed', 'complaint_work_started', 'complaint_progress_updated', 'complaint_deadline_changed', 'complaint_deadline_milestone', 'complaint_overdue', 'complaint_resolved', 'complaint_feedback_received', 'complaint_feedback_replied', 'forum_comment_received', 'forum_reply_received', 'official_announcement', 'system_alert')
+- `notification_type`: ENUM ('account_review_required', 'account_approved', 'account_rejected', 'complaint_review_required', 'complaint_accepted', 'complaint_rejected', 'complaint_work_started', 'complaint_progress_updated', 'complaint_deadline_changed', 'complaint_deadline_milestone', 'complaint_overdue', 'complaint_resolved', 'complaint_feedback_received', 'complaint_feedback_replied', 'forum_comment_received', 'forum_reply_received', 'official_announcement', 'system_alert')
 - `notification_entity_type`: ENUM ('account', 'complaint', 'feedback', 'forum_post', 'forum_comment', 'system')
 - `notification_priority`: ENUM ('low', 'normal', 'high', 'urgent')
 - `duplicate_review_status`: ENUM ('pending', 'confirmed', 'rejected')
@@ -52,21 +52,14 @@
 ### `duplicate`
 - `dup_id`: UUID (Primary Key, Default: gen_random_uuid())
 - `acc_id`: UUID (Foreign Key to account.acc_id)
-- `comp_id`: UUID (Nullable Foreign Key to complaints.comp_id, ON DELETE SET NULL; newly submitted candidate complaint)
+- `comp_id`: UUID (Foreign Key to complaints.comp_id)
 - `timestamp`: TIMESTAMPTZ (Default: CURRENT_TIMESTAMP)
-- `matched_comp_id`: UUID (Foreign Key to complaints.comp_id, NOT NULL; canonical/original complaint)
+- `matched_comp_id`: UUID (Foreign Key to complaints.comp_id)
 - `ai_score`: NUMERIC
 - `ai_reason`: TEXT
 - `admin_status`: duplicate_review_status (Default: 'pending')
 - `reviewed_at`: TIMESTAMPTZ
 - `admin_note`: TEXT
-
-Notification integration assumptions:
-- `comp_id` identifies the newly submitted candidate complaint and becomes null if that complaint is deleted.
-- `matched_comp_id` identifies the canonical complaint that remains active.
-- `acc_id` identifies the resident who submitted the candidate complaint.
-- Admin review should set `admin_status` to `confirmed` before deleting the candidate complaint so the confirmation notification can include both complaint references.
-- Notification triggers observe duplicate inserts and `admin_status` changes; they do not decide the duplicate status or delete complaint/duplicate records.
 
 ### complaint_status_history
 - history_id: UUID (Primary Key, Default: gen_random_uuid())
