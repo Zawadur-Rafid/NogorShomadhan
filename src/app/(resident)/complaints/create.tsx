@@ -82,7 +82,7 @@ export default function NewComplaintForm() {
     if (categorizeTimeoutRef.current) {
       clearTimeout(categorizeTimeoutRef.current);
     }
-    
+
     if (title.trim() === "" || description.trim() === "") {
       return;
     }
