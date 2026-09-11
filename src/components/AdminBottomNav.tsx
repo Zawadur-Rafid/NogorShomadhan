@@ -1,6 +1,7 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useRouter } from "expo-router";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 type AdminRoute =
   | "home"
@@ -16,6 +17,7 @@ interface AdminBottomNavProps {
 
 export default function AdminBottomNav({ activeRoute }: AdminBottomNavProps) {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
 
   const items: Array<{
     key: AdminRoute;
@@ -62,7 +64,7 @@ export default function AdminBottomNav({ activeRoute }: AdminBottomNavProps) {
   ];
 
   return (
-    <View style={styles.bottomNavigation}>
+    <View style={[styles.bottomNavigation, { paddingBottom: insets.bottom || 8 }]}>
       {items.map((item) => {
         const isActive = activeRoute === item.key;
 
@@ -94,13 +96,14 @@ export default function AdminBottomNav({ activeRoute }: AdminBottomNavProps) {
 
 const styles = StyleSheet.create({
   bottomNavigation: {
-    height: 68,
+    minHeight: 56,
+    paddingTop: 7,
     backgroundColor: "#fff",
     borderTopWidth: 1,
     borderTopColor: "#E8E8E8",
     flexDirection: "row",
     justifyContent: "space-around",
-    alignItems: "center",
+    alignItems: "flex-start",
   },
   navButton: {
     alignItems: "center",

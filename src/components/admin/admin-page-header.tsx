@@ -5,6 +5,7 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const getNotificationRoute = (notification: {
   route?: string;
@@ -33,6 +34,7 @@ const getNotificationRoute = (notification: {
 /** Shared top bar for every screen in the admin route group. */
 export default function AdminPageHeader() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const [menuVisible, setMenuVisible] = useState(false);
   const [notificationsVisible, setNotificationsVisible] = useState(false);
   const [notifications, setNotifications] = useState<any[]>([]);
@@ -77,7 +79,7 @@ export default function AdminPageHeader() {
   };
 
   return (
-    <View style={styles.header}>
+    <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
       <View style={styles.brandWrap}>
         <View style={styles.logoBox}>
           <Ionicons name="business-outline" size={22} color="#ffffff" />
@@ -96,13 +98,6 @@ export default function AdminPageHeader() {
           style={[styles.iconButton, styles.notificationButton]}
         >
           <Ionicons name="notifications-outline" size={24} color="#23435D" />
-          {notifications.length > 0 ? (
-            <View style={styles.notificationCount}>
-              <Text style={styles.notificationCountText}>
-                {notifications.length > 9 ? "9" : notifications.length}
-              </Text>
-            </View>
-          ) : null}
         </Pressable>
         <Pressable
           accessibilityLabel="Open account menu"
@@ -191,12 +186,11 @@ export default function AdminPageHeader() {
 
 const styles = StyleSheet.create({
   header: {
-    height: 60,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 18,
-    paddingVertical: 8,
+    paddingBottom: 8,
     backgroundColor: "#FFFFFF",
     borderBottomWidth: 1,
     borderBottomColor: "#E7EEF3",
@@ -255,7 +249,7 @@ const styles = StyleSheet.create({
   avatarText: { color: "#304B6B", fontSize: 12, fontWeight: "700" },
   accountMenu: {
     position: "absolute",
-    top: 58,
+    top: "100%",
     right: 18,
     minWidth: 126,
     padding: 6,
@@ -269,7 +263,7 @@ const styles = StyleSheet.create({
   },
   notificationsMenu: {
     position: "absolute",
-    top: 58,
+    top: "100%",
     right: 16,
     width: 320,
     paddingVertical: 6,
