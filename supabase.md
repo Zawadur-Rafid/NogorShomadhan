@@ -9,7 +9,7 @@
 - `complaint_status`: ENUM ('unverified', 'pending', 'in progress', 'resolved')
 - `complaint_category`: ENUM ('Road Damage', 'Garbage & Waste', 'Drainage & Waterlogging', 'Streetlight & Electrical', 'Water Supply', 'Sanitation & Public Toilets', 'Traffic & Illegal Parking', 'Public Safety & Encroachment', 'Noise & Environmental Pollution', 'Parks & Public Spaces', 'Animal-Related Issues', 'Other')
 - `forum_post_type`: ENUM ('Announcement', 'Update', 'Alert')
-- `notification_type`: ENUM ('account_review_required', 'account_approved', 'account_rejected', 'complaint_review_required', 'duplicate_review_required', 'complaint_accepted', 'complaint_rejected', 'complaint_duplicate_confirmed', 'complaint_work_started', 'complaint_progress_updated', 'complaint_deadline_changed', 'complaint_deadline_milestone', 'complaint_overdue', 'complaint_resolved', 'complaint_feedback_received', 'complaint_feedback_replied', 'forum_comment_received', 'forum_reply_received', 'official_announcement', 'system_alert')
+- `notification_type`: ENUM ('account_review_required', 'account_approved', 'account_rejected', 'complaint_review_required', 'duplicate_review_required', 'complaint_accepted', 'complaint_rejected', 'complaint_duplicate_confirmed', 'complaint_work_started', 'complaint_pending_stale', 'complaint_progress_updated', 'complaint_deadline_changed', 'complaint_deadline_milestone', 'complaint_overdue', 'complaint_resolved', 'complaint_feedback_received', 'complaint_feedback_replied', 'forum_comment_received', 'forum_reply_received', 'official_announcement', 'system_alert')
 - `notification_entity_type`: ENUM ('account', 'complaint', 'feedback', 'forum_post', 'forum_comment', 'system')
 - `notification_priority`: ENUM ('low', 'normal', 'high', 'urgent')
 - `duplicate_review_status`: ENUM ('pending', 'confirmed', 'rejected')
@@ -199,5 +199,11 @@ Security:
 - Row Level Security is enabled with public select, insert, and update policies to match the current anonymous-client access model documented in `rls.md`.
 - The app must filter reads and updates by `recipient_acc_id`; stronger recipient-scoped enforcement remains in the security-hardening backlog.
 - No public delete policy is provided, so notification history is retained.
+
+Scheduled generation:
+- `notify-stale-pending-complaints` runs daily at 03:00 UTC (09:00 Asia/Dhaka).
+- It creates one high-priority authority notification when a complaint remains `pending` for 14 days after acceptance.
+- The acceptance time comes from the latest `unverified` to `pending` history row when available, with the persisted complaint-accepted notification as a fallback.
+- The notification event key prevents the daily job from creating repeated reminders for the same complaint and authority account.
 
 

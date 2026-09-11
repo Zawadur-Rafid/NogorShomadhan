@@ -1,4 +1,4 @@
--- Migration: Add duplicate-review events to an existing notification_type enum.
+-- Migration: Add newer notification events to an existing notification_type enum.
 -- Run this once before applying notification-generation triggers.
 
 ALTER TYPE notification_type
@@ -6,3 +6,6 @@ ALTER TYPE notification_type
 
 ALTER TYPE notification_type
     ADD VALUE IF NOT EXISTS 'complaint_duplicate_confirmed';
+
+ALTER TYPE notification_type
+    ADD VALUE IF NOT EXISTS 'complaint_pending_stale';

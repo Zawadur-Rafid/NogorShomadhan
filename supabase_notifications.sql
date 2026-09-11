@@ -13,6 +13,7 @@ DO $$ BEGIN
         'complaint_rejected',
         'complaint_duplicate_confirmed',
         'complaint_work_started',
+        'complaint_pending_stale',
         'complaint_progress_updated',
         'complaint_deadline_changed',
         'complaint_deadline_milestone',
