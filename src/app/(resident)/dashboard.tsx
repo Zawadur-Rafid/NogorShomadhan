@@ -20,17 +20,23 @@ import {
     getDashboardData,
 } from "../../services/resident.service";
 
+import SkeletonDashboard from "../../components/SkeletonDashboard";
+
 export default function Dashboard() {
   const router = useRouter();
   const [data, setData] = useState<DashboardData | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function loadData() {
       try {
+        setLoading(true);
         const dashboardData = await getDashboardData();
         setData(dashboardData);
       } catch (error) {
         if (error instanceof Error) Alert.alert("Error", error.message);
+      } finally {
+        setLoading(false);
       }
     }
     loadData();
@@ -420,15 +426,18 @@ export default function Dashboard() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView showsVerticalScrollIndicator={false}>
-        {/* HEADER */}
-        <TopNav />
+      {/* HEADER */}
+      <TopNav />
 
-        {/* Welcome */}
-        <View style={styles.welcome}>
-          <Text style={styles.smallTitle}>WELCOME BACK,</Text>
-          <Text style={styles.bigTitle}>Resident Dashboard</Text>
-        </View>
+      {loading ? (
+        <SkeletonDashboard />
+      ) : (
+        <ScrollView showsVerticalScrollIndicator={false}>
+          {/* Welcome */}
+          <View style={styles.welcome}>
+            <Text style={styles.smallTitle}>WELCOME BACK,</Text>
+            <Text style={styles.bigTitle}>Resident Dashboard</Text>
+          </View>
 
         {/* Stats */}
         <View style={styles.statsRow}>
@@ -533,7 +542,8 @@ export default function Dashboard() {
             <Ionicons name="add" size={28} color="#fff" />
           </TouchableOpacity>
         </View>
-      </ScrollView>
+        </ScrollView>
+      )}
 
       {/* Bottom Navigation */}
       <BottomNav activeRoute="home" />
