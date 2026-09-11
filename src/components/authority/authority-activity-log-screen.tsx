@@ -7,12 +7,12 @@ import {
   Pressable,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import AuthorityPageHeader from '@/components/authority/authority-page-header';
+import { useAuthorityComplaints } from '@/components/authority/authority-complaints-context';
 import {
   getAuthorityActivities,
   type AuthorityActivity,
@@ -95,13 +95,26 @@ function getDayLabel(value: string): string {
 
 export default function AuthorityActivityLogScreen() {
   const router = useRouter();
+  const { complaints } = useAuthorityComplaints();
   const [activities, setActivities] = useState<AuthorityActivity[]>([]);
   const [filter, setFilter] = useState<ActivityFilter>('All');
-  const [search, setSearch] = useState('');
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const complaintDisplayIds = useMemo(
+    () => new Map(complaints.map((complaint) => [complaint.id, complaint.displayId])),
+    [complaints],
+  );
+
+  const getActivityDisplayId = useCallback(
+    (activity: AuthorityActivity) =>
+      activity.entityType === 'complaint'
+        ? complaintDisplayIds.get(activity.entityId) ?? 'Complaint'
+        : activity.entityId,
+    [complaintDisplayIds],
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -140,18 +153,13 @@ export default function AuthorityActivityLogScreen() {
     }
   }, []);
 
-  const filteredActivities = useMemo(() => {
-    const keyword = search.trim().toLowerCase();
-    return activities.filter((activity) => {
-      const matchesFilter = filter === 'All' || activity.category === filter;
-      const matchesSearch =
-        !keyword ||
-        activity.title.toLowerCase().includes(keyword) ||
-        activity.detail.toLowerCase().includes(keyword) ||
-        activity.entityId.toLowerCase().includes(keyword);
-      return matchesFilter && matchesSearch;
-    });
-  }, [activities, filter, search]);
+  const filteredActivities = useMemo(
+    () =>
+      filter === 'All'
+        ? activities
+        : activities.filter((activity) => activity.category === filter),
+    [activities, filter],
+  );
 
   const visibleActivities = useMemo(
     () => filteredActivities.slice(0, visibleCount),
@@ -184,11 +192,6 @@ export default function AuthorityActivityLogScreen() {
     setVisibleCount(PAGE_SIZE);
   };
 
-  const updateSearch = (value: string) => {
-    setSearch(value);
-    setVisibleCount(PAGE_SIZE);
-  };
-
   return (
     <SafeAreaView edges={['top', 'left', 'right']} style={styles.safeArea}>
       <AuthorityPageHeader
@@ -211,10 +214,10 @@ export default function AuthorityActivityLogScreen() {
                 <Ionicons name="time-outline" size={26} color="#FFFFFF" />
               </View>
               <View style={styles.heroCopy}>
-                <Text style={styles.eyebrow}>ACCOUNT HISTORY</Text>
+                <Text style={styles.eyebrow}>AUTHORITY OPERATIONS</Text>
                 <Text style={styles.title}>Activity Log</Text>
                 <Text style={styles.subtitle}>
-                  Your complaint decisions, contractor changes, work updates, and forum contributions in one timeline.
+                  Complaint decisions, contractor changes, work updates, and forum contributions recorded by the Community Authority.
                 </Text>
               </View>
               <View style={styles.activityCount}>
@@ -224,27 +227,6 @@ export default function AuthorityActivityLogScreen() {
             </View>
 
             <View style={styles.controls}>
-              <View style={styles.searchBox}>
-                <Ionicons name="search-outline" size={18} color="#7A8493" />
-                <TextInput
-                  value={search}
-                  onChangeText={updateSearch}
-                  placeholder="Search activity, complaint, or contractor"
-                  placeholderTextColor="#9AA2AE"
-                  returnKeyType="search"
-                  style={styles.searchInput}
-                />
-                {search ? (
-                  <Pressable
-                    accessibilityLabel="Clear activity search"
-                    hitSlop={8}
-                    onPress={() => updateSearch('')}
-                  >
-                    <Ionicons name="close-circle" size={18} color="#9AA2AE" />
-                  </Pressable>
-                ) : null}
-              </View>
-
               <View style={styles.filters}>
                 {filters.map((item) => (
                   <Pressable
@@ -333,7 +315,7 @@ export default function AuthorityActivityLogScreen() {
                   ) : null}
                   <View style={styles.cardFooter}>
                     <Text selectable numberOfLines={1} style={styles.activityId}>
-                      {item.entityId}
+                      {getActivityDisplayId(item)}
                     </Text>
                     <View style={styles.openAction}>
                       <Text style={styles.openActionText}>View details</Text>
@@ -351,7 +333,7 @@ export default function AuthorityActivityLogScreen() {
               <>
                 <ActivityIndicator size="large" color="#23435D" />
                 <Text style={styles.emptyTitle}>Loading activity</Text>
-                <Text style={styles.emptyText}>Building your authority timeline.</Text>
+                <Text style={styles.emptyText}>Building the authority operations timeline.</Text>
               </>
             ) : error ? (
               <>
@@ -372,8 +354,8 @@ export default function AuthorityActivityLogScreen() {
                 <Text style={styles.emptyTitle}>No activity found</Text>
                 <Text style={styles.emptyText}>
                   {activities.length === 0
-                    ? 'Your complaint and forum actions will appear here.'
-                    : 'Try another activity type or search phrase.'}
+                    ? 'Complaint and forum actions from the Community Authority will appear here.'
+                    : 'Choose another activity type.'}
                 </Text>
               </>
             )}
@@ -389,7 +371,7 @@ export default function AuthorityActivityLogScreen() {
               <Ionicons name="chevron-down" size={16} color="#23435D" />
             </Pressable>
           ) : visibleActivities.length > 0 ? (
-            <Text style={styles.endText}>You have reached the end of this activity.</Text>
+            <Text style={styles.endText}>End of the authority activity log.</Text>
           ) : null
         }
       />
@@ -446,19 +428,6 @@ const styles = StyleSheet.create({
   },
   activityCountLabel: { color: '#607080', fontSize: 8, fontWeight: '700' },
   controls: { gap: 10 },
-  searchBox: {
-    minHeight: 44,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 12,
-    borderRadius: 12,
-    borderCurve: 'continuous',
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E2E6EB',
-  },
-  searchInput: { flex: 1, color: '#344054', fontSize: 11 },
   filters: { flexDirection: 'row', flexWrap: 'wrap', gap: 7 },
   filterButton: {
     paddingHorizontal: 13,
