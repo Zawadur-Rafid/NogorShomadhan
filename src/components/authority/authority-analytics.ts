@@ -178,7 +178,9 @@ export function buildAuthorityAnalytics(
     resolved: resolved.length,
     resolutionRate: total === 0 ? 0 : Math.round((resolved.length / total) * 100),
     averageResolutionDays: average(resolutionDays),
+    resolutionSampleSize: resolutionDays.length,
     averageStartDays: average(startDays),
+    startSampleSize: startDays.length,
     statusDistribution,
     categoryDistribution: distribution(Object.entries(categoryCounts), total),
     areaDistribution: distribution(Object.entries(areaCounts), total),
@@ -193,3 +195,5 @@ export function buildAuthorityAnalytics(
     totalAdditionalReports,
   };
 }
+
+export type AuthorityAnalyticsSnapshot = ReturnType<typeof buildAuthorityAnalytics>;

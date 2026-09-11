@@ -1,12 +1,13 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
 import { useMemo, useState, type ComponentProps, type ReactNode } from 'react';
-import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, useWindowDimensions, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { analyticsPeriods, buildAuthorityAnalytics, formatAnalyticsDays, getAnalyticsArea, type AnalyticsDistribution, type AnalyticsPeriod } from '@/components/authority/authority-analytics';
 import { useAuthorityComplaints } from '@/components/authority/authority-complaints-context';
 import AuthorityPageHeader from '@/components/authority/authority-page-header';
+import { generateAuthorityAnalyticsPdf } from '@/services/authority-analytics-report.service';
 
 type IconName = ComponentProps<typeof Ionicons>['name'];
 
@@ -58,24 +59,43 @@ export default function AuthorityAnalytics() {
   const { width } = useWindowDimensions();
   const { complaints, loading, error, refreshComplaints } = useAuthorityComplaints();
   const [period, setPeriod] = useState<AnalyticsPeriod>('30 Days');
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const analytics = useMemo(() => buildAuthorityAnalytics(complaints, period), [complaints, period]);
   const wide = width >= 900;
   const maxTrend = Math.max(1, ...analytics.trend.map((item) => item.value));
-  const trendTitle = period === '7 Days' ? 'Daily Complaint Trend' : period === '30 Days' ? 'Six-day Complaint Trend' : 'Monthly Complaint Trend';
+  const trendSubtitle =
+    period === '7 Days'
+      ? 'Daily submission totals'
+      : period === '30 Days'
+        ? 'Submission totals in six-day intervals'
+        : 'Monthly submission totals';
   const summary: { label: string; value: string; detail: string; icon: IconName; color: string; background: string }[] = [
     { label: 'Total Complaints', value: String(analytics.total), detail: `Submitted during ${period.toLowerCase()}`, icon: 'documents-outline', color: '#3B82F6', background: '#EEF6FF' },
-    { label: 'In Progress', value: String(analytics.inProgress), detail: 'Current status in this period', icon: 'construct-outline', color: '#C67B00', background: '#FFF7E8' },
+    { label: 'In Progress', value: String(analytics.inProgress), detail: 'Current status among submissions in this period', icon: 'construct-outline', color: '#C67B00', background: '#FFF7E8' },
     { label: 'Resolution Rate', value: `${analytics.resolutionRate}%`, detail: `${analytics.resolved} of ${analytics.total} resolved`, icon: 'checkmark-done-outline', color: '#16845B', background: '#EAF8F1' },
-    { label: 'Average Resolution', value: formatAnalyticsDays(analytics.averageResolutionDays), detail: 'Submission to recorded resolution', icon: 'timer-outline', color: '#7C6BC4', background: '#F2EFFE' },
+    { label: 'Average Resolution', value: formatAnalyticsDays(analytics.averageResolutionDays), detail: analytics.resolutionSampleSize === 0 ? 'No resolved records with valid timestamps' : `Based on ${analytics.resolutionSampleSize} resolved complaint${analytics.resolutionSampleSize === 1 ? '' : 's'}`, icon: 'timer-outline', color: '#7C6BC4', background: '#F2EFFE' },
   ];
+
+  const handleGeneratePdf = async () => {
+    if (analytics.total === 0 || isGeneratingPdf) return;
+
+    setIsGeneratingPdf(true);
+    try {
+      const result = await generateAuthorityAnalyticsPdf({ analytics, period });
+      if (result.uri && !result.shared) {
+        Alert.alert('PDF created', `The report was created at ${result.uri}`);
+      }
+    } catch (reportError) {
+      console.error('Failed to generate authority analytics PDF:', reportError);
+      Alert.alert('Report failed', 'Unable to create the analytics PDF. Please try again.');
+    } finally {
+      setIsGeneratingPdf(false);
+    }
+  };
 
   return (
     <SafeAreaView edges={['top', 'left', 'right']} style={styles.safeArea}>
-      <AuthorityPageHeader
-        title="Home"
-        icon="home-outline"
-        onBack={() => router.navigate('/authority/dashboard' as never)}
-      />
+      <AuthorityPageHeader />
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentInsetAdjustmentBehavior="automatic"
@@ -88,12 +108,32 @@ export default function AuthorityAnalytics() {
             <View style={styles.heroCopy}>
               <Text style={styles.eyebrow}>AUTHORITY PERFORMANCE</Text>
               <Text style={styles.title}>Complaint Analytics</Text>
-              <Text style={styles.subtitle}>Live insights from complaint, work-update, resolution, deadline, location, and additional-report records.</Text>
+              <Text style={styles.subtitle}>Track complaint volume, response time, deadline performance, and confirmed additional reports.</Text>
             </View>
+            <TouchableOpacity
+              accessibilityRole="button"
+              accessibilityLabel="Export authority analytics as PDF"
+              accessibilityHint="Creates a report for the selected reporting period"
+              disabled={analytics.total === 0 || isGeneratingPdf}
+              onPress={() => void handleGeneratePdf()}
+              style={[
+                styles.reportButton,
+                (analytics.total === 0 || isGeneratingPdf) && styles.reportButtonDisabled,
+              ]}
+            >
+              {isGeneratingPdf ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                <Ionicons name="document-text-outline" size={18} color="#FFFFFF" />
+              )}
+              <Text style={styles.reportButtonText}>
+                {isGeneratingPdf ? 'Preparing PDF…' : 'Export PDF'}
+              </Text>
+            </TouchableOpacity>
           </View>
 
           <View style={styles.periodRow}>
-            <View><Text style={styles.periodLabel}>Analytics period</Text><Text style={styles.periodHint}>Grouped by complaint submission date</Text></View>
+            <View><Text style={styles.periodLabel}>Reporting period</Text><Text style={styles.periodHint}>Includes complaints submitted in this period</Text></View>
             <View style={styles.periodButtons}>
               {analyticsPeriods.map((item) => (
                 <Pressable key={item} accessibilityRole="button" accessibilityState={{ selected: period === item }} onPress={() => setPeriod(item)} style={[styles.periodButton, period === item && styles.periodButtonActive]}>
@@ -127,7 +167,7 @@ export default function AuthorityAnalytics() {
               </View>
 
               <View style={[styles.grid, wide && styles.gridWide]}>
-                <Panel title="Status Distribution" subtitle={`${analytics.total} complaints in this period`} icon="pie-chart-outline">
+                <Panel title="Current Status" subtitle={`${analytics.total} complaints submitted in this period`} icon="pie-chart-outline">
                   {analytics.total === 0 ? <Empty text="No complaints were submitted in this period." /> : (
                     <>
                       <View style={styles.statusBar}>{analytics.statusDistribution.map((item) => <View key={item.label} style={{ width: `${item.percent}%`, backgroundColor: item.color }} />)}</View>
@@ -137,7 +177,7 @@ export default function AuthorityAnalytics() {
                     </>
                   )}
                 </Panel>
-                <Panel title={trendTitle} subtitle={`Complaint submissions during ${period.toLowerCase()}`} icon="trending-up-outline">
+                <Panel title="Complaint Submissions Over Time" subtitle={trendSubtitle} icon="trending-up-outline">
                   <View style={styles.chart}>{analytics.trend.map((item) => (
                     <View key={item.label} style={styles.chartColumn}><Text style={styles.chartValue}>{item.value}</Text><View style={styles.chartTrack}><View style={[styles.chartBar, { height: `${Math.max(5, Math.round((item.value / maxTrend) * 100))}%` }]} /></View><Text numberOfLines={1} style={styles.chartLabel}>{item.label}</Text></View>
                   ))}</View>
@@ -145,28 +185,27 @@ export default function AuthorityAnalytics() {
               </View>
 
               <View style={[styles.grid, wide && styles.gridWide]}>
-                <Panel title="Top Categories" subtitle="Share of complaints by issue type" icon="layers-outline">
+                <Panel title="Top Complaint Categories" subtitle="Up to six categories by share of submitted complaints" icon="layers-outline">
                   <Distribution items={analytics.categoryDistribution} emptyText="Category data will appear when complaints are submitted." />
                 </Panel>
-                <Panel title="Complaints by Area" subtitle="Grouped by stored avenue, then road" icon="location-outline">
+                <Panel title="Top Complaint Areas" subtitle="Up to six areas; avenue first, otherwise road" icon="location-outline">
                   <Distribution items={analytics.areaDistribution} emptyText="Avenue and road data will appear here." />
                 </Panel>
               </View>
 
               <View style={[styles.grid, wide && styles.gridWide]}>
-                <Panel title="Operational Performance" subtitle="From work history, deadlines, and resolutions" icon="speedometer-outline">
+                <Panel title="Operational Performance" subtitle="Response time and deadline compliance" icon="speedometer-outline">
                   <View style={styles.performanceGrid}>
                     <View style={styles.performanceStat}><Text style={styles.performanceValue}>{formatAnalyticsDays(analytics.averageStartDays)}</Text><Text style={styles.performanceLabel}>Average time to start</Text></View>
                     <View style={styles.performanceStat}><Text style={[styles.performanceValue, analytics.overdueOpen > 0 && styles.warning]}>{analytics.overdueOpen}</Text><Text style={styles.performanceLabel}>Open complaints overdue</Text></View>
-                    <View style={styles.performanceStat}><Text style={styles.performanceValue}>{analytics.totalAdditionalReports}</Text><Text style={styles.performanceLabel}>Additional resident reports</Text></View>
                   </View>
                   <View style={styles.performanceHeading}><Text style={styles.performanceHeadingText}>On-time resolved complaints</Text><Text style={styles.performanceRate}>{analytics.onTimeRate === null ? '—' : `${analytics.onTimeRate}%`}</Text></View>
                   <View style={styles.performanceTrack}><View style={[styles.performanceBar, { width: `${analytics.onTimeRate ?? 0}%` }]} /></View>
                   <Text style={styles.performanceFootnote}>{analytics.deadlineResolved === 0 ? 'No resolved complaints in this period have a recorded deadline.' : `${analytics.withinDeadline} of ${analytics.deadlineResolved} complaints with deadlines were resolved on time.`}</Text>
                 </Panel>
 
-                <Panel title="Additional Reports" subtitle="Complaints also reported by other residents" icon="people-outline">
-                  {analytics.additionalReports.length === 0 ? <Empty text="No additional resident reports were recorded in this period." /> : (
+                <Panel title="Confirmed Additional Reports" subtitle={`${analytics.totalAdditionalReports} linked reports; showing up to five complaints`} icon="people-outline">
+                  {analytics.additionalReports.length === 0 ? <Empty text="No confirmed additional reports were linked in this period." /> : (
                     <View style={styles.reportList}>{analytics.additionalReports.map((item, index) => (
                       <TouchableOpacity key={item.id} onPress={() => router.push({ pathname: '/authority/complaints/[complaintId]', params: { complaintId: item.id } } as never)} style={styles.reportRow}>
                         <View style={styles.reportRank}><Text style={styles.reportRankText}>{index + 1}</Text></View>
@@ -187,7 +226,8 @@ export default function AuthorityAnalytics() {
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: '#F6F8FA' }, scrollContent: { paddingBottom: 38 }, container: { width: '100%', maxWidth: 1120, alignSelf: 'center', padding: 16, gap: 16 },
-  hero: { flexDirection: 'row', alignItems: 'center', gap: 15, padding: 20, borderRadius: 18, backgroundColor: '#FFF', borderWidth: 1, borderColor: '#EAEDF1' }, heroIcon: { width: 54, height: 54, borderRadius: 17, alignItems: 'center', justifyContent: 'center', backgroundColor: '#23435D' }, heroCopy: { flex: 1, minWidth: 0 }, eyebrow: { color: '#B9854B', fontSize: 9, fontWeight: '900', letterSpacing: 0.8 }, title: { color: '#111827', fontSize: 25, fontWeight: '800', marginTop: 2 }, subtitle: { maxWidth: 720, color: '#667085', fontSize: 10, lineHeight: 16, marginTop: 5 },
+  hero: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 15, padding: 20, borderRadius: 18, backgroundColor: '#FFF', borderWidth: 1, borderColor: '#EAEDF1' }, heroIcon: { width: 54, height: 54, borderRadius: 17, alignItems: 'center', justifyContent: 'center', backgroundColor: '#23435D' }, heroCopy: { flex: 1, minWidth: 210 }, eyebrow: { color: '#B9854B', fontSize: 9, fontWeight: '900', letterSpacing: 0.8 }, title: { color: '#111827', fontSize: 25, fontWeight: '800', marginTop: 2 }, subtitle: { maxWidth: 720, color: '#667085', fontSize: 10, lineHeight: 16, marginTop: 5 },
+  reportButton: { minHeight: 42, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, paddingHorizontal: 15, borderRadius: 21, backgroundColor: '#23435D' }, reportButtonDisabled: { opacity: 0.5 }, reportButtonText: { color: '#FFFFFF', fontSize: 10, fontWeight: '800' },
   periodRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 12 }, periodLabel: { color: '#344054', fontSize: 11, fontWeight: '800' }, periodHint: { color: '#98A2B3', fontSize: 8, marginTop: 3 }, periodButtons: { flexDirection: 'row', gap: 7 }, periodButton: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 17, backgroundColor: '#FFF', borderWidth: 1, borderColor: '#E2E6EB' }, periodButtonActive: { backgroundColor: '#23435D', borderColor: '#23435D' }, periodButtonText: { color: '#667085', fontSize: 10, fontWeight: '700' }, periodButtonTextActive: { color: '#FFF' },
   errorBanner: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 13, borderRadius: 13, backgroundColor: '#FEF3F2', borderWidth: 1, borderColor: '#FECDCA' }, errorCopy: { flex: 1 }, errorTitle: { color: '#912018', fontSize: 11, fontWeight: '800' }, errorText: { color: '#B42318', fontSize: 9, marginTop: 2 }, retry: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 15, backgroundColor: '#FFF' }, retryText: { color: '#B42318', fontSize: 9, fontWeight: '800' }, loading: { minHeight: 180, alignItems: 'center', justifyContent: 'center', gap: 10, borderRadius: 15, backgroundColor: '#FFF' }, loadingText: { color: '#667085', fontSize: 10 },
   summaryGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 }, summaryCard: { backgroundColor: '#FFF', borderRadius: 14, padding: 15, borderWidth: 1, borderColor: '#ECEFF3', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }, summaryWide: { flex: 1, minWidth: 205 }, summaryCompact: { width: '48%', minWidth: 150 }, summaryIcon: { width: 39, height: 39, borderRadius: 12, alignItems: 'center', justifyContent: 'center' }, summaryLabel: { color: '#667085', fontSize: 10, fontWeight: '700', marginTop: 11 }, summaryValue: { color: '#1F2937', fontSize: 21, fontWeight: '900', marginTop: 3 }, summaryDetail: { color: '#98A2B3', fontSize: 8, lineHeight: 12, marginTop: 4 },
