@@ -88,6 +88,14 @@ type DbComplaintDetails = {
     changedAt: string;
     note?: string | null;
   }>;
+  duplicateWarning: {
+    dupId: string;
+    matchedCompId: string;
+    score: number;
+    reason: string;
+    adminStatus: string;
+    reviewedAt: string | null;
+  } | null;
 };
 
 function mapStatus(
@@ -189,6 +197,7 @@ export default function AdminComplaintDetails() {
         { data: updateEvidenceData },
         { data: resolutionData },
         { data: duplicateData },
+        { data: otherDuplicatesData },
         { data: statusHistoryData },
       ] = await Promise.all([
         supabase.from("evidence").select("ev_id, img_url").eq("comp_id", complaintRow.comp_id),
@@ -220,14 +229,23 @@ export default function AdminComplaintDetails() {
           .maybeSingle(),
         supabase
           .from("duplicate")
+          .select("dup_id, matched_comp_id, ai_score, ai_reason, admin_status, reviewed_at")
+          .eq("comp_id", complaintRow.comp_id)
+          .order('timestamp', { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+        supabase
+          .from("duplicate")
           .select("dup_id")
-          .eq("comp_id", complaintRow.comp_id),
+          .eq("matched_comp_id", complaintRow.comp_id),
         supabase
           .from("complaint_status_history")
           .select("history_id,from_status,to_status,changed_at,note")
           .eq("comp_id", complaintRow.comp_id)
           .order("changed_at", { ascending: false }),
       ]);
+
+      const duplicateWarningData = duplicateData as any;
 
       // Group update evidence images by update_id
       const updateImagesMap = new Map<string, string[]>();
@@ -324,8 +342,16 @@ export default function AdminComplaintDetails() {
         contractors,
         workUpdates,
         resolution,
-        duplicatesCount: (duplicateData ?? []).length,
+        duplicatesCount: (otherDuplicatesData ?? []).length,
         statusHistory,
+        duplicateWarning: duplicateWarningData ? {
+          dupId: duplicateWarningData.dup_id,
+          matchedCompId: duplicateWarningData.matched_comp_id,
+          score: duplicateWarningData.ai_score,
+          reason: duplicateWarningData.ai_reason,
+          adminStatus: duplicateWarningData.admin_status,
+          reviewedAt: duplicateWarningData.reviewed_at,
+        } : null,
       });
 
       setLoading(false);
@@ -426,6 +452,61 @@ export default function AdminComplaintDetails() {
             ) : null}
           </View>
         </View>
+
+        {/* AI Duplicate Warning Panel */}
+        {dbComplaint.duplicateWarning && dbComplaint.duplicateWarning.adminStatus === 'pending' ? (
+          <View style={[styles.panel, { backgroundColor: "#FFF4E5", borderColor: "#B54708", borderWidth: 1 }]}>
+            <View style={styles.panelHeaderRow}>
+              <Text style={[styles.panelTitle, { color: "#B54708" }]}>AI Duplicate Warning</Text>
+              <Ionicons name="warning" size={24} color="#B54708" />
+            </View>
+            <Text style={{ color: "#B54708", marginBottom: 12, fontSize: 14 }}>
+              The AI has detected that this complaint might be a duplicate of another existing complaint with a confidence score of {dbComplaint.duplicateWarning.score}%.
+            </Text>
+            <View style={styles.detailsGrid}>
+              <Detail icon="bulb-outline" label="AI Reason" value={dbComplaint.duplicateWarning.reason} />
+              <Detail icon="link-outline" label="Matched Complaint ID" value={`#${dbComplaint.duplicateWarning.matchedCompId.slice(0, 8)}`} />
+            </View>
+            <View style={{ flexDirection: "row", gap: 10, marginTop: 16 }}>
+              <TouchableOpacity
+                style={{ flex: 1, backgroundColor: "#B54708", padding: 12, borderRadius: 8, alignItems: "center" }}
+                onPress={async () => {
+                  try {
+                    await supabase.from('duplicate').update({ admin_status: 'confirmed', reviewed_at: new Date().toISOString() }).eq('dup_id', dbComplaint.duplicateWarning!.dupId);
+                    setDbComplaint(prev => prev ? ({ ...prev, duplicateWarning: { ...prev.duplicateWarning!, adminStatus: 'confirmed' } }) : null);
+                  } catch (e) {
+                    console.error(e);
+                  }
+                }}
+              >
+                <Text style={{ color: "#FFF", fontWeight: "600" }}>Confirm Duplicate</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={{ flex: 1, backgroundColor: "#FFF", borderWidth: 1, borderColor: "#B54708", padding: 12, borderRadius: 8, alignItems: "center" }}
+                onPress={async () => {
+                  try {
+                    await supabase.from('duplicate').update({ admin_status: 'rejected', reviewed_at: new Date().toISOString() }).eq('dup_id', dbComplaint.duplicateWarning!.dupId);
+                    setDbComplaint(prev => prev ? ({ ...prev, duplicateWarning: { ...prev.duplicateWarning!, adminStatus: 'rejected' } }) : null);
+                  } catch (e) {
+                    console.error(e);
+                  }
+                }}
+              >
+                <Text style={{ color: "#B54708", fontWeight: "600" }}>Reject</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        ) : dbComplaint.duplicateWarning && dbComplaint.duplicateWarning.adminStatus === 'confirmed' ? (
+          <View style={[styles.panel, { backgroundColor: "#F9FAFB", borderColor: "#EAECF0", borderWidth: 1 }]}>
+            <View style={styles.panelHeaderRow}>
+              <Text style={[styles.panelTitle, { color: "#475467" }]}>Duplicate Confirmed</Text>
+              <Ionicons name="copy-outline" size={24} color="#475467" />
+            </View>
+            <Text style={{ color: "#475467", fontSize: 14 }}>
+              This complaint was marked as a duplicate of #{dbComplaint.duplicateWarning.matchedCompId.slice(0, 8)}.
+            </Text>
+          </View>
+        ) : null}
 
         {/* Reporter Information Panel */}
         {dbComplaint.reporter ? (

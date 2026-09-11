@@ -54,9 +54,11 @@ export async function categorizeComplaint(
       });
     }
 
+    console.log(`[Categorization] Sending request to Gemini...`);
     const result = await model.generateContent(parts);
     const response = await result.response;
     const categoryResult = response.text().trim();
+    console.log(`[Categorization] Gemini Raw Response:`, categoryResult);
 
     // Verify it's exactly in our list
     if (CATEGORIES.includes(categoryResult)) {

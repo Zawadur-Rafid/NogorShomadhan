@@ -3,17 +3,8 @@ import { decode } from 'base64-arraybuffer';
 
 import { supabase } from '../lib/supabase';
 import { feedbackService } from './feedback.service';
-
-export function formatLocation(data: { house?: string; road?: string; avenue?: string; nearby_landmark?: string; additional_location_details?: string }) {
-  const parts = [];
-  if (data.house) parts.push(`House ${data.house}`);
-  if (data.road) parts.push(`Road ${data.road}`);
-  if (data.avenue) parts.push(`Avenue ${data.avenue}`);
-  if (data.nearby_landmark) parts.push(data.nearby_landmark);
-  if (data.additional_location_details) parts.push(data.additional_location_details);
-  
-  return parts.length > 0 ? parts.join(', ') : 'Location not provided';
-}
+import { runDuplicateCheckFlow } from './duplicate.service';
+import { formatLocation } from '../utils/formatters';
 
 function getInitials(name: string) {
   if (!name || !name.trim()) return '?';
@@ -152,6 +143,9 @@ export async function createComplaint(complaintData: {
       );
     }
   }
+
+  // Trigger duplicate detection asynchronously
+  runDuplicateCheckFlow(compId, residentAccId).catch(console.error);
 
   return compId;
 }

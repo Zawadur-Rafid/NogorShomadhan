@@ -63,27 +63,48 @@ export default function NewComplaintForm() {
     ]).start(() => setShowToast(false));
   };
 
-  useEffect(() => {
-    const handler = setTimeout(async () => {
-      if (title.trim().length > 5 && description.trim().length > 10) {
-        setIsCategorizing(true);
-        try {
-          const suggestedCategory = await categorizeComplaint(
-            title,
-            description,
-            [],
-          );
-          setCategory(suggestedCategory);
-        } catch (error) {
-          console.error("AI categorization failed", error);
-        } finally {
-          setIsCategorizing(false);
-        }
-      }
-    }, 1500); // 1.5 second debounce
+  const categorizeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-    return () => clearTimeout(handler);
+  const runCategorization = async (t: string, d: string) => {
+    if (t.trim() === "" || d.trim() === "") return;
+    setIsCategorizing(true);
+    try {
+      const suggestedCategory = await categorizeComplaint(t, d, []);
+      setCategory(suggestedCategory);
+    } catch (error) {
+      console.error("AI categorization failed", error);
+    } finally {
+      setIsCategorizing(false);
+    }
+  };
+
+  useEffect(() => {
+    if (categorizeTimeoutRef.current) {
+      clearTimeout(categorizeTimeoutRef.current);
+    }
+    
+    if (title.trim() === "" || description.trim() === "") {
+      return;
+    }
+
+    categorizeTimeoutRef.current = setTimeout(() => {
+      runCategorization(title, description);
+    }, 8000);
+
+    return () => {
+      if (categorizeTimeoutRef.current) {
+        clearTimeout(categorizeTimeoutRef.current);
+      }
+    };
   }, [title, description]);
+
+  const handleBlur = () => {
+    if (title.trim() === "" || description.trim() === "") return;
+    if (categorizeTimeoutRef.current) {
+      clearTimeout(categorizeTimeoutRef.current);
+    }
+    runCategorization(title, description);
+  };
 
   const handleCamera = async () => {
     try {
@@ -278,6 +299,7 @@ export default function NewComplaintForm() {
                 if (errors.title)
                   setErrors((prev) => ({ ...prev, title: false }));
               }}
+              onBlur={handleBlur}
             />
             {errors.title && (
               <Text style={styles.errorText}>This field is required</Text>
@@ -300,6 +322,7 @@ export default function NewComplaintForm() {
                 if (errors.description)
                   setErrors((prev) => ({ ...prev, description: false }));
               }}
+              onBlur={handleBlur}
             />
             {errors.description && (
               <Text style={styles.errorText}>This field is required</Text>
