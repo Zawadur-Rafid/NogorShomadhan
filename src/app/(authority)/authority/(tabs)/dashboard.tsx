@@ -1,6 +1,7 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { useRouter } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useFocusEffect, useRouter } from 'expo-router';
+import { useCallback, useMemo, useState } from 'react';
 import {
   Image,
   Pressable,
@@ -14,8 +15,10 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useAuthorityComplaints } from '@/components/authority/authority-complaints-context';
-import { useAuthorityProfile } from '@/components/authority/authority-profile-context';
 import type { AuthorityComplaintStatus } from '@/components/authority/store-authority-dashboard';
+import { AUTHORITY_UNREAD_NOTIFICATION_COUNT_KEY } from '@/utils/authority-notification-storage';
+
+const AUTHORITY_NAME = 'Community Authority';
 
 const statusTheme: Record<
   AuthorityComplaintStatus,
@@ -39,10 +42,27 @@ export default function AuthorityDashboard() {
   const router = useRouter();
   const { width } = useWindowDimensions();
   const { complaints } = useAuthorityComplaints();
-  const { profile } = useAuthorityProfile();
-  const profileName = profile?.fullName ?? 'Community Authority';
 
   const [profileOpen, setProfileOpen] = useState(false);
+  const [hasUnreadNotifications, setHasUnreadNotifications] = useState(true);
+
+  useFocusEffect(
+    useCallback(() => {
+      let active = true;
+
+      void AsyncStorage.getItem(
+        AUTHORITY_UNREAD_NOTIFICATION_COUNT_KEY,
+      ).then((storedCount) => {
+        if (active && storedCount !== null) {
+          setHasUnreadNotifications(Number(storedCount) > 0);
+        }
+      });
+
+      return () => {
+        active = false;
+      };
+    }, []),
+  );
 
   const wide = width >= 920;
 
@@ -162,9 +182,9 @@ export default function AuthorityDashboard() {
               color="#23435D"
             />
 
-            <View
-              style={styles.notificationDot}
-            />
+            {hasUnreadNotifications ? (
+              <View style={styles.notificationDot} />
+            ) : null}
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -188,7 +208,7 @@ export default function AuthorityDashboard() {
                 }
               >
                 {
-                  profileName
+                  AUTHORITY_NAME
                 }
               </Text>
             )}
@@ -204,44 +224,21 @@ export default function AuthorityDashboard() {
             <View style={styles.profileMenu}>
               <Text style={styles.profileName}>
                 {
-                  profileName
+                  AUTHORITY_NAME
                 }
               </Text>
 
               <Text style={styles.profileMeta}>
                 {
-                  profile?.email ?? 'Account information loading...'
+                  'Central authority account'
                 }
               </Text>
 
               <Text style={styles.profileMeta}>
-                Community Authority
+                Shared operations portal
               </Text>
 
               <View style={styles.menuDivider} />
-
-              <TouchableOpacity
-                style={styles.menuItem}
-                onPress={() => {
-                  setProfileOpen(false);
-
-                  router.push(
-                    '/authority/profile' as never,
-                  );
-                }}
-              >
-                <Ionicons
-                  name="person-outline"
-                  size={18}
-                  color="#23435D"
-                />
-
-                <Text
-                  style={styles.menuItemText}
-                >
-                  Profile information
-                </Text>
-              </TouchableOpacity>
 
               <TouchableOpacity
                 style={styles.menuItem}
@@ -323,7 +320,7 @@ export default function AuthorityDashboard() {
               <Text style={styles.bigTitle}>
                 Welcome back,{' '}
                 {
-                  profileName
+                  AUTHORITY_NAME
                 }
               </Text>
 

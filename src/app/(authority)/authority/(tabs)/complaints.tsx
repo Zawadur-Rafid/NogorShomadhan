@@ -90,7 +90,7 @@ const matchesComplaintSearch = (
     complaint.category
       .toLowerCase()
       .includes(keyword) ||
-    complaint.id
+    complaint.displayId
       .toLowerCase()
       .includes(keyword)
   );
@@ -932,7 +932,7 @@ export default function AuthorityAllComplaints() {
                                           }
                                         >
                                           {
-                                            complaint.id
+                                            complaint.displayId
                                           }
                                         </Text>
                                       </View>

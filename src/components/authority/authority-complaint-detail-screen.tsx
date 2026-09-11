@@ -1309,7 +1309,7 @@ export default function AuthorityComplaintDetailScreen() {
                 </Text>
               </View>
               <Text selectable style={styles.complaintId}>
-                {complaint.id}
+                {complaint.displayId}
               </Text>
             </View>
             <Text selectable style={styles.title}>

@@ -159,8 +159,12 @@ export default function AuthorityForumScreen() {
       if (dbPosts && dbPosts.length > 0) {
         const formatted: ForumPostUI[] = dbPosts.map((p) => ({
           id: p.post_id,
-          author: p.account?.full_name || (p.is_official ? 'Community Authority' : 'Resident'),
-          initials: getInitials(p.account?.full_name || (p.is_official ? 'Authority' : 'Resident')),
+          author: p.is_official
+            ? 'Community Authority'
+            : p.account?.full_name || 'Resident',
+          initials: p.is_official
+            ? 'CA'
+            : getInitials(p.account?.full_name || 'Resident'),
           status: p.status,
           title: p.title,
           body: p.body,
@@ -168,8 +172,12 @@ export default function AuthorityForumScreen() {
           official: p.is_official,
           comments: (p.comments || []).map((c) => ({
             id: c.comment_id,
-            author: c.account?.full_name || (c.is_official ? 'Community Authority' : 'Resident'),
-            initials: getInitials(c.account?.full_name || (c.is_official ? 'Authority' : 'Resident')),
+            author: c.is_official
+              ? 'Community Authority'
+              : c.account?.full_name || 'Resident',
+            initials: c.is_official
+              ? 'CA'
+              : getInitials(c.account?.full_name || 'Resident'),
             text: c.content,
             time: formatTimeAgo(c.created_at),
             parent_comment_id: c.parent_comment_id,
