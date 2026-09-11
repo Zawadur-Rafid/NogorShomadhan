@@ -64,6 +64,8 @@ type DuplicateRow = {
   dup_id: string;
   acc_id: string | null;
   comp_id: string | null;
+  matched_comp_id: string;
+  admin_status: 'pending' | 'confirmed' | 'rejected';
   timestamp: string | null;
 };
 
@@ -484,7 +486,11 @@ export async function getAuthorityComplaints(): Promise<
     resolutionResult,
   ] = await Promise.all([
     supabase.from('evidence').select('*').in('comp_id', complaintIds),
-    supabase.from('duplicate').select('*').in('comp_id', complaintIds),
+    supabase
+      .from('duplicate')
+      .select('*')
+      .in('matched_comp_id', complaintIds)
+      .eq('admin_status', 'confirmed'),
     supabase
       .from('complaint_status_history')
       .select('*')
@@ -601,7 +607,7 @@ export async function getAuthorityComplaints(): Promise<
         (item) => item.comp_id === complaint.comp_id,
       );
       const complaintDuplicates = duplicateRows
-        .filter((item) => item.comp_id === complaint.comp_id)
+        .filter((item) => item.matched_comp_id === complaint.comp_id)
         .sort((a, b) => {
           const first = a.timestamp ? new Date(a.timestamp).getTime() : 0;
           const second = b.timestamp ? new Date(b.timestamp).getTime() : 0;
@@ -628,7 +634,8 @@ export async function getAuthorityComplaints(): Promise<
         ? accountMap.get(complaint.acc_id)
         : undefined;
 
-      // Other reporters come only from duplicate rows for this complaint.
+      // Other reporters come only from confirmed duplicate rows linked to this
+      // surviving canonical complaint through duplicate.matched_comp_id.
       const seenDuplicateAccounts = new Set<string>();
       const otherReporters = complaintDuplicates
         .map((duplicate) => {
