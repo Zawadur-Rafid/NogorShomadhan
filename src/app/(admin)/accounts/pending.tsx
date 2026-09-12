@@ -384,7 +384,7 @@ const styles = StyleSheet.create({
   },
   bigText: {
     marginTop: 2,
-    fontSize: 28,
+    fontSize: 24,
     color: "#222",
     fontWeight: "700",
   },
@@ -473,7 +473,7 @@ const styles = StyleSheet.create({
     marginLeft: 12,
   },
   personName: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: "700",
     color: colors.text,
   },
