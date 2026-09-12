@@ -201,6 +201,15 @@ export default function DuplicateReviewScreen() {
             {review.ai_reason ||
               "The complaints appear to describe the same issue and location."}
           </Text>
+          <Pressable
+            style={styles.aiLink}
+            onPress={() =>
+              router.push(`/(admin)/complaints/${canonical.comp_id}`)
+            }
+          >
+            <Ionicons name="open-outline" size={14} color="#23435D" />
+            <Text style={styles.aiLinkText}>View existing complaint</Text>
+          </Pressable>
         </View>
       </View>
 
@@ -378,6 +387,21 @@ const styles = StyleSheet.create({
     lineHeight: 19,
     marginTop: 3,
     fontFamily: "System",
+  },
+  aiLink: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    alignSelf: "flex-start",
+    marginTop: 9,
+    paddingVertical: 2,
+  },
+  aiLinkText: {
+    color: "#23435D",
+    fontSize: 12,
+    fontWeight: "800",
+    fontFamily: "System",
+    textDecorationLine: "underline",
   },
   compareRow: { flexDirection: "row", gap: 12 },
   complaintPanel: {

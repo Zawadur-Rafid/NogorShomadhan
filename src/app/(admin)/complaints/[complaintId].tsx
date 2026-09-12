@@ -495,6 +495,15 @@ export default function AdminComplaintDetails() {
                 <Text style={{ color: "#B54708", fontWeight: "600" }}>Reject</Text>
               </TouchableOpacity>
             </View>
+            <TouchableOpacity
+              style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, marginTop: 12, paddingVertical: 4 }}
+              onPress={() => router.push(`/(admin)/duplicates/${dbComplaint.duplicateWarning!.dupId}`)}
+            >
+              <Ionicons name="stats-chart-outline" size={15} color="#B54708" />
+              <Text style={{ color: "#B54708", fontWeight: "700", fontSize: 13, textDecorationLine: "underline" }}>
+                View duplicate metrics
+              </Text>
+            </TouchableOpacity>
           </View>
         ) : dbComplaint.duplicateWarning && dbComplaint.duplicateWarning.adminStatus === 'confirmed' ? (
           <View style={[styles.panel, { backgroundColor: "#F9FAFB", borderColor: "#EAECF0", borderWidth: 1 }]}>
