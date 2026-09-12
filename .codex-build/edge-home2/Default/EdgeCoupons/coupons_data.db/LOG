@@ -1,0 +1,5 @@
+2026/09/12-02:00:03.397 d458 Creating DB C:\NogorShomadhan\.codex-build\edge-home2\Default\EdgeCoupons/coupons_data.db since it was missing.
+2026/09/12-02:00:03.427 d458 Reusing MANIFEST C:\NogorShomadhan\.codex-build\edge-home2\Default\EdgeCoupons/coupons_data.db/MANIFEST-000001
+2026/09/12-02:00:04.281 b504 Level-0 table #5: started
+2026/09/12-02:00:04.288 b504 Level-0 table #5: 683284 bytes OK
+2026/09/12-02:00:04.295 b504 Delete type=0 #3

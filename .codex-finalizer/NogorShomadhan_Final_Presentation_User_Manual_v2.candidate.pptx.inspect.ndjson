@@ -1,0 +1,422 @@
+{"kind":"deck","id":"pr/eqb8rx","name":"Deck"}
+{"kind":"layout","layoutId":"36ae1f00-48e2-4349-9377-e4081f040456","name":"Master","type":"master"}
+{"kind":"layout","layoutId":"e9b949e8-18af-42bc-947a-8d3d5b17c195","name":"Title Slide","type":"title"}
+{"kind":"slide","id":"sl/dot60i","slide":1,"title":"Nogor Shomadhan","textShapes":5}
+{"kind":"shape","id":"sh/hgny9wbu","slide":1,"bbox":[0,0,690,720]}
+{"kind":"textbox","id":"sh/3ipgb6t0","slide":1,"text":"Nogor Shomadhan","textPreview":"Nogor Shomadhan","textChars":15,"textLines":1,"bbox":[70,168,540,70]}
+{"kind":"textbox","id":"sh/2hgz21cf","slide":1,"text":"Application demonstration and user manual","textPreview":"Application demonstration and user manual","textChars":41,"textLines":1,"bbox":[72,246,500,62]}
+{"kind":"textbox","id":"sh/pk7idgbq","slide":1,"text":"Resident report / AI review / Authority resolution","textPreview":"Resident report / AI review / Authority resolution","textChars":50,"textLines":1,"bbox":[72,330,500,40]}
+{"kind":"textbox","id":"sh/4jyh4bu5","slide":1,"text":"FINAL PRESENTATION · WEEK 13","textPreview":"FINAL PRESENTATION · WEEK 13","textChars":28,"textLines":1,"bbox":[72,430,250,46]}
+{"kind":"textbox","id":"sh/jmlgzmdg","slide":1,"text":"12-minute group presentation","textPreview":"12-minute group presentation","textChars":28,"textLines":1,"bbox":[72,500,390,34]}
+{"kind":"image","id":"im/fe9k3udk","slide":1,"name":"","alt":"Resident reporting a community issue","bbox":[560,0,720,720]}
+{"kind":"image","id":"im/hgb254ba","slide":1,"name":"","alt":"Nogor Shomadhan logo","bbox":[70,58,72,78]}
+{"kind":"notes","id":"nt/dot60i","slide":1,"text":"Timing: 30 seconds. Introduce Nogor Shomadhan as a civic complaint platform connecting residents, administrators, and community authorities. State that the demonstration follows one complaint through its complete life cycle."}
+{"kind":"slide","id":"sl/kzebvn","slide":2,"title":"1","textShapes":34}
+{"kind":"textbox","id":"sh/ovm90jql","slide":2,"text":"1","textPreview":"1","textChars":1,"textLines":1,"bbox":[40,28,50,46]}
+{"kind":"textbox","id":"sh/3udsrep0","slide":2,"text":"Complete complaint workflow","textPreview":"Complete complaint workflow","textChars":27,"textLines":1,"bbox":[104,25,870,54]}
+{"kind":"textbox","id":"sh/2t4ryt8f","slide":2,"text":"Both roles","textPreview":"Both roles","textChars":10,"textLines":1,"bbox":[1084,30,134,34]}
+{"kind":"shape","id":"sh/dkfax872","slide":2,"bbox":[40,92,1200,0]}
+{"kind":"shape","id":"sh/cj69436h","slide":2,"bbox":[48,180,208,270]}
+{"kind":"textbox","id":"sh/bixsvypc","slide":2,"text":"1","textPreview":"1","textChars":1,"textLines":1,"bbox":[120,132,64,64]}
+{"kind":"textbox","id":"sh/qhor2t8r","slide":2,"text":"Resident","textPreview":"Resident","textChars":8,"textLines":1,"bbox":[68,224,168,28]}
+{"kind":"textbox","id":"sh/tobql47y","slide":2,"text":"Report issue","textPreview":"Report issue","textChars":12,"textLines":1,"bbox":[66,275,172,58]}
+{"kind":"textbox","id":"sh/sn29szqd","slide":2,"text":"Photo, location, description","textPreview":"Photo, location, description","textChars":28,"textLines":1,"bbox":[68,350,168,62]}
+{"kind":"shape","id":"sh/y1obm9s7","slide":2,"bbox":[258,292,34,36]}
+{"kind":"shape","id":"sh/z2hsvets","slide":2,"bbox":[294,180,208,270]}
+{"kind":"textbox","id":"sh/k3qtojad","slide":2,"text":"2","textPreview":"2","textChars":1,"textLines":1,"bbox":[366,132,64,64]}
+{"kind":"textbox","id":"sh/l4zaxoby","slide":2,"text":"System","textPreview":"System","textChars":6,"textLines":1,"bbox":[314,224,168,28]}
+{"kind":"textbox","id":"sh/m58bqtsj","slide":2,"text":"Classify and compare","textPreview":"Classify and compare","textChars":20,"textLines":1,"bbox":[312,275,172,58]}
+{"kind":"textbox","id":"sh/76hczyt4","slide":2,"text":"AI category and duplicate check","textPreview":"AI category and duplicate check","textChars":31,"textLines":1,"bbox":[314,350,168,62]}
+{"kind":"shape","id":"sh/87qts3ap","slide":2,"bbox":[504,292,34,36]}
+{"kind":"shape","id":"sh/98zu1obu","slide":2,"bbox":[540,180,208,270]}
+{"kind":"textbox","id":"sh/u98butsf","slide":2,"text":"3","textPreview":"3","textChars":1,"textLines":1,"bbox":[612,132,64,64]}
+{"kind":"textbox","id":"sh/va1c3y90","slide":2,"text":"Admin","textPreview":"Admin","textChars":5,"textLines":1,"bbox":[560,224,168,28]}
+{"kind":"textbox","id":"sh/ry1sryp8","slide":2,"text":"Review and verify","textPreview":"Review and verify","textChars":17,"textLines":1,"bbox":[558,275,172,58]}
+{"kind":"textbox","id":"sh/qdsrit8n","slide":2,"text":"Approve, reject, or merge","textPreview":"Approve, reject, or merge","textChars":25,"textLines":1,"bbox":[560,350,168,62]}
+{"kind":"shape","id":"sh/d0jat87e","slide":2,"bbox":[750,292,34,36]}
+{"kind":"shape","id":"sh/szatk3qt","slide":2,"bbox":[786,180,208,270]}
+{"kind":"textbox","id":"sh/3a1snypw","slide":2,"text":"4","textPreview":"4","textChars":1,"textLines":1,"bbox":[858,132,64,64]}
+{"kind":"textbox","id":"sh/i98ret8r","slide":2,"text":"Authority","textPreview":"Authority","textChars":9,"textLines":1,"bbox":[806,224,168,28]}
+{"kind":"textbox","id":"sh/5cjap872","slide":2,"text":"Work and document","textPreview":"Work and document","textChars":17,"textLines":1,"bbox":[804,275,172,58]}
+{"kind":"textbox","id":"sh/4ba9g3qh","slide":2,"text":"Budget, updates, evidence","textPreview":"Budget, updates, evidence","textChars":25,"textLines":1,"bbox":[806,350,168,62]}
+{"kind":"shape","id":"sh/v6hsjep0","slide":2,"bbox":[996,292,34,36]}
+{"kind":"shape","id":"sh/u58ra98f","slide":2,"bbox":[1032,180,208,270]}
+{"kind":"textbox","id":"sh/kb6pkf6d","slide":2,"text":"5","textPreview":"5","textChars":1,"textLines":1,"bbox":[1104,132,64,64]}
+{"kind":"textbox","id":"sh/lcfqdkny","slide":2,"text":"Resident","textPreview":"Resident","textChars":8,"textLines":1,"bbox":[1052,224,168,28]}
+{"kind":"textbox","id":"sh/y947ipo7","slide":2,"text":"Confirm outcome","textPreview":"Confirm outcome","textChars":15,"textLines":1,"bbox":[1050,275,172,58]}
+{"kind":"textbox","id":"sh/zaxoba5s","slide":2,"text":"Track, rate, and comment","textPreview":"Track, rate, and comment","textChars":24,"textLines":1,"bbox":[1052,350,168,62]}
+{"kind":"textbox","id":"sh/8f6poz69","slide":2,"text":"Status sequence","textPreview":"Status sequence","textChars":15,"textLines":1,"bbox":[54,510,180,28]}
+{"kind":"textbox","id":"sh/9gfqh4nu","slide":2,"text":"Unverified","textPreview":"Unverified","textChars":10,"textLines":1,"bbox":[252,505,170,42]}
+{"kind":"textbox","id":"sh/mdo7mpoj","slide":2,"text":"›","textPreview":"›","textChars":1,"textLines":1,"bbox":[432,505,34,42]}
+{"kind":"textbox","id":"sh/7ex8fu5o","slide":2,"text":"Pending","textPreview":"Pending","textChars":7,"textLines":1,"bbox":[476,505,170,42]}
+{"kind":"textbox","id":"sh/ojmpcv65","slide":2,"text":"›","textPreview":"›","textChars":1,"textLines":1,"bbox":[656,505,34,42]}
+{"kind":"textbox","id":"sh/pkv650nq","slide":2,"text":"In progress","textPreview":"In progress","textChars":11,"textLines":1,"bbox":[700,505,170,42]}
+{"kind":"textbox","id":"sh/hcrq14r6","slide":2,"text":"›","textPreview":"›","textChars":1,"textLines":1,"bbox":[880,505,34,42]}
+{"kind":"textbox","id":"sh/gbyp8zal","slide":2,"text":"Resolved","textPreview":"Resolved","textChars":8,"textLines":1,"bbox":[924,505,170,42]}
+{"kind":"textbox","id":"sh/fqp8zu90","slide":2,"text":"Notifications keep the resident and authority informed at each material status change.","textPreview":"Notifications keep the resident and authority informed at each material status change.","textChars":86,"textLines":1,"bbox":[54,590,1120,42]}
+{"kind":"textbox","id":"sh/upg76psv","slide":2,"text":"Nogor Shomadhan  •  Final user manual","textPreview":"Nogor Shomadhan  •  Final user manual","textChars":37,"textLines":1,"bbox":[48,688,420,18]}
+{"kind":"textbox","id":"sh/to7qxkra","slide":2,"text":"2","textPreview":"2","textChars":1,"textLines":1,"bbox":[1194,686,38,20]}
+{"kind":"notes","id":"nt/kzebvn","slide":2,"text":"Timing: 50 seconds. Explain the handoff between roles. Emphasize that AI assists classification and duplicate detection, while the admin makes the final review decision. The authority owns execution and evidence. The resident sees the full history and submits feedback."}
+{"kind":"slide","id":"sl/1e40m4","slide":3,"title":"2","textShapes":20}
+{"kind":"textbox","id":"sh/3qlc7q54","slide":3,"text":"2","textPreview":"2","textChars":1,"textLines":1,"bbox":[40,28,50,46]}
+{"kind":"textbox","id":"sh/orut0vmp","slide":3,"text":"Resident dashboard and navigation","textPreview":"Resident dashboard and navigation","textChars":33,"textLines":1,"bbox":[104,25,870,54]}
+{"kind":"textbox","id":"sh/psnu90na","slide":3,"text":"Resident","textPreview":"Resident","textChars":8,"textLines":1,"bbox":[1100,30,118,34]}
+{"kind":"shape","id":"sh/qtwb2l4f","slide":3,"bbox":[40,92,1200,0]}
+{"kind":"textbox","id":"sh/bu5cbq50","slide":3,"text":"1","textPreview":"1","textChars":1,"textLines":1,"bbox":[56,144,28,28]}
+{"kind":"textbox","id":"sh/cvet4vml","slide":3,"text":"Sign in with a verified resident account.","textPreview":"Sign in with a verified resident account.","textChars":41,"textLines":1,"bbox":[98,140,368,56]}
+{"kind":"textbox","id":"sh/dwnud0n6","slide":3,"text":"2","textPreview":"2","textChars":1,"textLines":1,"bbox":[56,236,28,28]}
+{"kind":"textbox","id":"sh/yxwb654r","slide":3,"text":"Review total, pending, in-progress, and resolved counts.","textPreview":"Review total, pending, in-progress, and resolved counts.","textChars":56,"textLines":1,"bbox":[98,232,368,56]}
+{"kind":"textbox","id":"sh/zy5cfa5c","slide":3,"text":"3","textPreview":"3","textChars":1,"textLines":1,"bbox":[56,328,28,28]}
+{"kind":"textbox","id":"sh/bq9srapw","slide":3,"text":"Tap a recent complaint to open its details.","textPreview":"Tap a recent complaint to open its details.","textChars":43,"textLines":1,"bbox":[98,324,368,56]}
+{"kind":"textbox","id":"sh/qp0rip8b","slide":3,"text":"4","textPreview":"4","textChars":1,"textLines":1,"bbox":[56,420,28,28]}
+{"kind":"textbox","id":"sh/dsbatk72","slide":3,"text":"Use the bottom tabs for Complaints, Analytics, and Forum.","textPreview":"Use the bottom tabs for Complaints, Analytics, and Forum.","textChars":57,"textLines":1,"bbox":[98,416,368,56]}
+{"kind":"shape","id":"sh/cr29kf6h","slide":3,"bbox":[532,108,268,562]}
+{"kind":"textbox","id":"sh/2l0re58f","slide":3,"text":"Resident dashboard","textPreview":"Resident dashboard","textChars":18,"textLines":1,"bbox":[528,676,276,24]}
+{"kind":"shape","id":"sh/porapk7q","slide":3,"bbox":[548,183,236,142]}
+{"kind":"textbox","id":"sh/oni9gfql","slide":3,"text":"2","textPreview":"2","textChars":1,"textLines":1,"bbox":[764,197,30,30]}
+{"kind":"shape","id":"sh/nitszup4","slide":3,"bbox":[548,350,236,170]}
+{"kind":"textbox","id":"sh/mhkbq9oj","slide":3,"text":"3","textPreview":"3","textChars":1,"textLines":1,"bbox":[764,373,30,30]}
+{"kind":"shape","id":"sh/idovyd8r","slide":3,"bbox":[548,608,236,44]}
+{"kind":"textbox","id":"sh/jexcry9c","slide":3,"text":"4","textPreview":"4","textChars":1,"textLines":1,"bbox":[764,620,30,30]}
+{"kind":"textbox","id":"sh/kf6d03qx","slide":3,"text":"Demo focus","textPreview":"Demo focus","textChars":10,"textLines":1,"bbox":[860,170,280,28]}
+{"kind":"textbox","id":"sh/5gfet8ri","slide":3,"text":"Open a complaint or start a new report. Skip profile editing during the live presentation.","textPreview":"Open a complaint or start a new report. Skip profile editing during the live presentation.","textChars":90,"textLines":1,"bbox":[860,208,300,100]}
+{"kind":"textbox","id":"sh/6hov2d83","slide":3,"text":"Resident can also browse all verified community complaints, raise urgency, comment, and follow progress.","textPreview":"Resident can also browse all verified community complaints, raise urgency, comment, and follow progress.","textChars":104,"textLines":1,"bbox":[860,352,300,126]}
+{"kind":"textbox","id":"sh/7ihwvi98","slide":3,"text":"Nogor Shomadhan  •  Final user manual","textPreview":"Nogor Shomadhan  •  Final user manual","textChars":37,"textLines":1,"bbox":[48,688,420,18]}
+{"kind":"textbox","id":"sh/sjqd4nqt","slide":3,"text":"3","textPreview":"3","textChars":1,"textLines":1,"bbox":[1194,686,38,20]}
+{"kind":"image","id":"im/kzq1wj6x","slide":3,"name":"","geometry":"roundRect","alt":"Resident dashboard","bbox":[540,116,252,546]}
+{"kind":"notes","id":"nt/1e40m4","slide":3,"text":"Timing: 45 seconds. Show the four status cards and recent complaints. Mention the navigation tabs once, then move directly to the complaint form. Authentication is demonstrated only if the evaluator asks."}
+{"kind":"slide","id":"sl/nefdf2","slide":4,"title":"3","textShapes":23}
+{"kind":"textbox","id":"sh/z69ona5k","slide":4,"text":"3","textPreview":"3","textChars":1,"textLines":1,"bbox":[40,28,50,46]}
+{"kind":"textbox","id":"sh/k7i5gfm5","slide":4,"text":"Submitting a new community issue","textPreview":"Submitting a new community issue","textChars":32,"textLines":1,"bbox":[104,25,870,54]}
+{"kind":"textbox","id":"sh/l8r6pknq","slide":4,"text":"Resident","textPreview":"Resident","textChars":8,"textLines":1,"bbox":[1100,30,118,34]}
+{"kind":"shape","id":"sh/ahgna543","slide":4,"bbox":[40,92,1200,0]}
+{"kind":"textbox","id":"sh/bipojq5o","slide":4,"text":"1","textPreview":"1","textChars":1,"textLines":1,"bbox":[44,124,28,28]}
+{"kind":"textbox","id":"sh/cjy5cvmt","slide":4,"text":"Open Complaints and select New Complaint.","textPreview":"Open Complaints and select New Complaint.","textChars":41,"textLines":1,"bbox":[86,120,296,56]}
+{"kind":"textbox","id":"sh/xk76l0ne","slide":4,"text":"2","textPreview":"2","textChars":1,"textLines":1,"bbox":[44,214,28,28]}
+{"kind":"textbox","id":"sh/2dwn6l4r","slide":4,"text":"Enter a clear title and description.","textPreview":"Enter a clear title and description.","textChars":36,"textLines":1,"bbox":[86,210,296,56]}
+{"kind":"textbox","id":"sh/nep4fq5c","slide":4,"text":"3","textPreview":"3","textChars":1,"textLines":1,"bbox":[44,304,28,28]}
+{"kind":"textbox","id":"sh/nexczq9w","slide":4,"text":"Provide road and avenue; add a landmark when useful.","textPreview":"Provide road and avenue; add a landmark when useful.","textChars":52,"textLines":1,"bbox":[86,300,296,56]}
+{"kind":"textbox","id":"sh/mdobql8r","slide":4,"text":"4","textPreview":"4","textChars":1,"textLines":1,"bbox":[44,394,28,28]}
+{"kind":"textbox","id":"sh/9gfu1gr2","slide":4,"text":"Attach photo evidence from the camera or gallery.","textPreview":"Attach photo evidence from the camera or gallery.","textChars":49,"textLines":1,"bbox":[86,390,296,56]}
+{"kind":"textbox","id":"sh/8f6dsbqh","slide":4,"text":"5","textPreview":"5","textChars":1,"textLines":1,"bbox":[44,484,28,28]}
+{"kind":"textbox","id":"sh/v2xc3q98","slide":4,"text":"Review the entries and tap Submit Complaint.","textPreview":"Review the entries and tap Submit Complaint.","textChars":44,"textLines":1,"bbox":[86,480,296,56]}
+{"kind":"shape","id":"sh/ahovul8n","slide":4,"bbox":[418,108,242,506]}
+{"kind":"textbox","id":"sh/w36dwvqt","slide":4,"text":"Issue details","textPreview":"Issue details","textChars":13,"textLines":1,"bbox":[414,620,250,24]}
+{"kind":"shape","id":"sh/b6dcrm9o","slide":4,"bbox":[724,108,242,506]}
+{"kind":"textbox","id":"sh/u1sf69sr","slide":4,"text":"Evidence and submission","textPreview":"Evidence and submission","textChars":23,"textLines":1,"bbox":[720,620,250,24]}
+{"kind":"shape","id":"sh/f21gzutc","slide":4,"bbox":[434,185,210,132]}
+{"kind":"textbox","id":"sh/g3ax8zax","slide":4,"text":"2","textPreview":"2","textChars":1,"textLines":1,"bbox":[624,206,30,30]}
+{"kind":"shape","id":"sh/h43y14bi","slide":4,"bbox":[434,330,210,170]}
+{"kind":"textbox","id":"sh/6xsf2psv","slide":4,"text":"3","textPreview":"3","textChars":1,"textLines":1,"bbox":[624,352,30,30]}
+{"kind":"shape","id":"sh/7y1wvutg","slide":4,"bbox":[740,280,210,100]}
+{"kind":"textbox","id":"sh/szax4za1","slide":4,"text":"4","textPreview":"4","textChars":1,"textLines":1,"bbox":[930,310,30,30]}
+{"kind":"shape","id":"sh/t0jex4bm","slide":4,"bbox":[740,503,210,55]}
+{"kind":"textbox","id":"sh/i98fypsz","slide":4,"text":"5","textPreview":"5","textChars":1,"textLines":1,"bbox":[930,530,30,30]}
+{"kind":"textbox","id":"sh/jahwrat4","slide":4,"text":"Automatic after submission","textPreview":"Automatic after submission","textChars":26,"textLines":1,"bbox":[1010,170,220,28]}
+{"kind":"textbox","id":"sh/lo7ixsvm","slide":4,"text":"The system assigns a category, stores the report as Unverified, and starts duplicate screening.","textPreview":"The system assigns a category, stores the report as Unverified, and starts duplicate screening.","textChars":95,"textLines":1,"bbox":[1010,210,220,150]}
+{"kind":"textbox","id":"sh/0nyh4nuh","slide":4,"text":"Nogor Shomadhan  •  Final user manual","textPreview":"Nogor Shomadhan  •  Final user manual","textChars":37,"textLines":1,"bbox":[48,688,420,18]}
+{"kind":"textbox","id":"sh/zm50vidw","slide":4,"text":"4","textPreview":"4","textChars":1,"textLines":1,"bbox":[1194,686,38,20]}
+{"kind":"image","id":"im/65cbadk3","slide":4,"name":"","geometry":"roundRect","alt":"Issue details","bbox":[426,116,226,490]}
+{"kind":"image","id":"im/hwnupsjq","slide":4,"name":"","geometry":"roundRect","alt":"Evidence and submission","bbox":[732,116,226,490]}
+{"kind":"notes","id":"nt/nefdf2","slide":4,"text":"Timing: 70 seconds. Enter only enough data to demonstrate the required fields. Use a prepared photo to avoid camera delay. After submission, explain that classification and duplicate checking run automatically."}
+{"kind":"slide","id":"sl/clgru3","slide":5,"title":"4","textShapes":21}
+{"kind":"textbox","id":"sh/cbqlg7i5","slide":5,"text":"4","textPreview":"4","textChars":1,"textLines":1,"bbox":[40,28,50,46]}
+{"kind":"textbox","id":"sh/baxk721k","slide":5,"text":"AI categorization and duplicate review","textPreview":"AI categorization and duplicate review","textChars":38,"textLines":1,"bbox":[104,25,870,54]}
+{"kind":"textbox","id":"sh/q9ojexkf","slide":5,"text":"System + Admin","textPreview":"System + Admin","textChars":14,"textLines":1,"bbox":[1044,30,174,34]}
+{"kind":"shape","id":"sh/l0z2dcj2","slide":5,"bbox":[40,92,1200,0]}
+{"kind":"textbox","id":"sh/0zqlk7ih","slide":5,"text":"1","textPreview":"1","textChars":1,"textLines":1,"bbox":[46,122,28,28]}
+{"kind":"textbox","id":"sh/zyhkbm1w","slide":5,"text":"AI selects one complaint category from the system list.","textPreview":"AI selects one complaint category from the system list.","textChars":55,"textLines":1,"bbox":[88,118,368,56]}
+{"kind":"textbox","id":"sh/yd83ih0b","slide":5,"text":"2","textPreview":"2","textChars":1,"textLines":1,"bbox":[46,216,28,28]}
+{"kind":"textbox","id":"sh/94j2hwjy","slide":5,"text":"It compares recent reports in the same category.","textPreview":"It compares recent reports in the same category.","textChars":48,"textLines":1,"bbox":[88,212,368,56]}
+{"kind":"textbox","id":"sh/83alorid","slide":5,"text":"3","textPreview":"3","textChars":1,"textLines":1,"bbox":[46,310,28,28]}
+{"kind":"textbox","id":"sh/6hcj65gn","slide":5,"text":"Location and the real-world issue carry more weight than wording.","textPreview":"Location and the real-world issue carry more weight than wording.","textChars":65,"textLines":1,"bbox":[88,306,368,56]}
+{"kind":"textbox","id":"sh/rilkzah8","slide":5,"text":"4","textPreview":"4","textChars":1,"textLines":1,"bbox":[46,404,28,28]}
+{"kind":"textbox","id":"sh/s3u18fyt","slide":5,"text":"A score of 80% or higher creates an admin warning.","textPreview":"A score of 80% or higher creates an admin warning.","textChars":50,"textLines":1,"bbox":[88,400,368,56]}
+{"kind":"textbox","id":"sh/t4321kzy","slide":5,"text":"5","textPreview":"5","textChars":1,"textLines":1,"bbox":[46,498,28,28]}
+{"kind":"textbox","id":"sh/e5cjapgj","slide":5,"text":"Admin compares both reports and makes the final decision.","textPreview":"Admin compares both reports and makes the final decision.","textChars":57,"textLines":1,"bbox":[88,494,368,56]}
+{"kind":"shape","id":"sh/f6lk3ah4","slide":5,"bbox":[552,108,268,562]}
+{"kind":"textbox","id":"sh/18n25kza","slide":5,"text":"Admin duplicate comparison","textPreview":"Admin duplicate comparison","textChars":26,"textLines":1,"bbox":[548,676,276,24]}
+{"kind":"shape","id":"sh/u9sjylgf","slide":5,"bbox":[718,116,86,68]}
+{"kind":"textbox","id":"sh/va1krqh0","slide":5,"text":"4","textPreview":"4","textChars":1,"textLines":1,"bbox":[784,112,30,30]}
+{"kind":"shape","id":"sh/z2d8jitg","slide":5,"bbox":[568,490,236,128]}
+{"kind":"textbox","id":"sh/eh47axsv","slide":5,"text":"5","textPreview":"5","textChars":1,"textLines":1,"bbox":[784,516,30,30]}
+{"kind":"textbox","id":"sh/14fqlsbm","slide":5,"text":"Decision meaning","textPreview":"Decision meaning","textChars":16,"textLines":1,"bbox":[870,158,290,28]}
+{"kind":"textbox","id":"sh/03mpcna1","slide":5,"text":"Accept as duplicate removes the newly submitted copy. Reject as duplicate keeps it as a separate complaint.","textPreview":"Accept as duplicate removes the newly submitted copy. Reject as duplicate keeps it as a separate complaint.","textChars":107,"textLines":1,"bbox":[870,196,300,138]}
+{"kind":"textbox","id":"sh/red8fitk","slide":5,"text":"Stored confidence: 98.5%. The screen rounds it to 99%.","textPreview":"Stored confidence: 98.5%. The screen rounds it to 99%.","textChars":54,"textLines":1,"bbox":[870,392,300,58]}
+{"kind":"textbox","id":"sh/qd476dsz","slide":5,"text":"Nogor Shomadhan  •  Final user manual","textPreview":"Nogor Shomadhan  •  Final user manual","textChars":37,"textLines":1,"bbox":[48,688,420,18]}
+{"kind":"textbox","id":"sh/dgvqhsba","slide":5,"text":"5","textPreview":"5","textChars":1,"textLines":1,"bbox":[1194,686,38,20]}
+{"kind":"image","id":"im/bi98fqdc","slide":5,"name":"","geometry":"roundRect","alt":"Admin duplicate comparison","bbox":[560,116,252,546]}
+{"kind":"notes","id":"nt/clgru3","slide":5,"text":"Timing: 60 seconds. Explain that the AI does not delete complaints. It produces a confidence score and reason. The admin retains control. In the live dataset, the road-hole reports show a 98.5 percent match."}
+{"kind":"slide","id":"sl/5m5bv5","slide":6,"title":"5","textShapes":22}
+{"kind":"textbox","id":"sh/e9svehgb","slide":6,"text":"5","textPreview":"5","textChars":1,"textLines":1,"bbox":[40,28,50,46]}
+{"kind":"textbox","id":"sh/1c3epwf2","slide":6,"text":"Admin verification and routing","textPreview":"Admin verification and routing","textChars":30,"textLines":1,"bbox":[104,25,870,54]}
+{"kind":"textbox","id":"sh/gbadgryh","slide":6,"text":"Admin","textPreview":"Admin","textChars":5,"textLines":1,"bbox":[1100,30,118,34]}
+{"kind":"shape","id":"sh/3elwrmx8","slide":6,"bbox":[40,92,1200,0]}
+{"kind":"textbox","id":"sh/2dcfihgn","slide":6,"text":"1","textPreview":"1","textChars":1,"textLines":1,"bbox":[44,124,28,28]}
+{"kind":"textbox","id":"sh/pg3etwfy","slide":6,"text":"Open Review Complaints from the admin dashboard.","textPreview":"Open Review Complaints from the admin dashboard.","textChars":48,"textLines":1,"bbox":[86,120,308,56]}
+{"kind":"textbox","id":"sh/ofuxkryd","slide":6,"text":"2","textPreview":"2","textChars":1,"textLines":1,"bbox":[44,217,28,28]}
+{"kind":"textbox","id":"sh/bilwv6x4","slide":6,"text":"Inspect the report title, location, category, and submitted evidence.","textPreview":"Inspect the report title, location, category, and submitted evidence.","textChars":69,"textLines":1,"bbox":[86,213,308,56]}
+{"kind":"textbox","id":"sh/qhcfm1gj","slide":6,"text":"3","textPreview":"3","textChars":1,"textLines":1,"bbox":[44,310,28,28]}
+{"kind":"textbox","id":"sh/cv2t03mx","slide":6,"text":"Open any possible-duplicate warning before deciding.","textPreview":"Open any possible-duplicate warning before deciding.","textChars":52,"textLines":1,"bbox":[86,306,308,56]}
+{"kind":"textbox","id":"sh/dwbut83i","slide":6,"text":"4","textPreview":"4","textChars":1,"textLines":1,"bbox":[44,403,28,28]}
+{"kind":"textbox","id":"sh/qtkbyt4r","slide":6,"text":"Verify a valid report or reject an invalid submission.","textPreview":"Verify a valid report or reject an invalid submission.","textChars":54,"textLines":1,"bbox":[86,399,308,56]}
+{"kind":"textbox","id":"sh/butcrylc","slide":6,"text":"5","textPreview":"5","textChars":1,"textLines":1,"bbox":[44,496,28,28]}
+{"kind":"textbox","id":"sh/0j2t4nm9","slide":6,"text":"Verified complaints enter the authority workflow.","textPreview":"Verified complaints enter the authority workflow.","textChars":49,"textLines":1,"bbox":[86,492,308,56]}
+{"kind":"shape","id":"sh/lkvuxs3u","slide":6,"bbox":[424,108,242,506]}
+{"kind":"textbox","id":"sh/zitcvilo","slide":6,"text":"Admin dashboard","textPreview":"Admin dashboard","textChars":15,"textLines":1,"bbox":[420,620,250,24]}
+{"kind":"shape","id":"sh/8nmd8nm5","slide":6,"bbox":[736,108,242,506]}
+{"kind":"textbox","id":"sh/h4rulsvu","slide":6,"text":"Review queue","textPreview":"Review queue","textChars":12,"textLines":1,"bbox":[732,620,250,24]}
+{"kind":"shape","id":"sh/w3itsne9","slide":6,"bbox":[440,455,210,100]}
+{"kind":"textbox","id":"sh/v29cjido","slide":6,"text":"1","textPreview":"1","textChars":1,"textLines":1,"bbox":[630,485,30,30]}
+{"kind":"shape","id":"sh/u10bqdw3","slide":6,"bbox":[752,205,210,95]}
+{"kind":"textbox","id":"sh/58bupsv6","slide":6,"text":"3","textPreview":"3","textChars":1,"textLines":1,"bbox":[942,230,30,30]}
+{"kind":"shape","id":"sh/472twnel","slide":6,"bbox":[752,465,210,98]}
+{"kind":"textbox","id":"sh/j6tcn2d0","slide":6,"text":"4","textPreview":"4","textChars":1,"textLines":1,"bbox":[942,496,30,30]}
+{"kind":"textbox","id":"sh/i50buxwf","slide":6,"text":"Result","textPreview":"Result","textChars":6,"textLines":1,"bbox":[1020,220,160,28]}
+{"kind":"textbox","id":"sh/lc7ad8vm","slide":6,"text":"The review step protects the authority queue from unverified or duplicate reports.","textPreview":"The review step protects the authority queue from unverified or duplicate reports.","textChars":82,"textLines":1,"bbox":[1020,258,200,150]}
+{"kind":"textbox","id":"sh/kbytk3e1","slide":6,"text":"Nogor Shomadhan  •  Final user manual","textPreview":"Nogor Shomadhan  •  Final user manual","textChars":37,"textLines":1,"bbox":[48,688,420,18]}
+{"kind":"textbox","id":"sh/ahwre9cz","slide":6,"text":"6","textPreview":"6","textChars":1,"textLines":1,"bbox":[1194,686,38,20]}
+{"kind":"image","id":"im/5wzupsn6","slide":6,"name":"","geometry":"roundRect","alt":"Admin dashboard","bbox":[432,116,226,490]}
+{"kind":"image","id":"im/6x8bix4b","slide":6,"name":"","geometry":"roundRect","alt":"Review queue","bbox":[744,116,226,490]}
+{"kind":"notes","id":"nt/5m5bv5","slide":6,"text":"Timing: 55 seconds. Open the review queue, select one complaint, and point to the evidence and decision controls. Do not spend time on account verification unless the evaluator asks about onboarding governance."}
+{"kind":"slide","id":"sl/u92924","slide":7,"title":"6","textShapes":20}
+{"kind":"textbox","id":"sh/18fqd8zy","slide":7,"text":"6","textPreview":"6","textChars":1,"textLines":1,"bbox":[40,28,50,46]}
+{"kind":"textbox","id":"sh/e54rit07","slide":7,"text":"Authority dashboard and complaint queue","textPreview":"Authority dashboard and complaint queue","textChars":39,"textLines":1,"bbox":[104,25,870,54]}
+{"kind":"textbox","id":"sh/z6d8byhs","slide":7,"text":"Authority","textPreview":"Authority","textChars":9,"textLines":1,"bbox":[1094,30,124,34]}
+{"kind":"shape","id":"sh/8v69oni9","slide":7,"bbox":[40,92,1200,0]}
+{"kind":"textbox","id":"sh/9wfah8zu","slide":7,"text":"1","textPreview":"1","textChars":1,"textLines":1,"bbox":[44,138,28,28]}
+{"kind":"textbox","id":"sh/mtormd0j","slide":7,"text":"Sign in with a verified authority account.","textPreview":"Sign in with a verified authority account.","textChars":42,"textLines":1,"bbox":[86,134,308,56]}
+{"kind":"textbox","id":"sh/nux8fih4","slide":7,"text":"2","textPreview":"2","textChars":1,"textLines":1,"bbox":[44,238,28,28]}
+{"kind":"textbox","id":"sh/4z29cji5","slide":7,"text":"Review workload counts by current status.","textPreview":"Review workload counts by current status.","textChars":41,"textLines":1,"bbox":[86,234,308,56]}
+{"kind":"textbox","id":"sh/p0vq5ozq","slide":7,"text":"3","textPreview":"3","textChars":1,"textLines":1,"bbox":[44,338,28,28]}
+{"kind":"textbox","id":"sh/pczixwf2","slide":7,"text":"Open All Complaints or use the Complaints tab.","textPreview":"Open All Complaints or use the Complaints tab.","textChars":46,"textLines":1,"bbox":[86,334,308,56]}
+{"kind":"textbox","id":"sh/4bq14reh","slide":7,"text":"4","textPreview":"4","textChars":1,"textLines":1,"bbox":[44,438,28,28]}
+{"kind":"textbox","id":"sh/3ah0vmxw","slide":7,"text":"Filter the queue and select the next issue to handle.","textPreview":"Filter the queue and select the next issue to handle.","textChars":53,"textLines":1,"bbox":[86,434,308,56]}
+{"kind":"shape","id":"sh/298j2hwb","slide":7,"bbox":[424,108,242,506]}
+{"kind":"textbox","id":"sh/cfq18red","slide":7,"text":"Authority dashboard","textPreview":"Authority dashboard","textChars":19,"textLines":1,"bbox":[420,620,250,24]}
+{"kind":"shape","id":"sh/reh0zmx8","slide":7,"bbox":[736,108,242,506]}
+{"kind":"textbox","id":"sh/l4ji5gfa","slide":7,"text":"Complaint queue","textPreview":"Complaint queue","textChars":15,"textLines":1,"bbox":[732,620,250,24]}
+{"kind":"shape","id":"sh/0ja1cbep","slide":7,"bbox":[440,190,210,145]}
+{"kind":"textbox","id":"sh/knil8fm1","slide":7,"text":"2","textPreview":"2","textChars":1,"textLines":1,"bbox":[630,214,30,30]}
+{"kind":"shape","id":"sh/lor21k36","slide":7,"bbox":[575,116,75,38]}
+{"kind":"textbox","id":"sh/yl03654v","slide":7,"text":"3","textPreview":"3","textChars":1,"textLines":1,"bbox":[630,118,30,30]}
+{"kind":"shape","id":"sh/jm9kzalg","slide":7,"bbox":[752,288,210,180]}
+{"kind":"textbox","id":"sh/8bilczmx","slide":7,"text":"4","textPreview":"4","textChars":1,"textLines":1,"bbox":[942,318,30,30]}
+{"kind":"textbox","id":"sh/tcb2543i","slide":7,"text":"Recommended live demo","textPreview":"Recommended live demo","textChars":21,"textLines":1,"bbox":[1010,180,210,30]}
+{"kind":"textbox","id":"sh/6p03ap4r","slide":7,"text":"Open one In Progress complaint with evidence already loaded.","textPreview":"Open one In Progress complaint with evidence already loaded.","textChars":60,"textLines":1,"bbox":[1010,220,210,110]}
+{"kind":"textbox","id":"sh/7a9k3ulc","slide":7,"text":"Nogor Shomadhan  •  Final user manual","textPreview":"Nogor Shomadhan  •  Final user manual","textChars":37,"textLines":1,"bbox":[48,688,420,18]}
+{"kind":"textbox","id":"sh/ofyl0vmt","slide":7,"text":"7","textPreview":"7","textChars":1,"textLines":1,"bbox":[1194,686,38,20]}
+{"kind":"image","id":"im/mdwzel8v","slide":7,"name":"","geometry":"roundRect","alt":"Authority dashboard","bbox":[432,116,226,490]}
+{"kind":"image","id":"im/9gnip07m","slide":7,"name":"","geometry":"roundRect","alt":"Complaint queue","bbox":[744,116,226,490]}
+{"kind":"notes","id":"nt/u92924","slide":7,"text":"Timing: 45 seconds. Use the workload cards to explain prioritization, then open the complaint queue. Choose an existing in-progress complaint so progress history and evidence are immediately visible."}
+{"kind":"slide","id":"sl/im7gun","slide":8,"title":"7","textShapes":21}
+{"kind":"textbox","id":"sh/7qxoredk","slide":8,"text":"7","textPreview":"7","textChars":1,"textLines":1,"bbox":[40,28,50,46]}
+{"kind":"textbox","id":"sh/sr6p0je5","slide":8,"text":"Reviewing an assigned complaint","textPreview":"Reviewing an assigned complaint","textChars":31,"textLines":1,"bbox":[104,25,870,54]}
+{"kind":"textbox","id":"sh/tsfqtova","slide":8,"text":"Authority","textPreview":"Authority","textChars":9,"textLines":1,"bbox":[1094,30,124,34]}
+{"kind":"shape","id":"sh/il47u9wn","slide":8,"bbox":[40,92,1200,0]}
+{"kind":"textbox","id":"sh/jmdoned8","slide":8,"text":"1","textPreview":"1","textChars":1,"textLines":1,"bbox":[46,122,28,28]}
+{"kind":"textbox","id":"sh/knmpwzet","slide":8,"text":"Confirm the status, category, and complaint description.","textPreview":"Confirm the status, category, and complaint description.","textChars":56,"textLines":1,"bbox":[88,118,358,56]}
+{"kind":"textbox","id":"sh/5of6p4ve","slide":8,"text":"2","textPreview":"2","textChars":1,"textLines":1,"bbox":[46,215,28,28]}
+{"kind":"textbox","id":"sh/ax47qpwr","slide":8,"text":"Check the address and nearby location details.","textPreview":"Check the address and nearby location details.","textChars":46,"textLines":1,"bbox":[88,211,358,56]}
+{"kind":"textbox","id":"sh/vidojudc","slide":8,"text":"3","textPreview":"3","textChars":1,"textLines":1,"bbox":[46,308,28,28]}
+{"kind":"textbox","id":"sh/bax0b650","slide":8,"text":"Review the resident’s original evidence.","textPreview":"Review the resident’s original evidence.","textChars":40,"textLines":1,"bbox":[88,304,358,56]}
+{"kind":"textbox","id":"sh/a9oj214v","slide":8,"text":"4","textPreview":"4","textChars":1,"textLines":1,"bbox":[46,401,28,28]}
+{"kind":"textbox","id":"sh/xcfidwn6","slide":8,"text":"Verify assignment, estimated budget, and deadline.","textPreview":"Verify assignment, estimated budget, and deadline.","textChars":50,"textLines":1,"bbox":[88,397,358,56]}
+{"kind":"textbox","id":"sh/cb614rml","slide":8,"text":"5","textPreview":"5","textChars":1,"textLines":1,"bbox":[46,494,28,28]}
+{"kind":"textbox","id":"sh/zeh0f65c","slide":8,"text":"Use the work history to understand earlier actions.","textPreview":"Use the work history to understand earlier actions.","textChars":51,"textLines":1,"bbox":[88,490,358,56]}
+{"kind":"shape","id":"sh/yd8j614r","slide":8,"bbox":[540,108,268,562]}
+{"kind":"textbox","id":"sh/kfq18bmx","slide":8,"text":"Complaint overview","textPreview":"Complaint overview","textChars":18,"textLines":1,"bbox":[536,676,276,24]}
+{"kind":"shape","id":"sh/fid03m5s","slide":8,"bbox":[556,124,236,105]}
+{"kind":"textbox","id":"sh/eh4zuh4n","slide":8,"text":"1","textPreview":"1","textChars":1,"textLines":1,"bbox":[772,134,30,30]}
+{"kind":"shape","id":"sh/2pwvy9s7","slide":8,"bbox":[556,290,236,172]}
+{"kind":"textbox","id":"sh/3a5crets","slide":8,"text":"2","textPreview":"2","textChars":1,"textLines":1,"bbox":[772,320,30,30]}
+{"kind":"shape","id":"sh/4bed0jad","slide":8,"bbox":[556,480,236,150]}
+{"kind":"textbox","id":"sh/pcnutoby","slide":8,"text":"3","textPreview":"3","textChars":1,"textLines":1,"bbox":[772,507,30,30]}
+{"kind":"textbox","id":"sh/ulcvu9sb","slide":8,"text":"Before updating status","textPreview":"Before updating status","textChars":22,"textLines":1,"bbox":[860,172,280,30]}
+{"kind":"textbox","id":"sh/fmlcnutw","slide":8,"text":"Confirm that the report and location describe the same issue shown in the evidence photo.","textPreview":"Confirm that the report and location describe the same issue shown in the evidence photo.","textChars":89,"textLines":1,"bbox":[860,214,300,126]}
+{"kind":"textbox","id":"sh/gnudwza1","slide":8,"text":"Nogor Shomadhan  •  Final user manual","textPreview":"Nogor Shomadhan  •  Final user manual","textChars":37,"textLines":1,"bbox":[48,688,420,18]}
+{"kind":"textbox","id":"sh/ho3up4bm","slide":8,"text":"8","textPreview":"8","textChars":1,"textLines":1,"bbox":[1194,686,38,20]}
+{"kind":"image","id":"im/il87u5of","slide":8,"name":"","geometry":"roundRect","alt":"Complaint overview","bbox":[548,116,252,546]}
+{"kind":"notes","id":"nt/im7gun","slide":8,"text":"Timing: 55 seconds. Point out the status badge, complaint metadata, location, and resident evidence. Explain that these checks reduce mistaken assignments before work starts."}
+{"kind":"slide","id":"sl/o87jox","slide":9,"title":"8","textShapes":22}
+{"kind":"textbox","id":"sh/d03uxwji","slide":9,"text":"8","textPreview":"8","textChars":1,"textLines":1,"bbox":[40,28,50,46]}
+{"kind":"textbox","id":"sh/6dsb2h07","slide":9,"text":"Recording work progress","textPreview":"Recording work progress","textChars":23,"textLines":1,"bbox":[104,25,870,54]}
+{"kind":"textbox","id":"sh/relcvm1c","slide":9,"text":"Authority","textPreview":"Authority","textChars":9,"textLines":1,"bbox":[1094,30,124,34]}
+{"kind":"shape","id":"sh/4bat07i1","slide":9,"bbox":[40,92,1200,0]}
+{"kind":"textbox","id":"sh/5cjutcjm","slide":9,"text":"1","textPreview":"1","textChars":1,"textLines":1,"bbox":[44,124,28,28]}
+{"kind":"textbox","id":"sh/i9sbyh0v","slide":9,"text":"Open the action area for the in-progress complaint.","textPreview":"Open the action area for the in-progress complaint.","textChars":51,"textLines":1,"bbox":[86,120,306,56]}
+{"kind":"textbox","id":"sh/ja1crm1g","slide":9,"text":"2","textPreview":"2","textChars":1,"textLines":1,"bbox":[44,216,28,28]}
+{"kind":"textbox","id":"sh/o7edcbi5","slide":9,"text":"Select Update, Contractor, or Completed.","textPreview":"Select Update, Contractor, or Completed.","textChars":40,"textLines":1,"bbox":[86,212,306,56]}
+{"kind":"textbox","id":"sh/p8nu5gjq","slide":9,"text":"3","textPreview":"3","textChars":1,"textLines":1,"bbox":[44,308,28,28]}
+{"kind":"textbox","id":"sh/p8jmpoz2","slide":9,"text":"Enter a new amount or deadline when either changes.","textPreview":"Enter a new amount or deadline when either changes.","textChars":51,"textLines":1,"bbox":[86,304,306,56]}
+{"kind":"textbox","id":"sh/o7alwjih","slide":9,"text":"4","textPreview":"4","textChars":1,"textLines":1,"bbox":[44,400,28,28]}
+{"kind":"textbox","id":"sh/3614nehw","slide":9,"text":"Add a concise work note and attach progress photos.","textPreview":"Add a concise work note and attach progress photos.","textChars":51,"textLines":1,"bbox":[86,396,306,56]}
+{"kind":"textbox","id":"sh/25s3u90r","slide":9,"text":"5","textPreview":"5","textChars":1,"textLines":1,"bbox":[44,492,28,28]}
+{"kind":"textbox","id":"sh/14j2l4z6","slide":9,"text":"Save the update; it becomes part of the visible history.","textPreview":"Save the update; it becomes part of the visible history.","textChars":56,"textLines":1,"bbox":[86,488,306,56]}
+{"kind":"shape","id":"sh/g3alszil","slide":9,"bbox":[416,108,242,506]}
+{"kind":"textbox","id":"sh/e1s3qp0f","slide":9,"text":"Progress controls","textPreview":"Progress controls","textChars":17,"textLines":1,"bbox":[412,620,250,24]}
+{"kind":"shape","id":"sh/l0nmx8za","slide":9,"bbox":[726,108,242,506]}
+{"kind":"textbox","id":"sh/4fmxgbud","slide":9,"text":"Update details","textPreview":"Update details","textChars":14,"textLines":1,"bbox":[722,620,250,24]}
+{"kind":"shape","id":"sh/5gvepwby","slide":9,"bbox":[432,278,210,74]}
+{"kind":"textbox","id":"sh/id4fe1c7","slide":9,"text":"2","textPreview":"2","textChars":1,"textLines":1,"bbox":[622,304,30,30]}
+{"kind":"shape","id":"sh/jedwn6ts","slide":9,"bbox":[742,334,210,74]}
+{"kind":"textbox","id":"sh/wrmxcru1","slide":9,"text":"3","textPreview":"3","textChars":1,"textLines":1,"bbox":[932,364,30,30]}
+{"kind":"shape","id":"sh/hsvelwbm","slide":9,"bbox":[742,432,210,120]}
+{"kind":"textbox","id":"sh/upkfahcv","slide":9,"text":"4","textPreview":"4","textChars":1,"textLines":1,"bbox":[932,470,30,30]}
+{"kind":"textbox","id":"sh/vqdwjmtg","slide":9,"text":"Transparency rule","textPreview":"Transparency rule","textChars":17,"textLines":1,"bbox":[1010,196,190,28]}
+{"kind":"textbox","id":"sh/8n2d87u5","slide":9,"text":"Budget, deadline, notes, and evidence changes remain visible in the complaint history.","textPreview":"Budget, deadline, notes, and evidence changes remain visible in the complaint history.","textChars":86,"textLines":1,"bbox":[1010,236,205,150]}
+{"kind":"textbox","id":"sh/9obehcbq","slide":9,"text":"Nogor Shomadhan  •  Final user manual","textPreview":"Nogor Shomadhan  •  Final user manual","textChars":37,"textLines":1,"bbox":[48,688,420,18]}
+{"kind":"textbox","id":"sh/bi9gr2xc","slide":9,"text":"9","textPreview":"9","textChars":1,"textLines":1,"bbox":[1194,686,38,20]}
+{"kind":"image","id":"im/wvixcvyp","slide":9,"name":"","geometry":"roundRect","alt":"Progress controls","bbox":[424,116,226,490]}
+{"kind":"image","id":"im/nqpgfqx8","slide":9,"name":"","geometry":"roundRect","alt":"Update details","bbox":[734,116,226,490]}
+{"kind":"notes","id":"nt/o87jox","slide":9,"text":"Timing: 70 seconds. Demonstrate one progress update. Add either a note, a photo, or a changed amount or deadline. Mention that any one change is enough to save an update, and the resident can see it afterward."}
+{"kind":"slide","id":"sl/fdl9o8","slide":10,"title":"9","textShapes":22}
+{"kind":"textbox","id":"sh/8jyl43md","slide":10,"text":"9","textPreview":"9","textChars":1,"textLines":1,"bbox":[40,28,50,46]}
+{"kind":"textbox","id":"sh/ni54vyls","slide":10,"text":"Completing and documenting the resolution","textPreview":"Completing and documenting the resolution","textChars":41,"textLines":1,"bbox":[104,25,870,54]}
+{"kind":"textbox","id":"sh/mhw32t47","slide":10,"text":"Both roles","textPreview":"Both roles","textChars":10,"textLines":1,"bbox":[1084,30,134,34]}
+{"kind":"shape","id":"sh/x87m183u","slide":10,"bbox":[40,92,1200,0]}
+{"kind":"textbox","id":"sh/wnyl8nm9","slide":10,"text":"1","textPreview":"1","textChars":1,"textLines":1,"bbox":[44,124,28,28]}
+{"kind":"textbox","id":"sh/vmp4zilo","slide":10,"text":"Select Completed in the authority action area.","textPreview":"Select Completed in the authority action area.","textChars":46,"textLines":1,"bbox":[86,120,328,56]}
+{"kind":"textbox","id":"sh/alg36d43","slide":10,"text":"2","textPreview":"2","textChars":1,"textLines":1,"bbox":[44,216,28,28]}
+{"kind":"textbox","id":"sh/5crm5s3q","slide":10,"text":"Enter the final resolution note.","textPreview":"Enter the final resolution note.","textChars":32,"textLines":1,"bbox":[86,212,328,56]}
+{"kind":"textbox","id":"sh/kbi5cnml","slide":10,"text":"3","textPreview":"3","textChars":1,"textLines":1,"bbox":[44,308,28,28]}
+{"kind":"textbox","id":"sh/m18fq18b","slide":10,"text":"Confirm the final budget and attach completion evidence.","textPreview":"Confirm the final budget and attach completion evidence.","textChars":56,"textLines":1,"bbox":[86,304,328,56]}
+{"kind":"textbox","id":"sh/n2hgz69w","slide":10,"text":"4","textPreview":"4","textChars":1,"textLines":1,"bbox":[44,400,28,28]}
+{"kind":"textbox","id":"sh/83qxsbq1","slide":10,"text":"Submit the resolution to close the complaint.","textPreview":"Submit the resolution to close the complaint.","textChars":45,"textLines":1,"bbox":[86,396,328,56]}
+{"kind":"textbox","id":"sh/94jy1grm","slide":10,"text":"5","textPreview":"5","textChars":1,"textLines":1,"bbox":[44,492,28,28]}
+{"kind":"textbox","id":"sh/a5sfu187","slide":10,"text":"The record becomes read-only and the resident receives an update.","textPreview":"The record becomes read-only and the resident receives an update.","textChars":65,"textLines":1,"bbox":[86,488,328,56]}
+{"kind":"shape","id":"sh/v61g369s","slide":10,"bbox":[492,108,268,562]}
+{"kind":"textbox","id":"sh/x8jy5gry","slide":10,"text":"Resolved complaint and work history","textPreview":"Resolved complaint and work history","textChars":35,"textLines":1,"bbox":[488,676,276,24]}
+{"kind":"shape","id":"sh/q9ofihs3","slide":10,"bbox":[508,170,236,106]}
+{"kind":"textbox","id":"sh/raxwrm9o","slide":10,"text":"2","textPreview":"2","textChars":1,"textLines":1,"bbox":[724,192,30,30]}
+{"kind":"shape","id":"sh/fedczipg","slide":10,"bbox":[508,312,236,146]}
+{"kind":"textbox","id":"sh/ud4vqd8v","slide":10,"text":"3","textPreview":"3","textChars":1,"textLines":1,"bbox":[724,338,30,30]}
+{"kind":"shape","id":"sh/hgvu1s76","slide":10,"bbox":[508,510,236,116]}
+{"kind":"textbox","id":"sh/gfmdsnql","slide":10,"text":"5","textPreview":"5","textChars":1,"textLines":1,"bbox":[724,540,30,30]}
+{"kind":"textbox","id":"sh/7atcvyp4","slide":10,"text":"Completion evidence","textPreview":"Completion evidence","textChars":19,"textLines":1,"bbox":[830,160,320,30]}
+{"kind":"textbox","id":"sh/69kbmt8j","slide":10,"text":"Residents can compare the original issue photo with the final proof and review every recorded work update.","textPreview":"Residents can compare the original issue photo with the final proof and review every recorded work update.","textChars":106,"textLines":1,"bbox":[830,202,330,142]}
+{"kind":"textbox","id":"sh/tcbux87a","slide":10,"text":"This closes the operational loop before feedback begins.","textPreview":"This closes the operational loop before feedback begins.","textChars":56,"textLines":1,"bbox":[830,410,320,72]}
+{"kind":"textbox","id":"sh/sb2do3qp","slide":10,"text":"Nogor Shomadhan  •  Final user manual","textPreview":"Nogor Shomadhan  •  Final user manual","textChars":37,"textLines":1,"bbox":[48,688,420,18]}
+{"kind":"textbox","id":"sh/r6xc72po","slide":10,"text":"10","textPreview":"10","textChars":2,"textLines":1,"bbox":[1194,686,38,20]}
+{"kind":"image","id":"im/zehorqdc","slide":10,"name":"","geometry":"roundRect","alt":"Resolved complaint and work history","bbox":[500,116,252,546]}
+{"kind":"notes","id":"nt/fdl9o8","slide":10,"text":"Timing: 55 seconds. Show the final evidence and work history. Explain that the closed record is read-only for the authority and remains visible to residents for accountability."}
+{"kind":"slide","id":"sl/rkx1t5","slide":11,"title":"10","textShapes":23}
+{"kind":"textbox","id":"sh/zyl432t8","slide":11,"text":"10","textPreview":"10","textChars":2,"textLines":1,"bbox":[40,28,50,46]}
+{"kind":"textbox","id":"sh/0zulw7at","slide":11,"text":"Resident confirmation and feedback","textPreview":"Resident confirmation and feedback","textChars":34,"textLines":1,"bbox":[104,25,870,54]}
+{"kind":"textbox","id":"sh/l03m5cbe","slide":11,"text":"Resident","textPreview":"Resident","textChars":8,"textLines":1,"bbox":[1100,30,118,34]}
+{"kind":"shape","id":"sh/m1cnyhsz","slide":11,"bbox":[40,92,1200,0]}
+{"kind":"textbox","id":"sh/72l47m94","slide":11,"text":"1","textPreview":"1","textChars":1,"textLines":1,"bbox":[44,124,28,28]}
+{"kind":"textbox","id":"sh/83u50rap","slide":11,"text":"Open My Complaints and choose a resolved report.","textPreview":"Open My Complaints and choose a resolved report.","textChars":48,"textLines":1,"bbox":[86,120,306,56]}
+{"kind":"textbox","id":"sh/9onm9wra","slide":11,"text":"2","textPreview":"2","textChars":1,"textLines":1,"bbox":[44,216,28,28]}
+{"kind":"textbox","id":"sh/upwn21sv","slide":11,"text":"Review the resolution evidence and work history.","textPreview":"Review the resolution evidence and work history.","textChars":48,"textLines":1,"bbox":[86,212,306,56]}
+{"kind":"textbox","id":"sh/vq54bm9g","slide":11,"text":"3","textPreview":"3","textChars":1,"textLines":1,"bbox":[44,308,28,28]}
+{"kind":"textbox","id":"sh/z69ojm50","slide":11,"text":"Scroll to Resident Feedback.","textPreview":"Scroll to Resident Feedback.","textChars":28,"textLines":1,"bbox":[86,304,306,56]}
+{"kind":"textbox","id":"sh/e50nahof","slide":11,"text":"4","textPreview":"4","textChars":1,"textLines":1,"bbox":[44,400,28,28]}
+{"kind":"textbox","id":"sh/18r6lwn6","slide":11,"text":"Choose a rating from one to five stars.","textPreview":"Choose a rating from one to five stars.","textChars":39,"textLines":1,"bbox":[86,396,306,56]}
+{"kind":"textbox","id":"sh/07i5cr6l","slide":11,"text":"5","textPreview":"5","textChars":1,"textLines":1,"bbox":[44,492,28,28]}
+{"kind":"textbox","id":"sh/r2pofm5o","slide":11,"text":"Write a short comment and submit feedback.","textPreview":"Write a short comment and submit feedback.","textChars":42,"textLines":1,"bbox":[86,488,306,56]}
+{"kind":"shape","id":"sh/qhgnmho3","slide":11,"bbox":[416,108,242,506]}
+{"kind":"textbox","id":"sh/c3i58r69","slide":11,"text":"My complaints","textPreview":"My complaints","textChars":13,"textLines":1,"bbox":[412,620,250,24]}
+{"kind":"shape","id":"sh/bytor658","slide":11,"bbox":[726,108,242,506]}
+{"kind":"textbox","id":"sh/65oz69c7","slide":11,"text":"Feedback section","textPreview":"Feedback section","textChars":16,"textLines":1,"bbox":[722,620,250,24]}
+{"kind":"shape","id":"sh/76h0zetc","slide":11,"bbox":[432,255,210,178]}
+{"kind":"textbox","id":"sh/s7q18jux","slide":11,"text":"1","textPreview":"1","textChars":1,"textLines":1,"bbox":[622,286,30,30]}
+{"kind":"shape","id":"sh/t8zi14bi","slide":11,"bbox":[742,300,210,86]}
+{"kind":"textbox","id":"sh/u98ja9c3","slide":11,"text":"3","textPreview":"3","textChars":1,"textLines":1,"bbox":[932,326,30,30]}
+{"kind":"shape","id":"sh/fah03eto","slide":11,"bbox":[742,385,210,60]}
+{"kind":"textbox","id":"sh/gbq1cju9","slide":11,"text":"4","textPreview":"4","textChars":1,"textLines":1,"bbox":[932,405,30,30]}
+{"kind":"shape","id":"sh/hczi5obu","slide":11,"bbox":[742,455,210,108]}
+{"kind":"textbox","id":"sh/ad4zypcz","slide":11,"text":"5","textPreview":"5","textChars":1,"textLines":1,"bbox":[932,500,30,30]}
+{"kind":"textbox","id":"sh/ved0rutk","slide":11,"text":"Outcome","textPreview":"Outcome","textChars":7,"textLines":1,"bbox":[1010,205,170,30]}
+{"kind":"textbox","id":"sh/ds32dsv2","slide":11,"text":"Feedback gives authorities a visible quality signal after the technical work is complete.","textPreview":"Feedback gives authorities a visible quality signal after the technical work is complete.","textChars":89,"textLines":1,"bbox":[1010,245,205,150]}
+{"kind":"textbox","id":"sh/c7ul4neh","slide":11,"text":"Nogor Shomadhan  •  Final user manual","textPreview":"Nogor Shomadhan  •  Final user manual","textChars":37,"textLines":1,"bbox":[48,688,420,18]}
+{"kind":"textbox","id":"sh/r6lkbidw","slide":11,"text":"11","textPreview":"11","textChars":2,"textLines":1,"bbox":[1194,686,38,20]}
+{"kind":"image","id":"im/qp8nat4j","slide":11,"name":"","geometry":"roundRect","alt":"My complaints","bbox":[424,116,226,490]}
+{"kind":"image","id":"im/pozm1o3y","slide":11,"name":"","geometry":"roundRect","alt":"Feedback section","bbox":[734,116,226,490]}
+{"kind":"notes","id":"nt/rkx1t5","slide":11,"text":"Timing: 50 seconds. Open My Complaints, select a resolved item, and jump to the feedback section. If time is tight, show the rating controls without submitting a new review."}
+{"kind":"slide","id":"sl/bnyu33","slide":12,"title":"11","textShapes":23}
+{"kind":"textbox","id":"sh/6dwvm10n","slide":12,"text":"11","textPreview":"11","textChars":2,"textLines":1,"bbox":[40,28,50,46]}
+{"kind":"textbox","id":"sh/tg7exgze","slide":12,"text":"Notifications, analytics, and PDF reports","textPreview":"Notifications, analytics, and PDF reports","textChars":41,"textLines":1,"bbox":[104,25,870,54]}
+{"kind":"textbox","id":"sh/sfedobit","slide":12,"text":"Resident","textPreview":"Resident","textChars":8,"textLines":1,"bbox":[1100,30,118,34]}
+{"kind":"shape","id":"sh/fipwzqhk","slide":12,"bbox":[40,92,1200,0]}
+{"kind":"textbox","id":"sh/ehgvql0z","slide":12,"text":"1","textPreview":"1","textChars":1,"textLines":1,"bbox":[44,124,28,28]}
+{"kind":"textbox","id":"sh/1k7e10za","slide":12,"text":"Open Notifications to review status and community updates.","textPreview":"Open Notifications to review status and community updates.","textChars":58,"textLines":1,"bbox":[86,120,308,56]}
+{"kind":"textbox","id":"sh/gjydsvip","slide":12,"text":"2","textPreview":"2","textChars":1,"textLines":1,"bbox":[44,216,28,28]}
+{"kind":"textbox","id":"sh/vmlcnmh0","slide":12,"text":"Tap an actionable alert to return to its complaint.","textPreview":"Tap an actionable alert to return to its complaint.","textChars":51,"textLines":1,"bbox":[86,212,308,56]}
+{"kind":"textbox","id":"sh/ulcveh0f","slide":12,"text":"3","textPreview":"3","textChars":1,"textLines":1,"bbox":[44,308,28,28]}
+{"kind":"textbox","id":"sh/s3a94jep","slide":12,"text":"Open Analytics and choose All Complaints or My Complaints.","textPreview":"Open Analytics and choose All Complaints or My Complaints.","textChars":58,"textLines":1,"bbox":[86,304,308,56]}
+{"kind":"textbox","id":"sh/d4jqdofa","slide":12,"text":"4","textPreview":"4","textChars":1,"textLines":1,"bbox":[44,400,28,28]}
+{"kind":"textbox","id":"sh/q18r29wz","slide":12,"text":"Select a reporting period to refresh the metrics.","textPreview":"Select a reporting period to refresh the metrics.","textChars":49,"textLines":1,"bbox":[86,396,308,56]}
+{"kind":"textbox","id":"sh/r2h8bex4","slide":12,"text":"5","textPreview":"5","textChars":1,"textLines":1,"bbox":[44,492,28,28]}
+{"kind":"textbox","id":"sh/07a98je1","slide":12,"text":"Download a PDF report when a shareable summary is needed.","textPreview":"Download a PDF report when a shareable summary is needed.","textChars":57,"textLines":1,"bbox":[86,488,308,56]}
+{"kind":"shape","id":"sh/18jqhofm","slide":12,"bbox":[418,108,242,506]}
+{"kind":"textbox","id":"sh/f618fyxg","slide":12,"text":"Notifications","textPreview":"Notifications","textChars":13,"textLines":1,"bbox":[414,620,250,24]}
+{"kind":"shape","id":"sh/gb6pwzeh","slide":12,"bbox":[730,108,242,506]}
+{"kind":"textbox","id":"sh/xg7ydw3u","slide":12,"text":"Complaint analytics","textPreview":"Complaint analytics","textChars":19,"textLines":1,"bbox":[726,620,250,24]}
+{"kind":"shape","id":"sh/wfyxkr29","slide":12,"bbox":[434,240,210,210]}
+{"kind":"textbox","id":"sh/bu5wbmlo","slide":12,"text":"2","textPreview":"2","textChars":1,"textLines":1,"bbox":[624,282,30,30]}
+{"kind":"shape","id":"sh/atwfih43","slide":12,"bbox":[746,160,210,100]}
+{"kind":"textbox","id":"sh/lk7yhw3q","slide":12,"text":"3","textPreview":"3","textChars":1,"textLines":1,"bbox":[936,185,30,30]}
+{"kind":"shape","id":"sh/kjyxob25","slide":12,"bbox":[746,255,210,72]}
+{"kind":"textbox","id":"sh/jipgf6l0","slide":12,"text":"4","textPreview":"4","textChars":1,"textLines":1,"bbox":[936,275,30,30]}
+{"kind":"shape","id":"sh/yhgfm1kf","slide":12,"bbox":[815,116,141,50]}
+{"kind":"textbox","id":"sh/torylg32","slide":12,"text":"5","textPreview":"5","textChars":1,"textLines":1,"bbox":[936,115,30,30]}
+{"kind":"textbox","id":"sh/8nixsb2h","slide":12,"text":"Use in the demo","textPreview":"Use in the demo","textChars":15,"textLines":1,"bbox":[1010,205,185,30]}
+{"kind":"textbox","id":"sh/qtsv6dkz","slide":12,"text":"Show one notification and one analytics filter. Mention PDF export without waiting for the share sheet.","textPreview":"Show one notification and one analytics filter. Mention PDF export without waiting for the share sheet.","textChars":103,"textLines":1,"bbox":[1010,245,205,170]}
+{"kind":"textbox","id":"sh/ru1cfi1k","slide":12,"text":"Nogor Shomadhan  •  Final user manual","textPreview":"Nogor Shomadhan  •  Final user manual","textChars":37,"textLines":1,"bbox":[48,688,420,18]}
+{"kind":"textbox","id":"sh/svad8n2p","slide":12,"text":"12","textPreview":"12","textChars":2,"textLines":1,"bbox":[1194,686,38,20]}
+{"kind":"image","id":"im/pwne9wf2","slide":12,"name":"","geometry":"roundRect","alt":"Notifications","bbox":[426,116,226,490]}
+{"kind":"image","id":"im/mpgfalgv","slide":12,"name":"","geometry":"roundRect","alt":"Complaint analytics","bbox":[738,116,226,490]}
+{"kind":"notes","id":"nt/bnyu33","slide":12,"text":"Timing: 50 seconds. Open one actionable notification, then show the analytics scope and period controls. Mention that the app generates resident, authority, and admin PDF summaries. Avoid waiting for the operating system share dialog during the presentation."}
+{"kind":"slide","id":"sl/e3s3ga","slide":13,"title":"12","textShapes":41}
+{"kind":"textbox","id":"sh/k7udkjqt","slide":13,"text":"12","textPreview":"12","textChars":2,"textLines":1,"bbox":[40,28,50,46]}
+{"kind":"textbox","id":"sh/jmlcre9o","slide":13,"text":"12-minute demonstration runbook","textPreview":"12-minute demonstration runbook","textChars":31,"textLines":1,"bbox":[104,25,870,54]}
+{"kind":"textbox","id":"sh/ilcvi983","slide":13,"text":"Both roles","textPreview":"Both roles","textChars":10,"textLines":1,"bbox":[1084,30,134,34]}
+{"kind":"shape","id":"sh/xk3up4ri","slide":13,"bbox":[40,92,1200,0]}
+{"kind":"textbox","id":"sh/wjudgzqx","slide":13,"text":"Live sequence","textPreview":"Live sequence","textChars":13,"textLines":1,"bbox":[54,116,520,34]}
+{"kind":"textbox","id":"sh/vilcnu9c","slide":13,"text":"0:00–1:00","textPreview":"0:00–1:00","textChars":9,"textLines":1,"bbox":[54,160,132,36]}
+{"kind":"textbox","id":"sh/ahsve9sr","slide":13,"text":"Problem and workflow","textPreview":"Problem and workflow","textChars":20,"textLines":1,"bbox":[198,160,300,36]}
+{"kind":"textbox","id":"sh/hgne18rm","slide":13,"text":"Slides 1–2","textPreview":"Slides 1–2","textChars":10,"textLines":1,"bbox":[500,160,100,36]}
+{"kind":"shape","id":"sh/gfeds3q1","slide":13,"bbox":[54,203,546,0]}
+{"kind":"textbox","id":"sh/y1o3ydgz","slide":13,"text":"1:00–3:20","textPreview":"1:00–3:20","textChars":9,"textLines":1,"bbox":[54,218,132,36]}
+{"kind":"textbox","id":"sh/j2x47yhk","slide":13,"text":"Resident dashboard and report","textPreview":"Resident dashboard and report","textChars":29,"textLines":1,"bbox":[198,218,300,36]}
+{"kind":"textbox","id":"sh/k36l03y5","slide":13,"text":"Slides 3–4","textPreview":"Slides 3–4","textChars":10,"textLines":1,"bbox":[500,218,100,36]}
+{"kind":"shape","id":"sh/l4fm98zq","slide":13,"bbox":[54,261,546,0]}
+{"kind":"textbox","id":"sh/ad43ut03","slide":13,"text":"3:20–5:10","textPreview":"3:20–5:10","textChars":9,"textLines":1,"bbox":[54,276,132,36]}
+{"kind":"textbox","id":"sh/bedk3yho","slide":13,"text":"AI check and admin decision","textPreview":"AI check and admin decision","textChars":27,"textLines":1,"bbox":[198,276,300,36]}
+{"kind":"textbox","id":"sh/wfmlw3yt","slide":13,"text":"Slides 5–6","textPreview":"Slides 5–6","textChars":10,"textLines":1,"bbox":[500,276,100,36]}
+{"kind":"shape","id":"sh/xgfm58ze","slide":13,"bbox":[54,319,546,0]}
+{"kind":"textbox","id":"sh/u9836xg7","slide":13,"text":"5:10–8:30","textPreview":"5:10–8:30","textChars":9,"textLines":1,"bbox":[54,334,132,36]}
+{"kind":"textbox","id":"sh/vah4fihs","slide":13,"text":"Authority triage, update, and resolution","textPreview":"Authority triage, update, and resolution","textChars":40,"textLines":1,"bbox":[198,334,300,36]}
+{"kind":"textbox","id":"sh/re907ax4","slide":13,"text":"Slides 7–10","textPreview":"Slides 7–10","textChars":11,"textLines":1,"bbox":[500,334,100,36]}
+{"kind":"shape","id":"sh/qd0jypgj","slide":13,"bbox":[54,377,546,0]}
+{"kind":"textbox","id":"sh/dgri9kfa","slide":13,"text":"8:30–10:10","textPreview":"8:30–10:10","textChars":10,"textLines":1,"bbox":[54,392,132,36]}
+{"kind":"textbox","id":"sh/cfi10fyp","slide":13,"text":"Resident feedback","textPreview":"Resident feedback","textChars":17,"textLines":1,"bbox":[198,392,300,36]}
+{"kind":"textbox","id":"sh/zit0buxg","slide":13,"text":"Slide 11","textPreview":"Slide 11","textChars":8,"textLines":1,"bbox":[500,392,100,36]}
+{"kind":"shape","id":"sh/ehkj2pwv","slide":13,"bbox":[54,435,546,0]}
+{"kind":"textbox","id":"sh/1kbid4f6","slide":13,"text":"10:10–11:10","textPreview":"10:10–11:10","textChars":11,"textLines":1,"bbox":[54,450,132,36]}
+{"kind":"textbox","id":"sh/0j214zel","slide":13,"text":"Notifications and analytics","textPreview":"Notifications and analytics","textChars":27,"textLines":1,"bbox":[198,450,300,36]}
+{"kind":"textbox","id":"sh/nmt0fuxc","slide":13,"text":"Slide 12","textPreview":"Slide 12","textChars":8,"textLines":1,"bbox":[500,450,100,36]}
+{"kind":"shape","id":"sh/mlkj69wr","slide":13,"bbox":[54,493,546,0]}
+{"kind":"textbox","id":"sh/kbmhwju5","slide":13,"text":"11:10–12:00","textPreview":"11:10–12:00","textChars":11,"textLines":1,"bbox":[54,508,132,36]}
+{"kind":"textbox","id":"sh/lcvip4vq","slide":13,"text":"Summary and transition to Q&A","textPreview":"Summary and transition to Q&A","textChars":29,"textLines":1,"bbox":[198,508,300,36]}
+{"kind":"textbox","id":"sh/y94zu9cz","slide":13,"text":"Close","textPreview":"Close","textChars":5,"textLines":1,"bbox":[500,508,100,36]}
+{"kind":"shape","id":"sh/jad0nedk","slide":13,"bbox":[54,551,546,0]}
+{"kind":"shape","id":"sh/wn2hszut","slide":13,"bbox":[640,120,0,470]}
+{"kind":"textbox","id":"sh/xovil4ve","slide":13,"text":"Q&A code map","textPreview":"Q&A code map","textChars":12,"textLines":1,"bbox":[690,116,430,34]}
+{"kind":"textbox","id":"sh/alkzqpcn","slide":13,"text":"Report form","textPreview":"Report form","textChars":11,"textLines":1,"bbox":[690,170,190,26]}
+{"kind":"textbox","id":"sh/bmt0jud8","slide":13,"text":"src/app/(resident)/complaints/create.tsx","textPreview":"src/app/(resident)/complaints/create.tsx","textChars":40,"textLines":1,"bbox":[690,197,490,30]}
+{"kind":"textbox","id":"sh/oj2hozux","slide":13,"text":"AI categorization","textPreview":"AI categorization","textChars":17,"textLines":1,"bbox":[690,238,190,26]}
+{"kind":"textbox","id":"sh/9kbyhkvi","slide":13,"text":"src/services/ai.service.ts","textPreview":"src/services/ai.service.ts","textChars":26,"textLines":1,"bbox":[690,265,490,30]}
+{"kind":"textbox","id":"sh/do7epgba","slide":13,"text":"Duplicate detection","textPreview":"Duplicate detection","textChars":19,"textLines":1,"bbox":[690,306,190,26]}
+{"kind":"textbox","id":"sh/cnyxwvap","slide":13,"text":"src/services/duplicate.service.ts","textPreview":"src/services/duplicate.service.ts","textChars":33,"textLines":1,"bbox":[690,333,490,30]}
+{"kind":"textbox","id":"sh/rmpwnqt4","slide":13,"text":"Authority workflow","textPreview":"Authority workflow","textChars":18,"textLines":1,"bbox":[690,374,190,26]}
+{"kind":"textbox","id":"sh/qlgfulsj","slide":13,"text":"src/components/authority/authority-complaint-detail-screen.tsx","textPreview":"src/components/authority/authority-complaint-detail-screen.tsx","textChars":62,"textLines":1,"bbox":[690,401,490,30]}
+{"kind":"textbox","id":"sh/1sret0b6","slide":13,"text":"Notifications","textPreview":"Notifications","textChars":13,"textLines":1,"bbox":[690,442,190,26]}
+{"kind":"textbox","id":"sh/0rix0val","slide":13,"text":"src/store/notification-store.ts","textPreview":"src/store/notification-store.ts","textChars":31,"textLines":1,"bbox":[690,469,490,30]}
+{"kind":"textbox","id":"sh/zq9wrqt0","slide":13,"text":"PDF analytics","textPreview":"PDF analytics","textChars":13,"textLines":1,"bbox":[690,510,190,26]}
+{"kind":"textbox","id":"sh/ep0fylsf","slide":13,"text":"src/services/*-analytics-report.service.ts","textPreview":"src/services/*-analytics-report.service.ts","textChars":42,"textLines":1,"bbox":[690,537,490,30]}
+{"kind":"textbox","id":"sh/hwnehwb2","slide":13,"text":"Prepare the app on the resident and authority screens before the timer starts.","textPreview":"Prepare the app on the resident and authority screens before the timer starts.","textChars":78,"textLines":1,"bbox":[690,594,490,62]}
+{"kind":"textbox","id":"sh/gvedobah","slide":13,"text":"Nogor Shomadhan  •  Final user manual","textPreview":"Nogor Shomadhan  •  Final user manual","textChars":37,"textLines":1,"bbox":[48,688,420,18]}
+{"kind":"textbox","id":"sh/mps32d43","slide":13,"text":"13","textPreview":"13","textChars":2,"textLines":1,"bbox":[1194,686,38,20]}
+{"kind":"notes","id":"nt/e3s3ga","slide":13,"text":"Use this slide during rehearsal, not necessarily during the live demonstration. Keep two devices or browser sessions ready: one resident and one authority. Keep the admin duplicate review open in a third tab. During Q&A, use the code map to jump directly to the relevant implementation."}

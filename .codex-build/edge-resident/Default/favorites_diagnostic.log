@@ -1,0 +1,18 @@
+2026-09-11 20:00:52.232: [INFO] CurrentProfilePath: C:\NogorShomadhan\.codex-build\edge-resident\Default
+2026-09-11 20:00:52.232: [INFO] Profiles total count: 1
+2026-09-11 20:00:52.232: [INFO] Profile: name=Profile 1 path=C:\NogorShomadhan\.codex-build\edge-resident\Default lastActive=2026-09-11T20:00:52.196Z
+2026-09-11 20:00:52.232: [INFO] LastUsedProfileDir: C:\NogorShomadhan\.codex-build\edge-resident\Default
+2026-09-11 20:00:52.232: [INFO] MostRecentlyActiveProfile: name=Profile 1 path=C:\NogorShomadhan\.codex-build\edge-resident\Default lastActive=2026-09-11T20:00:52.196Z
+2026-09-11 20:00:52.232: [INFO] OnDoneLoading sync enabled: 0
+2026-09-11 20:00:52.232: [INFO] BookmarkModelLoaded, ids_reassigned: 0
+2026-09-11 20:00:52.232: [INFO] BookmarksLoadDropped droppedNodes=0
+2026-09-11 20:00:52.232: [INFO] BookmarksSnapshot Startup total=0 bar=0 other=0 mobile=0 showBar=0 showBarNTP=1
+2026-09-11 20:00:52.299: [INFO] RecordSyncInitDuration has_sync_been_enabled: 0 state: 0
+2026-09-11 20:00:52.452: [INFO] VisibilityChanged: 0
+2026-09-11 20:00:52.583: [INFO] RecordSyncInitDuration has_sync_been_enabled: 0 state: 0
+2026-09-11 20:00:52.586: [INFO] RecordSyncInitDuration has_sync_been_enabled: 0 state: 3
+2026-09-11 20:00:52.588: [INFO] Primary account changed.
+2026-09-11 20:00:52.588: [INFO] OnPrimaryAccountChanged PrimaryAccountChangeEvent::Type::kSet
+2026-09-11 20:00:52.594: [INFO] RecordSyncInitDuration has_sync_been_enabled: 0 state: 3
+2026-09-11 20:00:52.609: [INFO] RecordSyncInitDuration has_sync_been_enabled: 0 state: 3
+2026-09-11 20:00:55.985: [INFO] BookmarksSnapshot Shutdown total=0 bar=0 other=0 mobile=0 showBar=0 showBarNTP=1
