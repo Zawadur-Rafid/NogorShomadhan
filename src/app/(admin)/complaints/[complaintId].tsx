@@ -2,6 +2,7 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
+  Alert,
   Image,
   ScrollView,
   StyleSheet,
@@ -12,6 +13,7 @@ import {
 
 import AdminBottomNav from "@/components/AdminBottomNav";
 import { supabase } from "@/lib/supabase";
+import { confirmDuplicate, rejectDuplicate } from "@/services/admin.service";
 
 const statusTheme = {
   UNVERIFIED: {
@@ -472,10 +474,17 @@ export default function AdminComplaintDetails() {
                 style={{ flex: 1, backgroundColor: "#B54708", padding: 12, borderRadius: 8, alignItems: "center" }}
                 onPress={async () => {
                   try {
-                    await supabase.from('duplicate').update({ admin_status: 'confirmed', reviewed_at: new Date().toISOString() }).eq('dup_id', dbComplaint.duplicateWarning!.dupId);
-                    setDbComplaint(prev => prev ? ({ ...prev, duplicateWarning: { ...prev.duplicateWarning!, adminStatus: 'confirmed' } }) : null);
+                    await confirmDuplicate(dbComplaint.duplicateWarning!.dupId);
+                    Alert.alert(
+                      "Duplicate confirmed",
+                      "The resident was notified and linked to the base complaint.",
+                      [{ text: "Done", onPress: () => router.replace("/(admin)/dashboard") }],
+                    );
                   } catch (e) {
-                    console.error(e);
+                    Alert.alert(
+                      "Could not confirm duplicate",
+                      e instanceof Error ? e.message : "Please try again.",
+                    );
                   }
                 }}
               >
@@ -485,10 +494,13 @@ export default function AdminComplaintDetails() {
                 style={{ flex: 1, backgroundColor: "#FFF", borderWidth: 1, borderColor: "#B54708", padding: 12, borderRadius: 8, alignItems: "center" }}
                 onPress={async () => {
                   try {
-                    await supabase.from('duplicate').update({ admin_status: 'rejected', reviewed_at: new Date().toISOString() }).eq('dup_id', dbComplaint.duplicateWarning!.dupId);
+                    await rejectDuplicate(dbComplaint.duplicateWarning!.dupId);
                     setDbComplaint(prev => prev ? ({ ...prev, duplicateWarning: { ...prev.duplicateWarning!, adminStatus: 'rejected' } }) : null);
                   } catch (e) {
-                    console.error(e);
+                    Alert.alert(
+                      "Could not reject duplicate",
+                      e instanceof Error ? e.message : "Please try again.",
+                    );
                   }
                 }}
               >

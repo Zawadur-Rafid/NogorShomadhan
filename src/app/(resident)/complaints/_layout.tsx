@@ -13,6 +13,7 @@ import ResidentPageHeader from "@/components/resident-page-header";
 export default function ComplaintsLayout() {
   const router = useRouter();
   const pathname = usePathname();
+  const isComplaintDetail = /^\/complaints\/(?!create\/?$|my\/?$)[^/]+\/?$/.test(pathname);
 
   const activeTab = pathname.endsWith("create")
     ? "create"
@@ -31,39 +32,41 @@ export default function ComplaintsLayout() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ResidentPageHeader />
+      {!isComplaintDetail && <ResidentPageHeader />}
 
       {/* Top Tab Navigation (Card Style) */}
-      <View style={styles.tabWrapper}>
-        <View style={styles.tabContainer}>
-          <TouchableOpacity
-            style={[styles.tabButton, isNew && styles.activeTabButton]}
-            onPress={() => handleTabPress("/(resident)/complaints/create")}
-          >
-            <Text style={[styles.tabText, isNew && styles.activeTabText]}>
-              New Complaint
-            </Text>
-          </TouchableOpacity>
+      {!isComplaintDetail && (
+        <View style={styles.tabWrapper}>
+          <View style={styles.tabContainer}>
+            <TouchableOpacity
+              style={[styles.tabButton, isNew && styles.activeTabButton]}
+              onPress={() => handleTabPress("/(resident)/complaints/create")}
+            >
+              <Text style={[styles.tabText, isNew && styles.activeTabText]}>
+                New Complaint
+              </Text>
+            </TouchableOpacity>
 
-          <TouchableOpacity
-            style={[styles.tabButton, isAll && styles.activeTabButton]}
-            onPress={() => handleTabPress("/(resident)/complaints")}
-          >
-            <Text style={[styles.tabText, isAll && styles.activeTabText]}>
-              All Complaints
-            </Text>
-          </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.tabButton, isAll && styles.activeTabButton]}
+              onPress={() => handleTabPress("/(resident)/complaints")}
+            >
+              <Text style={[styles.tabText, isAll && styles.activeTabText]}>
+                All Complaints
+              </Text>
+            </TouchableOpacity>
 
-          <TouchableOpacity
-            style={[styles.tabButton, isMy && styles.activeTabButton]}
-            onPress={() => handleTabPress("/(resident)/complaints/my")}
-          >
-            <Text style={[styles.tabText, isMy && styles.activeTabText]}>
-              My Complaints
-            </Text>
-          </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.tabButton, isMy && styles.activeTabButton]}
+              onPress={() => handleTabPress("/(resident)/complaints/my")}
+            >
+              <Text style={[styles.tabText, isMy && styles.activeTabText]}>
+                My Complaints
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
-      </View>
+      )}
 
       <View style={styles.contentContainer}>
         <Slot />

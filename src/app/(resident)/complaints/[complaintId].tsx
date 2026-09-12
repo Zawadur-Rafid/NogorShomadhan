@@ -17,7 +17,6 @@ import {
   Animated as RNAnimated,
   LayoutChangeEvent,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import ResidentPageHeader from '@/components/resident-page-header';
 import { getComplaintDetails, deleteComplaint } from '@/services/resident.service';
 import { feedbackService } from '@/services/feedback.service';
@@ -872,19 +871,19 @@ export default function ComplaintDetailScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.safeArea}>
+      <View style={styles.safeArea}>
         <ResidentPageHeader />
         <View style={styles.notFound}>
           <ActivityIndicator size="large" color="#23435D" />
           <Text style={styles.notFoundTitle}>Loading complaint details...</Text>
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
   if (!complaint) {
     return (
-      <SafeAreaView style={styles.safeArea}>
+      <View style={styles.safeArea}>
         <ResidentPageHeader />
         <View style={styles.notFound}>
           <Ionicons name="document-text-outline" size={38} color="#98A2B3" />
@@ -893,7 +892,7 @@ export default function ComplaintDetailScreen() {
             This complaint record is not available.
           </Text>
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
@@ -902,7 +901,7 @@ export default function ComplaintDetailScreen() {
     : complaint.image;
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <View style={styles.safeArea}>
       <ResidentPageHeader />
       {showToast && (
         <RNAnimated.View style={[styles.toastContainer, { transform: [{ translateX: slideAnim }] }]}>
@@ -1144,7 +1143,7 @@ export default function ComplaintDetailScreen() {
           </View>
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 

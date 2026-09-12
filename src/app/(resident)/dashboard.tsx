@@ -200,6 +200,7 @@ export default function Dashboard() {
       marginTop: 10,
       borderRadius: 12,
       padding: 12,
+      overflow: "hidden",
       shadowColor: "#000",
       shadowOpacity: 0.04,
       shadowRadius: 6,
@@ -212,6 +213,16 @@ export default function Dashboard() {
     complaintHeader: {
       flexDirection: "row",
     },
+    complaintContent: {
+      flex: 1,
+      minWidth: 0,
+      marginLeft: 8,
+    },
+    complaintTitleRow: {
+      flexDirection: "row",
+      alignItems: "flex-start",
+      gap: 8,
+    },
     iconCircle: {
       width: 36,
       height: 36,
@@ -221,6 +232,8 @@ export default function Dashboard() {
       alignItems: "center",
     },
     complaintTitle: {
+      flex: 1,
+      minWidth: 0,
       fontSize: 14,
       fontWeight: "700",
       color: "#222",
@@ -240,6 +253,7 @@ export default function Dashboard() {
       fontFamily: "System",
     },
     statusBadge: {
+      flexShrink: 0,
       paddingHorizontal: 6,
       paddingVertical: 2,
       borderRadius: 10,
@@ -252,17 +266,31 @@ export default function Dashboard() {
     bottomRow: {
       flexDirection: "row",
       marginTop: 6,
-      justifyContent: "space-between",
+      alignItems: "flex-start",
+      gap: 8,
     },
     infoRow: {
       flexDirection: "row",
       alignItems: "center",
+      minWidth: 0,
+    },
+    dateInfoRow: {
+      flexShrink: 0,
+    },
+    locationInfoRow: {
+      flex: 1,
+      justifyContent: "flex-end",
     },
     infoText: {
       marginLeft: 3,
       color: "#777",
       fontSize: 10,
       fontFamily: "System",
+    },
+    locationText: {
+      flex: 1,
+      minWidth: 0,
+      textAlign: "right",
     },
     mapCard: {
       height: 250,
@@ -535,16 +563,12 @@ export default function Dashboard() {
           <View style={styles.iconCircle}>
             <Ionicons name={item.icon} size={18} color="#3B82F6" />
           </View>
-          <View style={{ flex: 1, marginLeft: 8 }}>
+          <View style={styles.complaintContent}>
             <Text style={styles.complaintId}>{item.displayId}</Text>
-            <View
-              style={{
-                flexDirection: "row",
-                justifyContent: "space-between",
-                alignItems: "center",
-              }}
-            >
-              <Text style={styles.complaintTitle}>{item.title}</Text>
+            <View style={styles.complaintTitleRow}>
+              <Text style={styles.complaintTitle} numberOfLines={2}>
+                {item.title}
+              </Text>
               <View
                 style={[
                   styles.statusBadge,
@@ -560,13 +584,18 @@ export default function Dashboard() {
               {item.description}
             </Text>
             <View style={styles.bottomRow}>
-              <View style={styles.infoRow}>
+              <View style={[styles.infoRow, styles.dateInfoRow]}>
                 <Ionicons name="calendar-outline" size={10} color="#777" />
                 <Text style={styles.infoText}>{item.date}</Text>
               </View>
-              <View style={styles.infoRow}>
+              <View style={[styles.infoRow, styles.locationInfoRow]}>
                 <Ionicons name="location-outline" size={10} color="#777" />
-                <Text style={styles.infoText}>{item.location}</Text>
+                <Text
+                  style={[styles.infoText, styles.locationText]}
+                  numberOfLines={2}
+                >
+                  {item.location}
+                </Text>
               </View>
             </View>
           </View>

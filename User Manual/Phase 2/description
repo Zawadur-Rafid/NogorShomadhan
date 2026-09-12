@@ -1,11 +1,11 @@
 Phase 2
 Resident submits complaint
 14. Resident opens new complaint page to submit a complaint. 
-15. Resident ads title, description, incident, location, and additional landmarks if needed. 
+15. Resident adds title, description, incident, location, and additional landmarks if needed. 
 16. Resident may or may not add photo evidence. This is optional. 
 Categorisation 
 17. System analyses the title description and assigned the most suitable category.
-18. Is the user desires, the user can choose a category themselves
+18. If the user desires, the user can choose a category themselves
 19. User chooses a category from the drop-down menu.
 Final submit 
 20. User free clicks confirm submission button and prompt arrives. 

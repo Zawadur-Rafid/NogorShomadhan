@@ -1,3 +1,4 @@
+import SkeletonComplaintCard from "@/components/SkeletonComplaintCard";
 import { getMyFeedComplaints } from "@/services/resident.service";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -11,7 +12,6 @@ import {
     TouchableOpacity,
     View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 
 type StatusFilter =
   | "All"
@@ -42,7 +42,6 @@ const theme = {
   onSecondaryContainer: "#713b00",
 };
 
-import SkeletonComplaintCard from "@/components/SkeletonComplaintCard";
 
 export default function MyComplaintsScreen() {
   const router = useRouter();
@@ -83,7 +82,7 @@ export default function MyComplaintsScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.contentContainer}
@@ -98,11 +97,7 @@ export default function MyComplaintsScreen() {
 
         {/* Filter Tabs */}
         <View style={styles.filterSection}>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.filterContainer}
-          >
+          <View style={styles.filterContainer}>
             {(
               [
                 "All",
@@ -136,7 +131,7 @@ export default function MyComplaintsScreen() {
                 </TouchableOpacity>
               );
             })}
-          </ScrollView>
+          </View>
         </View>
 
         {/* Complaints List */}
@@ -301,7 +296,7 @@ export default function MyComplaintsScreen() {
           color={theme.onSecondaryContainer}
         />
       </TouchableOpacity>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -336,6 +331,8 @@ const styles = StyleSheet.create({
   },
   filterContainer: {
     paddingHorizontal: 16,
+    flexDirection: "row",
+    flexWrap: "wrap",
     gap: 8,
   },
   filterBtn: {
