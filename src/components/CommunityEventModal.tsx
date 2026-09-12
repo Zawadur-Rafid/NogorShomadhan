@@ -1,4 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import { confirmAction } from "@/utils/confirm";
+import Ionicons from "@expo/vector-icons/Ionicons";
+import { useEffect, useState } from "react";
 import {
   Modal,
   Pressable,
@@ -8,21 +10,22 @@ import {
   TextInput,
   TouchableOpacity,
   View,
-} from 'react-native';
-import Ionicons from '@expo/vector-icons/Ionicons';
-import { confirmAction } from '@/utils/confirm';
+} from "react-native";
 
-export const EVENT_TAG_PREFIX = '[[COMMUNITY_EVENT:';
-export const EVENT_TAG_SUFFIX = ']]';
+export const EVENT_TAG_PREFIX = "[[COMMUNITY_EVENT:";
+export const EVENT_TAG_SUFFIX = "]]";
 
 export interface EventData {
   startDate: string; // YYYY-MM-DD
-  endDate: string;   // YYYY-MM-DD
+  endDate: string; // YYYY-MM-DD
 }
 
-export function formatEventBody(event: EventData, description?: string): string {
+export function formatEventBody(
+  event: EventData,
+  description?: string,
+): string {
   const meta = JSON.stringify(event);
-  const desc = description?.trim() ? `\n\n${description.trim()}` : '';
+  const desc = description?.trim() ? `\n\n${description.trim()}` : "";
   return `${EVENT_TAG_PREFIX}${meta}${EVENT_TAG_SUFFIX}${desc}`;
 }
 
@@ -31,7 +34,7 @@ export function parseEventFromBody(body: string): {
   event?: EventData;
   cleanBody: string;
 } {
-  if (!body) return { isEvent: false, cleanBody: '' };
+  if (!body) return { isEvent: false, cleanBody: "" };
   const startIdx = body.indexOf(EVENT_TAG_PREFIX);
   if (startIdx === -1) return { isEvent: false, cleanBody: body };
 
@@ -42,7 +45,8 @@ export function parseEventFromBody(body: string): {
   try {
     const event = JSON.parse(jsonStr) as EventData;
     const cleanBody = (
-      body.substring(0, startIdx) + body.substring(endIdx + EVENT_TAG_SUFFIX.length)
+      body.substring(0, startIdx) +
+      body.substring(endIdx + EVENT_TAG_SUFFIX.length)
     ).trim();
     return {
       isEvent: true,
@@ -54,35 +58,48 @@ export function parseEventFromBody(body: string): {
   }
 }
 
-export function formatDateRangeReadable(startDate?: string, endDate?: string): string {
-  if (!startDate) return '';
+export function formatDateRangeReadable(
+  startDate?: string,
+  endDate?: string,
+): string {
+  if (!startDate) return "";
   const start = new Date(startDate);
   const end = endDate ? new Date(endDate) : start;
 
-  const startFormatted = start.toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
+  const startFormatted = start.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
   });
 
   if (!endDate || startDate === endDate) {
     return startFormatted;
   }
 
-  const endFormatted = end.toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
+  const endFormatted = end.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
   });
 
   return `${startFormatted} – ${endFormatted}`;
 }
 
 const MONTH_NAMES = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December',
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
 ];
-const DAY_LABELS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
+const DAY_LABELS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
 
 function padZero(n: number) {
   return n < 10 ? `0${n}` : `${n}`;
@@ -130,7 +147,7 @@ export function CalendarGrid({
     cells.push(null);
   }
 
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = new Date().toISOString().split("T")[0];
 
   return (
     <View style={calStyles.container}>
@@ -174,8 +191,9 @@ export function CalendarGrid({
           const dateKey = toDateString(currentYear, currentMonth, day);
           const isStart = startDate === dateKey;
           const isEnd = endDate === dateKey;
-          const isBetween =
-            Boolean(startDate && endDate && dateKey > startDate && dateKey < endDate);
+          const isBetween = Boolean(
+            startDate && endDate && dateKey > startDate && dateKey < endDate,
+          );
           const isToday = todayStr === dateKey;
 
           return (
@@ -239,27 +257,31 @@ export function CommunityEventCreateModal({
   const [currentYear, setCurrentYear] = useState(today.getFullYear());
   const [currentMonth, setCurrentMonth] = useState(today.getMonth());
 
-  const todayKey = toDateString(today.getFullYear(), today.getMonth(), today.getDate());
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
+  const todayKey = toDateString(
+    today.getFullYear(),
+    today.getMonth(),
+    today.getDate(),
+  );
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
   const [startDate, setStartDate] = useState(todayKey);
   const [endDate, setEndDate] = useState(todayKey);
-  const [activePicker, setActivePicker] = useState<'start' | 'end'>('start');
-  const [error, setError] = useState('');
+  const [activePicker, setActivePicker] = useState<"start" | "end">("start");
+  const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     if (visible) {
-      setTitle('');
-      setDescription('');
+      setTitle("");
+      setDescription("");
       const t = new Date();
       const tKey = toDateString(t.getFullYear(), t.getMonth(), t.getDate());
       setStartDate(tKey);
       setEndDate(tKey);
       setCurrentYear(t.getFullYear());
       setCurrentMonth(t.getMonth());
-      setActivePicker('start');
-      setError('');
+      setActivePicker("start");
+      setError("");
       setSubmitting(false);
     }
   }, [visible]);
@@ -283,13 +305,13 @@ export function CommunityEventCreateModal({
   };
 
   const handleSelectDate = (dateStr: string) => {
-    setError('');
-    if (activePicker === 'start') {
+    setError("");
+    if (activePicker === "start") {
       setStartDate(dateStr);
       if (dateStr > endDate) {
         setEndDate(dateStr);
       }
-      setActivePicker('end');
+      setActivePicker("end");
     } else {
       if (dateStr < startDate) {
         setStartDate(dateStr);
@@ -301,18 +323,18 @@ export function CommunityEventCreateModal({
 
   const handleSubmit = async () => {
     if (!title.trim()) {
-      setError('Please enter an event title.');
+      setError("Please enter an event title.");
       return;
     }
     if (!startDate || !endDate) {
-      setError('Please select start and end dates.');
+      setError("Please select start and end dates.");
       return;
     }
 
     const confirmed = await confirmAction(
-      'Are you sure you want to submit this announcement?',
+      "Are you sure you want to submit this announcement?",
       undefined,
-      'Submit Event Announcement'
+      "Submit",
     );
     if (!confirmed) return;
 
@@ -326,7 +348,7 @@ export function CommunityEventCreateModal({
       });
       onClose();
     } catch (err: any) {
-      setError(err?.message || 'Failed to submit event.');
+      setError(err?.message || "Failed to submit event.");
     } finally {
       setSubmitting(false);
     }
@@ -341,7 +363,10 @@ export function CommunityEventCreateModal({
       statusBarTranslucent
     >
       <Pressable style={modalStyles.overlay} onPress={onClose}>
-        <Pressable style={modalStyles.card} onPress={(e) => e.stopPropagation()}>
+        <Pressable
+          style={modalStyles.card}
+          onPress={(e) => e.stopPropagation()}
+        >
           {/* Header */}
           <View style={modalStyles.headerRow}>
             <View style={modalStyles.headerLeft}>
@@ -384,10 +409,10 @@ export function CommunityEventCreateModal({
             {/* Date Pickers Buttons */}
             <View style={modalStyles.datePickersRow}>
               <TouchableOpacity
-                onPress={() => setActivePicker('start')}
+                onPress={() => setActivePicker("start")}
                 style={[
                   modalStyles.datePickerButton,
-                  activePicker === 'start' && modalStyles.datePickerActive,
+                  activePicker === "start" && modalStyles.datePickerActive,
                 ]}
               >
                 <Text style={modalStyles.datePickerLabel}>START DATE</Text>
@@ -395,12 +420,13 @@ export function CommunityEventCreateModal({
                   <Ionicons
                     name="calendar-outline"
                     size={15}
-                    color={activePicker === 'start' ? '#23435D' : '#667085'}
+                    color={activePicker === "start" ? "#23435D" : "#667085"}
                   />
                   <Text
                     style={[
                       modalStyles.datePickerValue,
-                      activePicker === 'start' && modalStyles.datePickerValueActive,
+                      activePicker === "start" &&
+                        modalStyles.datePickerValueActive,
                     ]}
                   >
                     {startDate}
@@ -413,10 +439,10 @@ export function CommunityEventCreateModal({
               </View>
 
               <TouchableOpacity
-                onPress={() => setActivePicker('end')}
+                onPress={() => setActivePicker("end")}
                 style={[
                   modalStyles.datePickerButton,
-                  activePicker === 'end' && modalStyles.datePickerActive,
+                  activePicker === "end" && modalStyles.datePickerActive,
                 ]}
               >
                 <Text style={modalStyles.datePickerLabel}>END DATE</Text>
@@ -424,12 +450,13 @@ export function CommunityEventCreateModal({
                   <Ionicons
                     name="calendar-outline"
                     size={15}
-                    color={activePicker === 'end' ? '#23435D' : '#667085'}
+                    color={activePicker === "end" ? "#23435D" : "#667085"}
                   />
                   <Text
                     style={[
                       modalStyles.datePickerValue,
-                      activePicker === 'end' && modalStyles.datePickerValueActive,
+                      activePicker === "end" &&
+                        modalStyles.datePickerValueActive,
                     ]}
                   >
                     {endDate}
@@ -439,7 +466,8 @@ export function CommunityEventCreateModal({
             </View>
 
             <Text style={modalStyles.helperText}>
-              Tap days on the calendar to mark {activePicker === 'start' ? 'Start Date' : 'End Date'}.
+              Tap days on the calendar to mark{" "}
+              {activePicker === "start" ? "Start Date" : "End Date"}.
             </Text>
 
             {/* Calendar */}
@@ -463,7 +491,10 @@ export function CommunityEventCreateModal({
                 placeholder="Share details, location coordinates, items to bring..."
                 placeholderTextColor="#98A2B3"
                 multiline
-                style={[modalStyles.textInput, { height: 75, textAlignVertical: 'top' }]}
+                style={[
+                  modalStyles.textInput,
+                  { height: 75, textAlignVertical: "top" },
+                ]}
               />
             </View>
 
@@ -486,7 +517,7 @@ export function CommunityEventCreateModal({
               >
                 <Ionicons name="megaphone-outline" size={16} color="#FFFFFF" />
                 <Text style={modalStyles.submitBtnText}>
-                  {submitting ? 'Publishing...' : 'Submit Event Announcement'}
+                  {submitting ? "Publishing..." : "Submit"}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -517,14 +548,18 @@ export function CommunityEventViewerModal({
   startDate,
   endDate,
   description,
-  authorName = 'Community Authority',
+  authorName = "Community Authority",
 }: ViewEventModalProps) {
   const initialDate = startDate ? new Date(startDate) : new Date();
   const [currentYear, setCurrentYear] = useState(
-    Number.isNaN(initialDate.getFullYear()) ? new Date().getFullYear() : initialDate.getFullYear()
+    Number.isNaN(initialDate.getFullYear())
+      ? new Date().getFullYear()
+      : initialDate.getFullYear(),
   );
   const [currentMonth, setCurrentMonth] = useState(
-    Number.isNaN(initialDate.getMonth()) ? new Date().getMonth() : initialDate.getMonth()
+    Number.isNaN(initialDate.getMonth())
+      ? new Date().getMonth()
+      : initialDate.getMonth(),
   );
 
   useEffect(() => {
@@ -566,7 +601,10 @@ export function CommunityEventViewerModal({
       statusBarTranslucent
     >
       <Pressable style={modalStyles.overlay} onPress={onClose}>
-        <Pressable style={modalStyles.card} onPress={(e) => e.stopPropagation()}>
+        <Pressable
+          style={modalStyles.card}
+          onPress={(e) => e.stopPropagation()}
+        >
           {/* Header */}
           <View style={modalStyles.headerRow}>
             <View style={modalStyles.headerLeft}>
@@ -575,7 +613,9 @@ export function CommunityEventViewerModal({
               </View>
               <View style={{ flex: 1 }}>
                 <View style={modalStyles.eventTagBadge}>
-                  <Text style={modalStyles.eventTagBadgeText}>COMMUNITY EVENT</Text>
+                  <Text style={modalStyles.eventTagBadgeText}>
+                    COMMUNITY EVENT
+                  </Text>
                 </View>
                 <Text style={modalStyles.title} numberOfLines={2}>
                   {title}
@@ -591,14 +631,19 @@ export function CommunityEventViewerModal({
             </TouchableOpacity>
           </View>
 
-          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={modalStyles.scrollBody}>
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={modalStyles.scrollBody}
+          >
             {/* Event Dates banner */}
             <View style={modalStyles.eventDateCard}>
               <View style={modalStyles.eventDateRow}>
                 <Ionicons name="time-outline" size={18} color="#23435D" />
                 <Text style={modalStyles.eventDateText}>{readableRange}</Text>
               </View>
-              <Text style={modalStyles.eventAuthorText}>Posted by {authorName}</Text>
+              <Text style={modalStyles.eventAuthorText}>
+                Posted by {authorName}
+              </Text>
             </View>
 
             {/* Calendar */}
@@ -615,11 +660,21 @@ export function CommunityEventViewerModal({
             {/* Legend */}
             <View style={modalStyles.legendRow}>
               <View style={modalStyles.legendItem}>
-                <View style={[modalStyles.legendDot, { backgroundColor: '#23435D' }]} />
+                <View
+                  style={[
+                    modalStyles.legendDot,
+                    { backgroundColor: "#23435D" },
+                  ]}
+                />
                 <Text style={modalStyles.legendText}>Start / End Date</Text>
               </View>
               <View style={modalStyles.legendItem}>
-                <View style={[modalStyles.legendDot, { backgroundColor: '#EAF0F6' }]} />
+                <View
+                  style={[
+                    modalStyles.legendDot,
+                    { backgroundColor: "#EAF0F6" },
+                  ]}
+                />
                 <Text style={modalStyles.legendText}>Event Period</Text>
               </View>
             </View>
@@ -647,17 +702,17 @@ export function CommunityEventViewerModal({
 // ----------------------------------------------------
 const calStyles = StyleSheet.create({
   container: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: '#EAECF0',
+    borderColor: "#EAECF0",
     padding: 12,
     marginTop: 6,
   },
   monthNav: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     marginBottom: 10,
     paddingHorizontal: 4,
   },
@@ -665,120 +720,120 @@ const calStyles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 8,
-    backgroundColor: '#F2F4F7',
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: "#F2F4F7",
+    alignItems: "center",
+    justifyContent: "center",
   },
   monthYearText: {
     fontSize: 15,
-    fontWeight: '800',
-    color: '#1F2937',
+    fontWeight: "800",
+    color: "#1F2937",
   },
   weekHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
+    flexDirection: "row",
+    justifyContent: "space-around",
     paddingBottom: 6,
     borderBottomWidth: 1,
-    borderBottomColor: '#F2F4F7',
+    borderBottomColor: "#F2F4F7",
     marginBottom: 4,
   },
   dayLabel: {
     width: 36,
-    textAlign: 'center',
+    textAlign: "center",
     fontSize: 11,
-    fontWeight: '700',
-    color: '#8A93A1',
+    fontWeight: "700",
+    color: "#8A93A1",
   },
   grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
   },
   dayCell: {
-    width: '14.28%',
+    width: "14.28%",
     height: 36,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   inRangeCell: {
-    backgroundColor: '#EAF0F6',
+    backgroundColor: "#EAF0F6",
   },
   rangeStartCell: {
     borderTopLeftRadius: 18,
     borderBottomLeftRadius: 18,
-    backgroundColor: '#EAF0F6',
+    backgroundColor: "#EAF0F6",
   },
   rangeEndCell: {
     borderTopRightRadius: 18,
     borderBottomRightRadius: 18,
-    backgroundColor: '#EAF0F6',
+    backgroundColor: "#EAF0F6",
   },
   dayBubble: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   activeBubble: {
-    backgroundColor: '#23435D',
+    backgroundColor: "#23435D",
   },
   todayBubble: {
     borderWidth: 1.5,
-    borderColor: '#23435D',
+    borderColor: "#23435D",
   },
   dayText: {
     fontSize: 13,
-    fontWeight: '600',
-    color: '#344054',
+    fontWeight: "600",
+    color: "#344054",
   },
   activeDayText: {
-    color: '#FFFFFF',
-    fontWeight: '800',
+    color: "#FFFFFF",
+    fontWeight: "800",
   },
   inRangeText: {
-    color: '#23435D',
-    fontWeight: '700',
+    color: "#23435D",
+    fontWeight: "700",
   },
   todayText: {
-    color: '#23435D',
-    fontWeight: '800',
+    color: "#23435D",
+    fontWeight: "800",
   },
 });
 
 const modalStyles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.45)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "rgba(15, 23, 42, 0.45)",
+    justifyContent: "center",
+    alignItems: "center",
     padding: 16,
   },
   card: {
-    width: '100%',
+    width: "100%",
     maxWidth: 420,
-    maxHeight: '90%',
-    backgroundColor: '#FFFFFF',
+    maxHeight: "90%",
+    backgroundColor: "#FFFFFF",
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: '#EAECF0',
+    borderColor: "#EAECF0",
     padding: 18,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.16,
     shadowRadius: 24,
     elevation: 10,
   },
   headerRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
     paddingBottom: 14,
     borderBottomWidth: 1,
-    borderBottomColor: '#EAECF0',
+    borderBottomColor: "#EAECF0",
   },
   headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 12,
     flex: 1,
   },
@@ -786,27 +841,27 @@ const modalStyles = StyleSheet.create({
     width: 42,
     height: 42,
     borderRadius: 12,
-    backgroundColor: '#EAF0F6',
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: "#EAF0F6",
+    alignItems: "center",
+    justifyContent: "center",
   },
   title: {
     fontSize: 17,
-    fontWeight: '800',
-    color: '#1F2937',
+    fontWeight: "800",
+    color: "#1F2937",
   },
   subtitle: {
     fontSize: 11,
-    color: '#667085',
+    color: "#667085",
     marginTop: 2,
   },
   closeButton: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#F2F4F7',
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: "#F2F4F7",
+    alignItems: "center",
+    justifyContent: "center",
   },
   scrollBody: {
     paddingTop: 14,
@@ -817,155 +872,155 @@ const modalStyles = StyleSheet.create({
   },
   fieldLabel: {
     fontSize: 12,
-    fontWeight: '700',
-    color: '#344054',
+    fontWeight: "700",
+    color: "#344054",
     marginBottom: 6,
   },
   textInput: {
     borderWidth: 1,
-    borderColor: '#D0D5DD',
+    borderColor: "#D0D5DD",
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 14,
-    color: '#1F2937',
-    backgroundColor: '#FAFAFA',
+    color: "#1F2937",
+    backgroundColor: "#FAFAFA",
   },
   datePickersRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 8,
     marginBottom: 6,
   },
   datePickerButton: {
     flex: 1,
     borderWidth: 1,
-    borderColor: '#D0D5DD',
+    borderColor: "#D0D5DD",
     borderRadius: 10,
     padding: 10,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: "#F9FAFB",
   },
   datePickerActive: {
-    borderColor: '#23435D',
-    backgroundColor: '#EAF0F6',
+    borderColor: "#23435D",
+    backgroundColor: "#EAF0F6",
   },
   datePickerLabel: {
     fontSize: 10,
-    fontWeight: '800',
-    color: '#667085',
+    fontWeight: "800",
+    color: "#667085",
     letterSpacing: 0.5,
   },
   datePickerValueRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 6,
     marginTop: 4,
   },
   datePickerValue: {
     fontSize: 13,
-    fontWeight: '700',
-    color: '#344054',
+    fontWeight: "700",
+    color: "#344054",
   },
   datePickerValueActive: {
-    color: '#23435D',
+    color: "#23435D",
   },
   arrowBetween: {
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   helperText: {
     fontSize: 11,
-    color: '#667085',
+    color: "#667085",
     marginBottom: 6,
   },
   errorText: {
     fontSize: 12,
-    color: '#D92D20',
-    fontWeight: '600',
+    color: "#D92D20",
+    fontWeight: "600",
     marginTop: 8,
   },
   actionsRow: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 10,
     marginTop: 18,
   },
   cancelBtn: {
     flex: 1,
-    backgroundColor: '#F2F4F7',
+    backgroundColor: "#F2F4F7",
     borderRadius: 10,
     paddingVertical: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   cancelBtnText: {
-    color: '#344054',
+    color: "#344054",
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: "700",
   },
   submitBtn: {
     flex: 2,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     gap: 6,
-    backgroundColor: '#23435D',
+    backgroundColor: "#23435D",
     borderRadius: 10,
     paddingVertical: 12,
   },
   submitBtnText: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     fontSize: 13,
-    fontWeight: '700',
+    fontWeight: "700",
   },
   // Viewer styles
   eventTagBadge: {
-    alignSelf: 'flex-start',
-    backgroundColor: '#EAF0F6',
+    alignSelf: "flex-start",
+    backgroundColor: "#EAF0F6",
     paddingHorizontal: 7,
     paddingVertical: 3,
     borderRadius: 6,
     marginBottom: 4,
   },
   eventTagBadgeText: {
-    color: '#23435D',
+    color: "#23435D",
     fontSize: 9,
-    fontWeight: '800',
+    fontWeight: "800",
     letterSpacing: 0.5,
   },
   eventDateCard: {
-    backgroundColor: '#F8FAFC',
+    backgroundColor: "#F8FAFC",
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#EAECF0',
+    borderColor: "#EAECF0",
     padding: 12,
     marginBottom: 10,
   },
   eventDateRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 8,
   },
   eventDateText: {
     fontSize: 15,
-    fontWeight: '800',
-    color: '#1F2937',
+    fontWeight: "800",
+    color: "#1F2937",
   },
   eventAuthorText: {
     fontSize: 11,
-    color: '#667085',
+    color: "#667085",
     marginTop: 4,
     marginLeft: 26,
   },
   legendRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     gap: 20,
     marginTop: 10,
   },
   legendItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 6,
   },
   legendDot: {
@@ -975,40 +1030,40 @@ const modalStyles = StyleSheet.create({
   },
   legendText: {
     fontSize: 11,
-    fontWeight: '600',
-    color: '#667085',
+    fontWeight: "600",
+    color: "#667085",
   },
   descContainer: {
     marginTop: 14,
     padding: 12,
     borderRadius: 10,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: "#F8FAFC",
     borderWidth: 1,
-    borderColor: '#EAECF0',
+    borderColor: "#EAECF0",
   },
   descLabel: {
     fontSize: 10,
-    fontWeight: '800',
-    color: '#8A93A1',
+    fontWeight: "800",
+    color: "#8A93A1",
     letterSpacing: 0.5,
     marginBottom: 4,
   },
   descText: {
     fontSize: 13,
-    color: '#344054',
+    color: "#344054",
     lineHeight: 19,
   },
   doneBtn: {
     marginTop: 16,
-    backgroundColor: '#23435D',
+    backgroundColor: "#23435D",
     borderRadius: 10,
     paddingVertical: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   doneBtnText: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: "700",
   },
 });

@@ -178,10 +178,9 @@ export async function generateAuthorityAnalyticsPdf({
   period: AnalyticsPeriod;
 }): Promise<PdfReportResult> {
   const html = buildAuthorityAnalyticsReportHtml({ analytics, period });
-  const periodSlug = period.toLowerCase().replace(/\s+/g, '-');
   return exportHtmlReportAsPdf({
     html,
-    fileName: `nogor-shomadhan-authority-complaints-${periodSlug}`,
+    fileName: 'NogorShomadhan_report',
     dialogTitle: 'Save authority complaint report',
   });
 }

@@ -20,11 +20,9 @@ export async function generateAdminAnalyticsPdf({
     period,
     reportOwner: 'Administration',
   });
-  const periodSlug = period.toLowerCase().replace(/\s+/g, '-');
-
   return exportHtmlReportAsPdf({
     html,
-    fileName: `nogor-shomadhan-admin-complaints-${periodSlug}`,
+    fileName: 'NogorShomadhan_report',
     dialogTitle: 'Save administration complaint report',
   });
 }

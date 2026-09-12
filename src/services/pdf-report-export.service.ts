@@ -1,3 +1,5 @@
+import * as FileSystem from 'expo-file-system';
+import { Paths } from 'expo-file-system';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import { Platform } from 'react-native';
@@ -80,12 +82,12 @@ function printReportDocumentOnWeb(html: string, fileName: string) {
 
 export async function exportHtmlReportAsPdf({
   html,
-  fileName,
-  dialogTitle,
+  fileName = 'NogorShomadhan_report',
+  dialogTitle = 'Save complaint report',
 }: {
   html: string;
-  fileName: string;
-  dialogTitle: string;
+  fileName?: string;
+  dialogTitle?: string;
 }): Promise<PdfReportResult> {
   if (Platform.OS === 'web') {
     // expo-print's web shim prints the current app page even when HTML is
@@ -96,15 +98,37 @@ export async function exportHtmlReportAsPdf({
   }
 
   const { uri } = await Print.printToFileAsync({ html, width: 595, height: 842 });
+  let finalUri = uri;
+
+  const cleanFileName = fileName.endsWith('.pdf') ? fileName : `${fileName}.pdf`;
+  const baseDir = Paths.cache?.uri ?? Paths.document?.uri;
+
+  if (baseDir) {
+    const destinationUri = `${baseDir}${cleanFileName}`;
+    try {
+      const fileInfo = await FileSystem.getInfoAsync(destinationUri);
+      if (fileInfo.exists) {
+        await FileSystem.deleteAsync(destinationUri, { idempotent: true });
+      }
+      await FileSystem.copyAsync({
+        from: uri,
+        to: destinationUri,
+      });
+      finalUri = destinationUri;
+    } catch (renameError) {
+      console.warn('Could not rename PDF file, falling back to generated URI:', renameError);
+    }
+  }
+
   const canShare = await Sharing.isAvailableAsync();
 
   if (canShare) {
-    await Sharing.shareAsync(uri, {
+    await Sharing.shareAsync(finalUri, {
       mimeType: 'application/pdf',
       dialogTitle,
       UTI: 'com.adobe.pdf',
     });
   }
 
-  return { uri, shared: canShare };
+  return { uri: finalUri, shared: canShare };
 }
