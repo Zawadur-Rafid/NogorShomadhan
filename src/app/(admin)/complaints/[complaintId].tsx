@@ -865,11 +865,11 @@ const styles = StyleSheet.create({
   title: {
     marginTop: 13,
     color: "#00475E",
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: "700",
     letterSpacing: -0.5,
   },
-  description: { marginTop: 7, color: "#40484D", fontSize: 14, lineHeight: 20 },
+  description: { marginTop: 7, color: "#40484D", fontSize: 13, lineHeight: 19 },
   panel: { padding: 18, borderRadius: 16, backgroundColor: "#FFFFFF" },
   panelHeaderRow: {
     flexDirection: "row",
