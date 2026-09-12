@@ -444,8 +444,8 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     letterSpacing: 1,
   },
-  title: { color: '#23435D', fontSize: 28, fontWeight: '800', marginTop: 3 },
-  subtitle: { color: '#667085', fontSize: 13, lineHeight: 19, marginTop: 4 },
+  title: { color: '#23435D', fontSize: 24, fontWeight: '800', marginTop: 3 },
+  subtitle: { color: '#667085', fontSize: 12, lineHeight: 18, marginTop: 4 },
   markAllButton: {
     minHeight: 44,
     flexDirection: 'row',
