@@ -1,4 +1,4 @@
-import * as FileSystem from 'expo-file-system';
+import { File, Paths } from 'expo-file-system';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import { Platform } from 'react-native';
@@ -108,24 +108,18 @@ export async function exportHtmlReportAsPdf({
   let finalUri = uri;
 
   const cleanFileName = fileName.endsWith('.pdf') ? fileName : `${fileName}.pdf`;
-  const baseDir = FileSystem.cacheDirectory ?? FileSystem.documentDirectory;
 
-  if (baseDir) {
-    const normalizedDir = baseDir.endsWith('/') ? baseDir : `${baseDir}/`;
-    const destinationUri = `${normalizedDir}${cleanFileName}`;
-    try {
-      const fileInfo = await FileSystem.getInfoAsync(destinationUri);
-      if (fileInfo.exists) {
-        await FileSystem.deleteAsync(destinationUri, { idempotent: true });
-      }
-      await FileSystem.copyAsync({
-        from: uri,
-        to: destinationUri,
-      });
-      finalUri = destinationUri;
-    } catch (renameError) {
-      console.warn('Could not rename PDF file, falling back to generated URI:', renameError);
+  try {
+    const sourceFile = new File(uri);
+    const targetFile = new File(Paths.cache, cleanFileName);
+
+    if (targetFile.exists) {
+      targetFile.delete();
     }
+    await sourceFile.copy(targetFile);
+    finalUri = targetFile.uri;
+  } catch (renameError) {
+    console.warn('Could not rename PDF file, falling back to generated URI:', renameError);
   }
 
   const canShare = await Sharing.isAvailableAsync();
