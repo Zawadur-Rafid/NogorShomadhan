@@ -218,7 +218,7 @@ export default function PendingAccountsPage() {
                     size={18}
                     color="#C0392B"
                   />
-                  <Text style={styles.rejectText}>
+                  <Text style={[styles.rejectText, busy && styles.busyText]}>
                     {busy ? "Processing" : "Reject"}
                   </Text>
                 </TouchableOpacity>
@@ -233,7 +233,7 @@ export default function PendingAccountsPage() {
                     size={18}
                     color="#fff"
                   />
-                  <Text style={styles.approveText}>
+                  <Text style={[styles.approveText, busy && styles.busyText]}>
                     {busy ? "Processing" : "Approve"}
                   </Text>
                 </TouchableOpacity>
@@ -544,6 +544,9 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontWeight: "700",
     fontSize: 12,
+  },
+  busyText: {
+    fontSize: 10,
   },
   backdrop: {
     flex: 1,
