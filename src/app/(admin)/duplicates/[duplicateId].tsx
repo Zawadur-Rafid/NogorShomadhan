@@ -1,6 +1,6 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
     ActivityIndicator,
     Alert,
@@ -14,6 +14,7 @@ import {
 
 import { supabase } from "@/lib/supabase";
 import { confirmDuplicate, rejectDuplicate } from "@/services/admin.service";
+import { confirmAction } from "@/utils/confirm";
 
 type Complaint = {
   comp_id: string;
@@ -59,9 +60,8 @@ export default function DuplicateReviewScreen() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  const loadReview = async () => {
+  const loadReview = useCallback(async () => {
     if (!duplicateId) return;
-    setLoading(true);
     const { data, error } = await supabase
       .from("duplicate")
       .select("dup_id,comp_id,matched_comp_id,ai_score,ai_reason,admin_status")
@@ -104,21 +104,35 @@ export default function DuplicateReviewScreen() {
     setCandidate(mapComplaint(duplicate.comp_id));
     setCanonical(mapComplaint(duplicate.matched_comp_id));
     setLoading(false);
-  };
+  }, [duplicateId]);
 
   useEffect(() => {
-    void loadReview();
-  }, [duplicateId]);
+    const timeoutId = setTimeout(() => {
+      void loadReview();
+    }, 0);
+
+    return () => clearTimeout(timeoutId);
+  }, [loadReview]);
 
   const handleAccept = async () => {
     if (!review) return;
+
+    const approved = await confirmAction(
+      "Are you sure you want to accept this duplicate match? The newly submitted complaint will be deleted, and the resident will be directed to the existing complaint.",
+      undefined,
+      "Accept duplicate complaint?",
+    );
+    if (!approved) return;
+
     setSaving(true);
     try {
       await confirmDuplicate(review.dup_id);
+      setReview((current) =>
+        current ? { ...current, admin_status: "confirmed" } : current,
+      );
       Alert.alert(
         "Duplicate accepted",
         "The newly submitted complaint was deleted because it matched the existing complaint.",
-        [{ text: "Done", onPress: () => router.replace("/(admin)/dashboard") }],
       );
     } catch (error) {
       Alert.alert(
@@ -132,13 +146,23 @@ export default function DuplicateReviewScreen() {
 
   const handleReject = async () => {
     if (!review) return;
+
+    const approved = await confirmAction(
+      "Are you sure you want to reject this duplicate match? The submitted complaint will be kept as a separate complaint and moved to All Complaints.",
+      undefined,
+      "Reject duplicate match?",
+    );
+    if (!approved) return;
+
     setSaving(true);
     try {
       await rejectDuplicate(review.dup_id);
+      setReview((current) =>
+        current ? { ...current, admin_status: "rejected" } : current,
+      );
       Alert.alert(
         "Duplicate rejected",
         "The complaint was kept and moved to All Complaints for normal processing.",
-        [{ text: "Done", onPress: () => router.replace("/(admin)/dashboard") }],
       );
     } catch (error) {
       Alert.alert(
@@ -226,39 +250,57 @@ export default function DuplicateReviewScreen() {
         />
       </View>
 
-      <View style={styles.actionsCard}>
-        <Text style={styles.actionTitle}>Review decision</Text>
-        <Text style={styles.actionHint}>
-          Accept deletes the newly submitted copy. Reject keeps it as a separate
-          complaint and moves it to All Complaints.
-        </Text>
-        <View style={styles.actions}>
-          <Pressable
-            disabled={saving}
-            style={[styles.actionButton, styles.rejectButton]}
-            onPress={handleReject}
-          >
-            <Ionicons name="close-circle-outline" size={19} color="#B42318" />
-            <Text style={styles.rejectText}>
-              {saving ? "Working..." : "Reject as duplicate"}
-            </Text>
-          </Pressable>
-          <Pressable
-            disabled={saving}
-            style={[styles.actionButton, styles.acceptButton]}
-            onPress={handleAccept}
-          >
-            <Ionicons
-              name="checkmark-circle-outline"
-              size={19}
-              color="#FFFFFF"
-            />
-            <Text style={styles.acceptText}>
-              {saving ? "Working..." : "Accept and delete"}
-            </Text>
-          </Pressable>
+      {review.admin_status === "pending" ? (
+        <View style={styles.actionsCard}>
+          <Text style={styles.actionTitle}>Review decision</Text>
+          <Text style={styles.actionHint}>
+            Accept deletes the newly submitted copy. Reject keeps it as a separate
+            complaint and moves it to All Complaints.
+          </Text>
+          <View style={styles.actions}>
+            <Pressable
+              disabled={saving}
+              style={[styles.actionButton, styles.rejectButton, saving && styles.disabledButton]}
+              onPress={handleReject}
+            >
+              <Ionicons name="close-circle-outline" size={19} color="#B42318" />
+              <Text style={styles.rejectText}>
+                {saving ? "Working..." : "Reject as duplicate"}
+              </Text>
+            </Pressable>
+            <Pressable
+              disabled={saving}
+              style={[styles.actionButton, styles.acceptButton, saving && styles.disabledButton]}
+              onPress={handleAccept}
+            >
+              <Ionicons
+                name="checkmark-circle-outline"
+                size={19}
+                color="#FFFFFF"
+              />
+              <Text style={styles.acceptText}>
+                {saving ? "Working..." : "Accept and delete"}
+              </Text>
+            </Pressable>
+          </View>
         </View>
-      </View>
+      ) : (
+        <View style={styles.decisionCard}>
+          <Ionicons
+            name={review.admin_status === "confirmed" ? "checkmark-circle" : "arrow-forward-circle"}
+            size={24}
+            color={review.admin_status === "confirmed" ? "#027A48" : "#23435D"}
+          />
+          <View style={styles.decisionCopy}>
+            <Text style={styles.decisionTitle}>Decision recorded</Text>
+            <Text style={styles.decisionText}>
+              {review.admin_status === "confirmed"
+                ? "The duplicate was accepted and the submitted copy was removed."
+                : "The duplicate match was rejected and the complaint will continue separately."}
+            </Text>
+          </View>
+        </View>
+      )}
     </ScrollView>
   );
 }
@@ -512,6 +554,7 @@ const styles = StyleSheet.create({
     borderColor: "#FDA29B",
   },
   acceptButton: { backgroundColor: "#23435D" },
+  disabledButton: { opacity: 0.55 },
   rejectText: {
     color: "#B42318",
     fontSize: 12,
@@ -522,6 +565,30 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontSize: 12,
     fontWeight: "800",
+    fontFamily: "System",
+  },
+  decisionCard: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 10,
+    padding: 16,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#D0D5DD",
+    backgroundColor: "#FFFFFF",
+  },
+  decisionCopy: { flex: 1 },
+  decisionTitle: {
+    color: "#1F2937",
+    fontSize: 15,
+    fontWeight: "800",
+    fontFamily: "System",
+  },
+  decisionText: {
+    color: "#667085",
+    fontSize: 12,
+    lineHeight: 18,
+    marginTop: 3,
     fontFamily: "System",
   },
   emptyTitle: {
