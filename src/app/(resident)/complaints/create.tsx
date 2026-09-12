@@ -1,4 +1,5 @@
 import { confirmAction } from "@/utils/confirm";
+import KeyboardAwareScrollView from "@/components/keyboard-aware-scroll-view";
 import { MaterialIcons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as ImagePicker from "expo-image-picker";
@@ -8,7 +9,6 @@ import {
     Alert,
     Animated,
     Image,
-    KeyboardAvoidingView,
     Modal,
     Platform,
     ScrollView,
@@ -275,12 +275,7 @@ export default function NewComplaintForm() {
         </Animated.View>
       )}
 
-      <KeyboardAvoidingView
-        style={{ flex: 1, width: "100%" }}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
-      >
-        <ScrollView
+      <KeyboardAwareScrollView
           style={styles.scrollView}
           contentContainerStyle={styles.contentContainer}
           showsVerticalScrollIndicator={false}
@@ -528,8 +523,7 @@ export default function NewComplaintForm() {
               </>
             )}
           </TouchableOpacity>
-        </ScrollView>
-      </KeyboardAvoidingView>
+      </KeyboardAwareScrollView>
     </View>
   );
 }

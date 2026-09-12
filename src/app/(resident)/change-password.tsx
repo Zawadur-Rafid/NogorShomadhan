@@ -1,7 +1,8 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useState } from 'react';
-import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import KeyboardAwareScrollView from '@/components/keyboard-aware-scroll-view';
 import ResidentPageHeader from '@/components/resident-page-header';
 import { confirmAction } from '@/utils/confirm';
 
@@ -86,7 +87,7 @@ export default function ResidentChangePassword() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <ResidentPageHeader fallbackPath="/profile" />
-      <ScrollView
+      <KeyboardAwareScrollView
         contentInsetAdjustmentBehavior="automatic"
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
@@ -170,7 +171,7 @@ export default function ResidentChangePassword() {
             </TouchableOpacity>
           </View>
         </View>
-      </ScrollView>
+      </KeyboardAwareScrollView>
     </SafeAreaView>
   );
 }

@@ -2,6 +2,7 @@ import ProgressSegmentedControl from '@expo/ui/community/segmented-control';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Image } from 'expo-image';
 import ExpandableImage from '@/components/expandable-image';
+import KeyboardAwareScrollView from '@/components/keyboard-aware-scroll-view';
 import * as ImagePicker from 'expo-image-picker';
 import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
@@ -10,7 +11,6 @@ import {
   Alert,
   Modal,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -1297,7 +1297,7 @@ export default function AuthorityComplaintDetailScreen() {
     <SafeAreaView style={styles.safeArea}>
       <AuthorityPageHeader fallbackPath="/authority/complaints" />
 
-      <ScrollView
+      <KeyboardAwareScrollView
         contentInsetAdjustmentBehavior="automatic"
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
@@ -1907,7 +1907,7 @@ export default function AuthorityComplaintDetailScreen() {
             </View>
           </View>
         </View>
-      </ScrollView>
+      </KeyboardAwareScrollView>
     </SafeAreaView>
   );
 }

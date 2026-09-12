@@ -1,13 +1,14 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
 import { useState, useEffect } from 'react';
-import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, useWindowDimensions, View, ActivityIndicator, Animated, Platform } from 'react-native';
+import { StyleSheet, Text, TextInput, TouchableOpacity, useWindowDimensions, View, ActivityIndicator, Animated, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../../lib/supabase';
 
 import ResidentPageHeader from '@/components/resident-page-header';
+import KeyboardAwareScrollView from '@/components/keyboard-aware-scroll-view';
 import { confirmAction } from '@/utils/confirm';
 
 function ProfileField({
@@ -176,7 +177,7 @@ export default function Profile() {
           </TouchableOpacity>
         </Animated.View>
       )}
-      <ScrollView
+      <KeyboardAwareScrollView
         contentInsetAdjustmentBehavior="automatic"
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
@@ -239,7 +240,7 @@ export default function Profile() {
             </View>
           </View>
         </View>
-      </ScrollView>
+      </KeyboardAwareScrollView>
     </SafeAreaView>
   );
 }

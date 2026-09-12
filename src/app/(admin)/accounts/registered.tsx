@@ -3,7 +3,6 @@ import { useFocusEffect } from "expo-router";
 import {
   Modal,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -14,6 +13,7 @@ import {
 import Ionicons from "@expo/vector-icons/Ionicons";
 
 import AdminBottomNav from "@/components/AdminBottomNav";
+import KeyboardAwareScrollView from "@/components/keyboard-aware-scroll-view";
 import { AdminAccount, useAdminAccounts } from "@/store/admin-accounts-store";
 
 const colors = {
@@ -77,7 +77,7 @@ export default function RegisteredAccountsPage() {
 
   return (
     <View style={styles.container}>
-      <ScrollView
+      <KeyboardAwareScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.content}
       >
@@ -259,7 +259,7 @@ export default function RegisteredAccountsPage() {
             </View>
           </TouchableOpacity>
         ))}
-      </ScrollView>
+      </KeyboardAwareScrollView>
 
       <Modal
         visible={Boolean(selectedAccount)}

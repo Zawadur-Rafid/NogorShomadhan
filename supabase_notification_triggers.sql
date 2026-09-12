@@ -206,7 +206,7 @@ BEGIN
             'New complaint for review',
             complaint_label || ' — "' || NEW.title ||
                 '" is waiting for admin review.',
-            '/(admin)/complaints/' || NEW.comp_id::TEXT,
+            '/(admin)/complaints/review?complaintId=' || NEW.comp_id::TEXT,
             JSONB_BUILD_OBJECT(
                 'complaint_id', NEW.comp_id,
                 'complaint_label', complaint_label

@@ -4,6 +4,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Alert, LayoutChangeEvent, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, useWindowDimensions, View } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
+import KeyboardAwareScrollView, {
+  type AppKeyboardAwareScrollViewRef,
+} from "@/components/keyboard-aware-scroll-view";
 import AdminBottomNav from "@/components/AdminBottomNav";
 import { forumService, ForumStatus } from "@/services/forum.service";
 import { confirmAction } from "@/utils/confirm";
@@ -132,7 +135,7 @@ export default function AdminForumScreen() {
   const { width } = useWindowDimensions();
   const isNarrow = width < 560;
   const targetCommentId = Array.isArray(commentIdParam) ? commentIdParam[0] : commentIdParam;
-  const scrollViewRef = useRef<ScrollView>(null);
+  const scrollViewRef = useRef<AppKeyboardAwareScrollViewRef>(null);
   const postOffsetsRef = useRef<Record<string, number>>({});
   const commentOffsetsRef = useRef<Record<string, number>>({});
   const scrolledTargetRef = useRef<string | null>(null);
@@ -386,7 +389,7 @@ export default function AdminForumScreen() {
 
   return (
     <View style={styles.page}>
-      <ScrollView
+      <KeyboardAwareScrollView
         ref={scrollViewRef}
         contentInsetAdjustmentBehavior="automatic"
         contentContainerStyle={styles.content}
@@ -650,7 +653,7 @@ export default function AdminForumScreen() {
             <Ionicons name="chatbubbles-outline" size={40} color="#98A2B3" />
           </View>
         ) : null}
-      </ScrollView>
+      </KeyboardAwareScrollView>
       <AdminBottomNav activeRoute="forum" />
 
       {selectedEventPost && (

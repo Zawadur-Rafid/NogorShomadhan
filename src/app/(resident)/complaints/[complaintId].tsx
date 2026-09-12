@@ -1,11 +1,13 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import ExpandableImage from '@/components/expandable-image';
+import KeyboardAwareScrollView, {
+  type AppKeyboardAwareScrollViewRef,
+} from '@/components/keyboard-aware-scroll-view';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Animated, { FadeInDown, FadeOut } from 'react-native-reanimated';
 import {
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -755,7 +757,7 @@ export default function ComplaintDetailScreen() {
       : targetUpdateId
         ? 'work'
         : undefined);
-  const scrollViewRef = useRef<ScrollView>(null);
+  const scrollViewRef = useRef<AppKeyboardAwareScrollViewRef>(null);
   const pageGridOffsetRef = useRef(0);
   const sectionOffsetsRef = useRef<Record<string, number>>({});
   const scrolledSectionRef = useRef<string | null>(null);
@@ -917,7 +919,7 @@ export default function ComplaintDetailScreen() {
         </RNAnimated.View>
       )}
 
-      <ScrollView
+      <KeyboardAwareScrollView
         ref={scrollViewRef}
         contentInsetAdjustmentBehavior="automatic"
         showsVerticalScrollIndicator={false}
@@ -1142,7 +1144,7 @@ export default function ComplaintDetailScreen() {
             </View>
           </View>
         </View>
-      </ScrollView>
+      </KeyboardAwareScrollView>
     </View>
   );
 }

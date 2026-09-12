@@ -13,6 +13,9 @@ import {
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
+import KeyboardAwareScrollView, {
+  type AppKeyboardAwareScrollViewRef,
+} from "@/components/keyboard-aware-scroll-view";
 import BottomNav from "@/components/BottomNav";
 import ResidentPageHeader from "@/components/resident-page-header";
 import { forumService, ForumStatus } from "@/services/forum.service";
@@ -138,7 +141,7 @@ export default function ResidentForumScreen() {
   }>();
   const targetPostId = Array.isArray(postIdParam) ? postIdParam[0] : postIdParam;
   const targetCommentId = Array.isArray(commentIdParam) ? commentIdParam[0] : commentIdParam;
-  const scrollViewRef = useRef<ScrollView>(null);
+  const scrollViewRef = useRef<AppKeyboardAwareScrollViewRef>(null);
   const postOffsetsRef = useRef<Record<string, number>>({});
   const commentOffsetsRef = useRef<Record<string, number>>({});
   const scrolledTargetRef = useRef<string | null>(null);
@@ -341,7 +344,7 @@ export default function ResidentForumScreen() {
   return (
     <SafeAreaView style={styles.page}>
       <ResidentPageHeader />
-      <ScrollView
+      <KeyboardAwareScrollView
         ref={scrollViewRef}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
@@ -552,7 +555,7 @@ export default function ResidentForumScreen() {
             <Text style={styles.emptyText}>No forum posts in this category.</Text>
           </View>
         ) : null}
-      </ScrollView>
+      </KeyboardAwareScrollView>
 
       <BottomNav activeRoute="forum" />
 

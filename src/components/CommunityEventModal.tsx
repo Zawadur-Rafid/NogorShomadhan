@@ -1,4 +1,5 @@
 import { confirmAction } from "@/utils/confirm";
+import KeyboardAwareScrollView from "@/components/keyboard-aware-scroll-view";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useEffect, useState } from "react";
 import {
@@ -389,7 +390,7 @@ export function CommunityEventCreateModal({
             </TouchableOpacity>
           </View>
 
-          <ScrollView
+          <KeyboardAwareScrollView
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
             contentContainerStyle={modalStyles.scrollBody}
@@ -521,7 +522,7 @@ export function CommunityEventCreateModal({
                 </Text>
               </TouchableOpacity>
             </View>
-          </ScrollView>
+          </KeyboardAwareScrollView>
         </Pressable>
       </Pressable>
     </Modal>

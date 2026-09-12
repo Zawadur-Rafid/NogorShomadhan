@@ -1,8 +1,8 @@
 import AdminBottomNav from "@/components/AdminBottomNav";
 import { supabase } from "@/lib/supabase";
 import { MaterialIcons } from "@expo/vector-icons";
-import { useFocusEffect, useRouter } from "expo-router";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
+import { useCallback, useMemo, useState } from "react";
 import { confirmAction } from "@/utils/confirm";
 import {
     Image,
@@ -89,6 +89,12 @@ export function ComplaintsListScreen({
   reviewMode = false,
 }: ComplaintsListProps) {
   const router = useRouter();
+  const { complaintId: complaintIdParam } = useLocalSearchParams<{
+    complaintId?: string | string[];
+  }>();
+  const targetedComplaintId = Array.isArray(complaintIdParam)
+    ? complaintIdParam[0]
+    : complaintIdParam;
   const [activeFilter, setActiveFilter] = useState<ComplaintFilter>("All");
   const [reviewSort, setReviewSort] = useState<ReviewSort>("latest");
   const [complaints, setComplaints] = useState<NormalComplaint[]>([]);
@@ -333,8 +339,16 @@ export function ComplaintsListScreen({
       return reviewSort === "latest" ? bTime - aTime : aTime - bTime;
     });
 
+    if (reviewMode && targetedComplaintId) {
+      rows.sort((a, b) => {
+        if (a.compId === targetedComplaintId) return -1;
+        if (b.compId === targetedComplaintId) return 1;
+        return 0;
+      });
+    }
+
     return rows;
-  }, [reviewComplaints, reviewSort]);
+  }, [reviewComplaints, reviewMode, reviewSort, targetedComplaintId]);
 
   const handleAcceptReviewComplaint = (complaintId: string) => {
     void (async () => {
@@ -621,7 +635,13 @@ export function ComplaintsListScreen({
                 }
 
                 return (
-                  <View key={itemId} style={styles.card}>
+                  <View
+                    key={itemId}
+                    style={[
+                      styles.card,
+                      reviewMode && itemId === targetedComplaintId && styles.targetedCard,
+                    ]}
+                  >
                     <View style={styles.cardHeader}>
                       <View style={styles.cardHeaderLeft}>
                         <View style={styles.iconCircle}>
@@ -837,6 +857,10 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     shadowOffset: { width: 0, height: 2 },
     elevation: 2,
+  },
+  targetedCard: {
+    borderColor: "#B86A12",
+    backgroundColor: "#FFFAF2",
   },
   cardHeader: {
     flexDirection: "row",

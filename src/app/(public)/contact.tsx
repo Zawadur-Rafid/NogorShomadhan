@@ -1,10 +1,10 @@
 import BackButton from "@/components/back-button";
+import KeyboardAwareScrollView from "@/components/keyboard-aware-scroll-view";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useState } from "react";
 import {
   Alert,
   Image,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -72,7 +72,7 @@ export default function ContactScreen() {
         </View>
       </View>
 
-      <ScrollView
+      <KeyboardAwareScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
@@ -236,7 +236,7 @@ export default function ContactScreen() {
               </TouchableOpacity>
           </View>
       </View>
-      </ScrollView>
+      </KeyboardAwareScrollView>
 
     </SafeAreaView>
   );

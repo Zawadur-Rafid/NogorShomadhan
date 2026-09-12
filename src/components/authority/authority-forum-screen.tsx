@@ -12,6 +12,9 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import KeyboardAwareScrollView, {
+  type AppKeyboardAwareScrollViewRef,
+} from '@/components/keyboard-aware-scroll-view';
 
 import AuthorityPageHeader from '@/components/authority/authority-page-header';
 import { forumService, ForumStatus } from '@/services/forum.service';
@@ -148,7 +151,7 @@ export default function AuthorityForumScreen() {
     : commentIdParam;
   const { width } = useWindowDimensions();
   const wide = width >= 760;
-  const scrollViewRef = useRef<ScrollView>(null);
+  const scrollViewRef = useRef<AppKeyboardAwareScrollViewRef>(null);
   const feedOffsetRef = useRef<number | null>(null);
   const postOffsetsRef = useRef<Record<string, number>>({});
   const commentOffsetsRef = useRef<Record<string, number>>({});
@@ -369,7 +372,7 @@ export default function AuthorityForumScreen() {
     <SafeAreaView edges={['top', 'left', 'right', 'bottom']} style={styles.safeArea}>
       <AuthorityPageHeader />
 
-      <ScrollView
+      <KeyboardAwareScrollView
         ref={scrollViewRef}
         contentInsetAdjustmentBehavior="automatic"
         showsVerticalScrollIndicator={false}
@@ -689,7 +692,7 @@ export default function AuthorityForumScreen() {
             ) : null}
           </View>
         </View>
-      </ScrollView>
+      </KeyboardAwareScrollView>
 
       {selectedEventPost && (
         <CommunityEventViewerModal

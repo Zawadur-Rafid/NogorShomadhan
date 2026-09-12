@@ -1,4 +1,5 @@
 import BackButton from "@/components/back-button";
+import KeyboardAwareScrollView from "@/components/keyboard-aware-scroll-view";
 import { supabase } from "@/lib/supabase";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -6,10 +7,8 @@ import { useRef, useState } from "react";
 import {
     Animated,
     Image,
-    KeyboardAvoidingView,
     Platform,
     Pressable,
-    ScrollView,
     StyleSheet,
     Text,
     TextInput,
@@ -208,10 +207,7 @@ export default function Register() {
           </TouchableOpacity>
         </Animated.View>
       )}
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-        style={styles.keyboardView}
-      >
+      <View style={styles.keyboardView}>
         <View style={styles.header}>
           <View style={styles.headerLeft}>
             <BackButton />
@@ -223,7 +219,7 @@ export default function Register() {
           </View>
         </View>
 
-        <ScrollView
+        <KeyboardAwareScrollView
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
@@ -377,8 +373,8 @@ export default function Register() {
               </Pressable>
             </View>
           </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+        </KeyboardAwareScrollView>
+      </View>
     </SafeAreaView>
   );
 }

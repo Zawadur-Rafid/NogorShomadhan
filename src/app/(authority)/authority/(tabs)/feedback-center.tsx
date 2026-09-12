@@ -5,6 +5,9 @@ import { Image, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpa
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useAuthorityComplaints } from '@/components/authority/authority-complaints-context';
+import KeyboardAwareScrollView, {
+  type AppKeyboardAwareScrollViewRef,
+} from '@/components/keyboard-aware-scroll-view';
 import AuthorityPageHeader from '@/components/authority/authority-page-header';
 import { confirmAction } from '@/utils/confirm';
 import { feedbackService } from '@/services/feedback.service';
@@ -30,7 +33,7 @@ export default function AuthorityFeedbackCenter() {
     : feedbackIdParam;
   const { width } = useWindowDimensions();
   const { complaints } = useAuthorityComplaints();
-  const scrollViewRef = useRef<ScrollView>(null);
+  const scrollViewRef = useRef<AppKeyboardAwareScrollViewRef>(null);
   const feedbackGridOffsetRef = useRef<number | null>(null);
   const feedbackCardOffsetsRef = useRef<Record<string, number>>({});
   const scrolledFeedbackIdRef = useRef<string | null>(null);
@@ -167,7 +170,7 @@ export default function AuthorityFeedbackCenter() {
   return (
     <SafeAreaView edges={['top', 'left', 'right']} style={styles.safeArea}>
       <AuthorityPageHeader />
-      <ScrollView
+      <KeyboardAwareScrollView
         ref={scrollViewRef}
         contentInsetAdjustmentBehavior="automatic"
         showsVerticalScrollIndicator={false}
@@ -381,7 +384,7 @@ export default function AuthorityFeedbackCenter() {
             ))}
           </View>
         </View>
-      </ScrollView>
+      </KeyboardAwareScrollView>
     </SafeAreaView>
   );
 }

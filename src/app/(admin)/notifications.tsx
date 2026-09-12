@@ -91,6 +91,14 @@ function getAdminNotificationPath(notification: AppNotification): string {
       : '/(admin)/complaints/review';
   }
 
+  if (notification.type === 'complaint_review_required') {
+    const complaintId =
+      dataString(notification, 'complaint_id') ??
+      (notification.entityType === 'complaint' ? notification.entityId : null);
+
+    return withQuery('/(admin)/complaints/review', { complaintId });
+  }
+
   if (notification.type === 'account_review_required') {
     return '/(admin)/accounts/pending';
   }

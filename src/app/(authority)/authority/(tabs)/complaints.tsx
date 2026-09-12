@@ -15,6 +15,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import KeyboardAwareScrollView from '@/components/keyboard-aware-scroll-view';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useAuthorityComplaints } from '@/components/authority/authority-complaints-context';
@@ -363,7 +364,7 @@ export default function AuthorityAllComplaints() {
         </View>
       </Modal>
 
-      <ScrollView
+      <KeyboardAwareScrollView
         contentInsetAdjustmentBehavior="automatic"
         showsVerticalScrollIndicator={
           false
@@ -1090,7 +1091,7 @@ export default function AuthorityAllComplaints() {
             </>
           ) : null}
         </View>
-      </ScrollView>
+      </KeyboardAwareScrollView>
     </SafeAreaView>
   );
 }

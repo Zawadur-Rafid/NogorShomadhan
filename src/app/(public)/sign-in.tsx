@@ -1,4 +1,5 @@
 import BackButton from "@/components/back-button";
+import KeyboardAwareScrollView from "@/components/keyboard-aware-scroll-view";
 import Logo from "@/components/logo";
 import { supabase } from "@/lib/supabase";
 import { MaterialIcons } from "@expo/vector-icons";
@@ -7,9 +8,7 @@ import { Link, useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
     Animated,
-    KeyboardAvoidingView,
     Platform,
-    ScrollView,
     StyleSheet,
     Text,
     TextInput,
@@ -203,11 +202,7 @@ export default function SignInScreen() {
           </TouchableOpacity>
         </Animated.View>
       )}
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        style={{ flex: 1 }}
-      >
-        <ScrollView
+      <KeyboardAwareScrollView
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
         >
@@ -289,8 +284,7 @@ export default function SignInScreen() {
               </Link>
             </View>
           </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+      </KeyboardAwareScrollView>
     </SafeAreaView>
   );
 }
