@@ -12,6 +12,7 @@ import {
 } from "react-native";
 
 import AdminBottomNav from "@/components/AdminBottomNav";
+import ExpandableImage from "@/components/expandable-image";
 import { supabase } from "@/lib/supabase";
 import { confirmDuplicate, rejectDuplicate } from "@/services/admin.service";
 
@@ -672,7 +673,7 @@ export default function AdminComplaintDetails() {
                     {update.images.length > 0 ? (
                       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 8 }}>
                         {update.images.map((img, i) => (
-                          <Image key={i} source={{ uri: img }} style={styles.updateEvidenceThumb} />
+                          <ExpandableImage key={i} source={{ uri: img }} style={styles.updateEvidenceThumb} contentFit="cover" />
                         ))}
                       </ScrollView>
                     ) : null}
@@ -722,7 +723,7 @@ export default function AdminComplaintDetails() {
 
           <View style={styles.imageContainer}>
             {imageList.length > 0 ? (
-              <Image source={{ uri: imageList[currentImageIndex] }} style={styles.evidence} resizeMode="cover" />
+              <ExpandableImage source={{ uri: imageList[currentImageIndex] }} style={styles.evidence} contentFit="cover" />
             ) : (
               <View style={styles.noImagePlaceholder}>
                 <Ionicons name="image-outline" size={40} color="#98A2B3" />

@@ -1,5 +1,5 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { Image } from 'expo-image';
+import ExpandableImage from '@/components/expandable-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Animated, { FadeInDown, FadeOut } from 'react-native-reanimated';
@@ -102,7 +102,7 @@ function EvidenceGrid({
     <View style={styles.evidenceGrid}>
       {validImages.map((image, index) => (
         <View key={`${index}`} style={styles.evidenceThumbWrap}>
-          <Image source={{uri: image}} style={styles.evidenceThumb} contentFit="cover" />
+          <ExpandableImage source={{uri: image}} style={styles.evidenceThumb} contentFit="cover" />
           {removable && onRemove && (
             <Pressable
               accessibilityLabel={`Remove photo ${index + 1}`}
@@ -1013,7 +1013,7 @@ export default function ComplaintDetailScreen() {
                     </View>
                     <Ionicons name="image-outline" size={21} color="#23435D" />
                   </View>
-                  <Image
+                  <ExpandableImage
                     source={{ uri: displayEvidence }}
                     style={styles.evidenceImage}
                     contentFit="cover"
@@ -1069,7 +1069,7 @@ export default function ComplaintDetailScreen() {
                   {complaint.finalEvidence && (
                     <View style={styles.finalEvidenceCard}>
                       <Text style={styles.resolutionNoteLabel}>FINAL COMPLETION PHOTO</Text>
-                      <Image
+                      <ExpandableImage
                         source={{ uri: complaint.finalEvidence }}
                         style={styles.finalEvidenceImage}
                         contentFit="cover"

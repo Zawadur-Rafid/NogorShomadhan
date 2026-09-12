@@ -1,6 +1,7 @@
 import ProgressSegmentedControl from '@expo/ui/community/segmented-control';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Image } from 'expo-image';
+import ExpandableImage from '@/components/expandable-image';
 import * as ImagePicker from 'expo-image-picker';
 import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
@@ -396,7 +397,7 @@ function EvidenceGrid({
     <View style={styles.evidenceGrid}>
       {images.map((image, index) => (
         <View key={`${index}-${JSON.stringify(image)}`} style={styles.evidenceThumbWrap}>
-          <Image source={image} style={styles.evidenceThumb} contentFit="cover" />
+          <ExpandableImage source={image} style={styles.evidenceThumb} contentFit="cover" />
           {removable && onRemove && (
             <Pressable
               accessibilityLabel={`Remove photo ${index + 1}`}
@@ -1402,7 +1403,7 @@ export default function AuthorityComplaintDetailScreen() {
                     </View>
                     <Ionicons name="image-outline" size={21} color="#23435D" />
                   </View>
-                  <Image
+                  <ExpandableImage
                     source={displayEvidence}
                     style={styles.evidenceImage}
                     contentFit="cover"
@@ -1894,7 +1895,7 @@ export default function AuthorityComplaintDetailScreen() {
                   {hasValidImage(complaint.finalEvidence) && (
                     <View style={styles.finalEvidenceCard}>
                       <Text style={styles.resolutionNoteLabel}>FINAL COMPLETION PHOTO</Text>
-                      <Image
+                      <ExpandableImage
                         source={complaint.finalEvidence}
                         style={styles.finalEvidenceImage}
                         contentFit="cover"
