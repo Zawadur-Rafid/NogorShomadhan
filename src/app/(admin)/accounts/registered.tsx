@@ -538,7 +538,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   personName: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: "700",
     color: colors.text,
   },
