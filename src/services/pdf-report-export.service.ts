@@ -1,5 +1,4 @@
 import * as FileSystem from 'expo-file-system';
-import { Paths } from 'expo-file-system';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import { Platform } from 'react-native';
@@ -39,7 +38,15 @@ function printReportDocumentOnWeb(html: string, fileName: string) {
     frame.style.height = '1160px';
     frame.style.border = '0';
 
+    const previousTitle = typeof document !== 'undefined' ? document.title : '';
+    if (typeof document !== 'undefined') {
+      document.title = fileName;
+    }
+
     const cleanup = () => {
+      if (typeof document !== 'undefined' && previousTitle) {
+        document.title = previousTitle;
+      }
       if (frame.parentNode) frame.parentNode.removeChild(frame);
     };
 
@@ -101,10 +108,11 @@ export async function exportHtmlReportAsPdf({
   let finalUri = uri;
 
   const cleanFileName = fileName.endsWith('.pdf') ? fileName : `${fileName}.pdf`;
-  const baseDir = Paths.cache?.uri ?? Paths.document?.uri;
+  const baseDir = FileSystem.cacheDirectory ?? FileSystem.documentDirectory;
 
   if (baseDir) {
-    const destinationUri = `${baseDir}${cleanFileName}`;
+    const normalizedDir = baseDir.endsWith('/') ? baseDir : `${baseDir}/`;
+    const destinationUri = `${normalizedDir}${cleanFileName}`;
     try {
       const fileInfo = await FileSystem.getInfoAsync(destinationUri);
       if (fileInfo.exists) {

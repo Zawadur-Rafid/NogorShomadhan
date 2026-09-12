@@ -486,8 +486,10 @@ export default function AdminForumScreen() {
                 <View style={styles.avatar}>
                   <Text style={styles.avatarText}>{post.initials}</Text>
                 </View>
-                <View>
-                  <Text style={styles.author}>{post.author}</Text>
+                <View style={styles.authorCopy}>
+                  <Text style={styles.author} numberOfLines={1} ellipsizeMode="tail">
+                    {post.author}
+                  </Text>
                   <Text style={styles.time}>{post.time}</Text>
                 </View>
               </View>
@@ -721,14 +723,15 @@ const styles = StyleSheet.create({
   activeFilterText: { color: "#FFFFFF" },
   post: { padding: 16, borderRadius: 14, backgroundColor: "#FFFFFF", borderWidth: 1, borderColor: "#DDE3E8" },
   postHighlighted: { borderWidth: 2, borderColor: "#2E78A6", backgroundColor: "#F8FBFF", boxShadow: "0 0 0 4px rgba(46,120,166,0.12)" },
-  postHeader: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", gap: 10 },
-  authorRow: { flexDirection: "row", alignItems: "center", gap: 9, flex: 1 },
+  postHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 14 },
+  authorRow: { flex: 1, minWidth: 0, flexDirection: "row", alignItems: "center", gap: 9, marginRight: 8 },
   avatar: { width: 36, height: 36, alignItems: "center", justifyContent: "center", borderRadius: 18, backgroundColor: "#E1EBF8" },
   avatarText: { color: "#304B6B", fontSize: 12, fontWeight: "700" },
+  authorCopy: { flex: 1, minWidth: 0 },
   author: { color: "#191C1E", fontSize: 13, fontWeight: "700" },
   time: { marginTop: 2, color: "#98A2B3", fontSize: 11 },
-  headerActions: { flexDirection: "row", alignItems: "center", gap: 5 },
-  statusBadge: { paddingHorizontal: 8, paddingVertical: 5, borderRadius: 12 },
+  headerActions: { flexDirection: "row", alignItems: "center", gap: 8, flexShrink: 0 },
+  statusBadge: { paddingHorizontal: 9, paddingVertical: 4, borderRadius: 12 },
   statusText: { fontSize: 10, fontWeight: "700" },
   deleteIcon: { padding: 6, borderRadius: 14, backgroundColor: "#FFF1F0" },
   postTitle: { marginTop: 14, color: "#191C1E", fontSize: 18, fontWeight: "600" },
