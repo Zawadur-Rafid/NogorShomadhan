@@ -15,6 +15,7 @@ import AdminBottomNav from "@/components/AdminBottomNav";
 import ExpandableImage from "@/components/expandable-image";
 import { supabase } from "@/lib/supabase";
 import { confirmDuplicate, rejectDuplicate } from "@/services/admin.service";
+import { confirmAction } from "@/utils/confirm";
 
 const statusTheme = {
   UNVERIFIED: {
@@ -153,6 +154,7 @@ export default function AdminComplaintDetails() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [duplicateSaving, setDuplicateSaving] = useState(false);
 
   useEffect(() => {
     const fetchComplaint = async () => {
@@ -472,40 +474,66 @@ export default function AdminComplaintDetails() {
             </View>
             <View style={{ flexDirection: "row", gap: 10, marginTop: 16 }}>
               <TouchableOpacity
-                style={{ flex: 1, backgroundColor: "#B54708", padding: 12, borderRadius: 8, alignItems: "center" }}
+                disabled={duplicateSaving}
+                style={{ flex: 1, backgroundColor: "#B54708", padding: 12, borderRadius: 8, alignItems: "center", opacity: duplicateSaving ? 0.55 : 1 }}
                 onPress={async () => {
+                  const approved = await confirmAction(
+                    "Are you sure you want to confirm this duplicate? The submitted complaint will be deleted, and the resident will be directed to the matched complaint.",
+                    undefined,
+                    "Confirm duplicate complaint?",
+                  );
+                  if (!approved) return;
+
+                  setDuplicateSaving(true);
                   try {
                     await confirmDuplicate(dbComplaint.duplicateWarning!.dupId);
+                    setDbComplaint(prev => prev ? ({ ...prev, duplicateWarning: { ...prev.duplicateWarning!, adminStatus: 'confirmed' } }) : null);
                     Alert.alert(
                       "Duplicate confirmed",
                       "The resident was notified and linked to the base complaint.",
-                      [{ text: "Done", onPress: () => router.replace("/(admin)/dashboard") }],
                     );
                   } catch (e) {
                     Alert.alert(
                       "Could not confirm duplicate",
                       e instanceof Error ? e.message : "Please try again.",
                     );
+                  } finally {
+                    setDuplicateSaving(false);
                   }
                 }}
               >
-                <Text style={{ color: "#FFF", fontWeight: "600" }}>Confirm Duplicate</Text>
+                <Text style={{ color: "#FFF", fontWeight: "600" }}>{duplicateSaving ? "Working..." : "Confirm Duplicate"}</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={{ flex: 1, backgroundColor: "#FFF", borderWidth: 1, borderColor: "#B54708", padding: 12, borderRadius: 8, alignItems: "center" }}
+                disabled={duplicateSaving}
+                style={{ flex: 1, backgroundColor: "#FFF", borderWidth: 1, borderColor: "#B54708", padding: 12, borderRadius: 8, alignItems: "center", opacity: duplicateSaving ? 0.55 : 1 }}
                 onPress={async () => {
+                  const approved = await confirmAction(
+                    "Are you sure you want to reject this duplicate match? The complaint will be kept as a separate complaint for normal processing.",
+                    undefined,
+                    "Reject duplicate match?",
+                  );
+                  if (!approved) return;
+
+                  setDuplicateSaving(true);
                   try {
                     await rejectDuplicate(dbComplaint.duplicateWarning!.dupId);
                     setDbComplaint(prev => prev ? ({ ...prev, duplicateWarning: { ...prev.duplicateWarning!, adminStatus: 'rejected' } }) : null);
+                    Alert.alert(
+                      "Duplicate rejected",
+                      "The complaint was kept and moved to All Complaints for normal processing.",
+                    );
                   } catch (e) {
                     Alert.alert(
                       "Could not reject duplicate",
                       e instanceof Error ? e.message : "Please try again.",
                     );
+                  } finally {
+                    setDuplicateSaving(false);
                   }
                 }}
               >
-                <Text style={{ color: "#B54708", fontWeight: "600" }}>Reject</Text>
+                <Text style={{ color: "#B54708", fontWeight: "600" }}>{duplicateSaving ? "Working..." : "Reject"}</Text>
               </TouchableOpacity>
             </View>
             <TouchableOpacity
