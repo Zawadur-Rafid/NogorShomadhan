@@ -425,7 +425,7 @@ export default function AuthorityForumScreen() {
             />
 
             <View style={[styles.composerFooter, !wide && styles.composerFooterMobile]}>
-              <View style={styles.statusOptions}>
+              <View style={[styles.statusOptions, !wide && styles.statusOptionsMobile]}>
                 {officialPostOptions.map((option) => {
                   const selected = postStatus === option.status;
                   const theme = forumCategoryTheme[option.label];
@@ -436,6 +436,7 @@ export default function AuthorityForumScreen() {
                       onPress={() => setPostStatus(option.status)}
                       style={[
                         styles.statusOption,
+                        !wide && styles.statusOptionMobile,
                         selected && { backgroundColor: theme.background, borderColor: theme.color },
                       ]}
                     >
@@ -446,11 +447,11 @@ export default function AuthorityForumScreen() {
                 })}
               </View>
 
-              <View style={styles.composerActions}>
+              <View style={[styles.composerActions, !wide && styles.composerActionsMobile]}>
                 <TouchableOpacity
                   accessibilityLabel="Create Community Event"
                   onPress={() => setCreateEventModalVisible(true)}
-                  style={styles.createEventButton}
+                  style={[styles.createEventButton, !wide && styles.composerActionButtonMobile]}
                 >
                   <Ionicons name="calendar-outline" size={15} color="#23435D" />
                   <Text style={styles.createEventButtonText}>Create Event</Text>
@@ -460,7 +461,7 @@ export default function AuthorityForumScreen() {
                   accessibilityLabel="Publish official forum post"
                   disabled={!canPublish}
                   onPress={publishPost}
-                  style={[styles.publishButton, !canPublish && styles.disabledButton]}
+                  style={[styles.publishButton, !wide && styles.composerActionButtonMobile, !canPublish && styles.disabledButton]}
                 >
                   <Ionicons name="send" size={16} color="#FFFFFF" />
                   <Text style={styles.publishText}>
@@ -813,13 +814,17 @@ const styles = StyleSheet.create({
   bodyInput: { minHeight: 96, padding: 13, borderWidth: 1, borderColor: '#D5DCE1', borderRadius: 10, backgroundColor: '#FAFBFC', color: '#1F2937', fontSize: 13, lineHeight: 19 },
   composerFooter: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
   composerFooterMobile: { alignItems: 'stretch', flexDirection: 'column' },
+  statusOptionsMobile: { width: '100%' },
   statusOptions: { flex: 1, flexDirection: 'row', flexWrap: 'wrap', gap: 7 },
+  statusOptionMobile: { flex: 1, minWidth: 0 },
   statusOption: { minWidth: 148, paddingHorizontal: 10, paddingVertical: 8, borderRadius: 10, borderWidth: 1, borderColor: '#D5DCE1', backgroundColor: '#FFFFFF' },
   statusOptionText: { color: '#667085', fontSize: 10, fontWeight: '700' },
   statusOptionDescription: { maxWidth: 154, marginTop: 2, color: '#7B8491', fontSize: 8, lineHeight: 11 },
   publishButton: { minHeight: 40, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, paddingHorizontal: 15, borderRadius: 20, backgroundColor: '#2F6B5F' },
   disabledButton: { opacity: 0.42 },
   publishText: { color: '#FFFFFF', fontSize: 11, fontWeight: '800' },
+  composerActionsMobile: { width: '100%', flexDirection: 'column', alignItems: 'stretch' },
+  composerActionButtonMobile: { width: '100%', minHeight: 44 },
   composerActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   createEventButton: { minHeight: 40, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingHorizontal: 13, borderRadius: 20, borderWidth: 1, borderColor: '#23435D', backgroundColor: '#EAF0F6' },
   createEventButtonText: { color: '#23435D', fontSize: 11, fontWeight: '800' },

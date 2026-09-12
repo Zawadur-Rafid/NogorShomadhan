@@ -1,7 +1,7 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Alert, LayoutChangeEvent, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { Alert, LayoutChangeEvent, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, useWindowDimensions, View } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import AdminBottomNav from "@/components/AdminBottomNav";
@@ -129,6 +129,8 @@ export default function AdminForumScreen() {
     commentId?: string | string[];
   }>();
   const requestedPostId = Array.isArray(postIdParam) ? postIdParam[0] : postIdParam;
+  const { width } = useWindowDimensions();
+  const isNarrow = width < 560;
   const targetCommentId = Array.isArray(commentIdParam) ? commentIdParam[0] : commentIdParam;
   const scrollViewRef = useRef<ScrollView>(null);
   const postOffsetsRef = useRef<Record<string, number>>({});
@@ -417,8 +419,8 @@ export default function AdminForumScreen() {
             multiline
             style={styles.bodyInput}
           />
-          <View style={styles.composerBottom}>
-            <View style={styles.statusOptions}>
+          <View style={[styles.composerBottom, isNarrow && styles.composerBottomMobile]}>
+            <View style={[styles.statusOptions, isNarrow && styles.statusOptionsMobile]}>
               {officialPostOptions.map((option) => (
                 <TouchableOpacity
                   key={option.status}
@@ -426,6 +428,7 @@ export default function AdminForumScreen() {
                   onPress={() => setPostStatus(option.status)}
                   style={[
                     styles.statusOption,
+                    isNarrow && styles.statusOptionMobile,
                     postStatus === option.status && {
                       backgroundColor: forumCategoryTheme[option.label].background,
                       borderColor: forumCategoryTheme[option.label].color,
@@ -447,7 +450,7 @@ export default function AdminForumScreen() {
             <TouchableOpacity
               disabled={!postTitle.trim() || !postBody.trim()}
               onPress={publishPost}
-              style={[styles.publishButton, (!postTitle.trim() || !postBody.trim()) && styles.disabledButton]}
+              style={[styles.publishButton, isNarrow && styles.publishButtonMobile, (!postTitle.trim() || !postBody.trim()) && styles.disabledButton]}
             >
               <Ionicons name="send" size={16} color="#FFFFFF" />
               <Text style={styles.publishText}>
@@ -697,11 +700,15 @@ const styles = StyleSheet.create({
   composer: { padding: 16, borderRadius: 14, backgroundColor: "#FFFFFF", borderWidth: 1, borderColor: "#DDE3E8", gap: 10 },
   panelTitle: { color: "#191C1E", fontSize: 17, fontWeight: "600" },
   panelSubtitle: { color: "#667085", fontSize: 12, lineHeight: 17 },
+  composerBottomMobile: { flexDirection: "column", alignItems: "stretch" },
   titleInput: { minHeight: 42, paddingHorizontal: 12, borderWidth: 1, borderColor: "#D0D5DD", borderRadius: 8, color: "#191C1E", fontSize: 14 },
+  statusOptionsMobile: { width: "100%" },
   bodyInput: { minHeight: 88, padding: 12, borderWidth: 1, borderColor: "#D0D5DD", borderRadius: 8, color: "#191C1E", fontSize: 14, textAlignVertical: "top" },
+  statusOptionMobile: { flex: 1, minWidth: 0 },
   composerBottom: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 10 },
   statusOptions: { flex: 1, flexDirection: "row", flexWrap: "wrap", gap: 6 },
   statusOption: { minWidth: 142, paddingHorizontal: 10, paddingVertical: 8, borderRadius: 10, borderWidth: 1, borderColor: "#D0D5DD" },
+  publishButtonMobile: { minHeight: 48, justifyContent: "center", paddingHorizontal: 16 },
   statusOptionText: { color: "#667085", fontSize: 11, fontWeight: "600" },
   statusOptionDescription: { maxWidth: 150, marginTop: 2, color: "#7A8490", fontSize: 9, lineHeight: 12 },
   publishButton: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 12, paddingVertical: 10, borderRadius: 8, backgroundColor: "#00475E" },
