@@ -507,7 +507,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   pageTitle: {
-    fontSize: 26,
+    fontSize: 22,
     fontWeight: "800",
     color: colors.primary,
     marginBottom: 4,
@@ -556,7 +556,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   adminName: {
-    fontSize: 17,
+    fontSize: 15,
     fontWeight: "700",
     color: colors.text,
   },
