@@ -771,7 +771,7 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   title: {
-    fontSize: 32,
+    fontSize: 24,
     fontWeight: "700",
     color: theme.primary,
     marginBottom: 4,
@@ -779,8 +779,9 @@ const styles = StyleSheet.create({
     // No fontFamily - uses system default (SF Pro/Roboto)
   },
   subtitle: {
-    fontSize: 14,
+    fontSize: 12,
     color: theme.onSurfaceVariant,
+    lineHeight: 18,
     // No fontFamily - uses system default (SF Pro/Roboto)
   },
   filterScroll: {
@@ -862,7 +863,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   cardTitle: {
-    fontSize: 20,
+    fontSize: 16,
     fontWeight: "600",
     color: theme.onSurface,
     // No fontFamily - uses system default (SF Pro/Roboto)
@@ -892,9 +893,9 @@ const styles = StyleSheet.create({
     backgroundColor: theme.surfaceContainer,
   },
   cardDesc: {
-    fontSize: 14,
+    fontSize: 12,
     color: theme.onSurfaceVariant,
-    lineHeight: 20,
+    lineHeight: 18,
     marginBottom: 16,
     // No fontFamily - uses system default (SF Pro/Roboto)
   },
@@ -961,15 +962,16 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   emptyTitle: {
-    fontSize: 20,
+    fontSize: 16,
     fontWeight: "600",
     color: theme.onSurface,
     marginBottom: 4,
     // No fontFamily - uses system default (SF Pro/Roboto)
   },
   emptyDesc: {
-    fontSize: 14,
+    fontSize: 12,
     color: theme.onSurfaceVariant,
+    lineHeight: 18,
     // No fontFamily - uses system default (SF Pro/Roboto)
   },
   successText: {
