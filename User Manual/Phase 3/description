@@ -1,0 +1,7 @@
+Phase 3
+Review complaint
+22 complaints sent to admin portal for verification admin views information to accept or reject the complaint
+23 admin checks info, if duplicate alert, found admin checks duplicate metrics
+24 admin compares the complaint with the existing complaint to see how much the complaint is duplicate of the existing complaint 25. Admin reviews and either except the complaint or reject the duplicate complaint.
+Post duplicate actions
+26 duplicate accepted then the newly submitted complaint is deleted as it matches with an existing complaint 27. Resident receives notification that their newly submitted complaint is marked for duplication and hence deleted 28. If duplicate rejected, then the compliment is kept for normal processing 29. Notitfication send to resident that complaint accepted and pendiing status 30. New complaint added as pending with all other complaint 31. The complaint is sent to the authority portal for mitigation purposes 32. The resident who submitted that complain can see it in my complaints in their dashboard
