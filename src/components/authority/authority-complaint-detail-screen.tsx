@@ -170,7 +170,9 @@ function hasValidImage(
 ): image is AuthorityEvidenceImage {
   if (!image) return false;
   if (typeof image === 'number') return true;
-  return Boolean(image.uri?.trim());
+
+  const uri = image.uri?.trim();
+  return Boolean(uri && uri.toLowerCase() !== 'null' && uri.toLowerCase() !== 'undefined');
 }
 
 function DatePickerField({
@@ -1351,7 +1353,8 @@ export default function AuthorityComplaintDetailScreen() {
                 </View>
               </View>
 
-              <View style={styles.panel}>
+              {locationDetails.length > 0 && (
+                <View style={styles.panel}>
                 <View style={styles.panelHeading}>
                   <View>
                     <Text style={styles.panelTitle}>Location Details</Text>
@@ -1387,35 +1390,26 @@ export default function AuthorityComplaintDetailScreen() {
                     />
                   ))}
                 </View>
-              </View>
-
-              <View style={styles.panel}>
-                <View style={styles.panelHeading}>
-                  <View>
-                    <Text style={styles.panelTitle}>{evidenceTitle}</Text>
-                    <Text style={styles.panelSubtitle}>{evidenceSubtitle}</Text>
-                  </View>
-                  <Ionicons name="image-outline" size={21} color="#23435D" />
                 </View>
-                {hasValidImage(displayEvidence) ? (
+              )}
+
+              {hasValidImage(displayEvidence) && (
+                <View style={styles.panel}>
+                  <View style={styles.panelHeading}>
+                    <View>
+                      <Text style={styles.panelTitle}>{evidenceTitle}</Text>
+                      <Text style={styles.panelSubtitle}>{evidenceSubtitle}</Text>
+                    </View>
+                    <Ionicons name="image-outline" size={21} color="#23435D" />
+                  </View>
                   <Image
                     source={displayEvidence}
                     style={styles.evidenceImage}
                     contentFit="cover"
                     transition={180}
                   />
-                ) : (
-                  <View style={styles.noEvidence}>
-                    <Ionicons name="image-outline" size={32} color="#98A2B3" />
-                    <Text style={styles.noEvidenceTitle}>
-                      No evidence image available
-                    </Text>
-                    <Text style={styles.noEvidenceText}>
-                      No photo is attached to this complaint record.
-                    </Text>
-                  </View>
-                )}
-              </View>
+                </View>
+              )}
 
 
 

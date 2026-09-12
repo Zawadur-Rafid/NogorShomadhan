@@ -15,7 +15,12 @@ export type AuthorityLocationDetail = {
   value: string;
 };
 
-const clean = (value?: string) => value?.trim() ?? '';
+const clean = (value?: string | null) => {
+  const trimmed = value?.trim() ?? '';
+  const normalized = trimmed.toLowerCase();
+
+  return normalized === 'null' || normalized === 'undefined' ? '' : trimmed;
+};
 
 function withPrefix(value: string, prefix: string, aliases: string[]) {
   if (!value) return '';
@@ -30,7 +35,7 @@ function withPrefix(value: string, prefix: string, aliases: string[]) {
 export function getAuthorityLocationDetails(
   complaint: AuthorityLocationFields,
 ): AuthorityLocationDetail[] {
-  return [
+  const details: AuthorityLocationDetail[] = [
     { key: 'house', label: 'House Number', value: clean(complaint.house) },
     { key: 'road', label: 'Road Number', value: clean(complaint.road) },
     { key: 'avenue', label: 'Avenue', value: clean(complaint.avenue) },
@@ -45,6 +50,8 @@ export function getAuthorityLocationDetails(
       value: clean(complaint.additional_location_details),
     },
   ];
+
+  return details.filter(({ value }) => value.length > 0);
 }
 
 export function formatAuthorityAddress(
