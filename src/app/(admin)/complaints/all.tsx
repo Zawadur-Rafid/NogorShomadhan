@@ -1,7 +1,7 @@
 import AdminBottomNav from "@/components/AdminBottomNav";
 import { supabase } from "@/lib/supabase";
 import { MaterialIcons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { confirmAction } from "@/utils/confirm";
 import {
@@ -299,17 +299,19 @@ export function ComplaintsListScreen({
     setReviewLoading(false);
   }, []);
 
-  useEffect(() => {
-    const frame = requestAnimationFrame(() => {
-      if (reviewMode) {
-        void fetchReviewComplaints();
-      } else {
-        void fetchAllComplaints();
-      }
-    });
+  useFocusEffect(
+    useCallback(() => {
+      const frame = requestAnimationFrame(() => {
+        if (reviewMode) {
+          void fetchReviewComplaints();
+        } else {
+          void fetchAllComplaints();
+        }
+      });
 
-    return () => cancelAnimationFrame(frame);
-  }, [fetchAllComplaints, fetchReviewComplaints, reviewMode]);
+      return () => cancelAnimationFrame(frame);
+    }, [fetchAllComplaints, fetchReviewComplaints, reviewMode])
+  );
 
   const filteredComplaints = useMemo(() => {
     if (activeFilter === "All") {

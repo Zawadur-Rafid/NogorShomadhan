@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
+import { useFocusEffect } from "expo-router";
 import {
   Modal,
   Pressable,
@@ -33,6 +34,13 @@ type AccountSortOrder = "newest" | "oldest";
 export default function RegisteredAccountsPage() {
   const { registeredAccounts, metrics, loading, error, refresh } =
     useAdminAccounts();
+
+  useFocusEffect(
+    useCallback(() => {
+      void refresh();
+    }, [refresh])
+  );
+
   const [query, setQuery] = useState("");
   const [sortOrder, setSortOrder] = useState<AccountSortOrder>("newest");
   const [selectedAccount, setSelectedAccount] = useState<AdminAccount | null>(
