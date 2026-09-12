@@ -92,12 +92,7 @@ function getAdminNotificationPath(notification: AppNotification): string {
   }
 
   if (notification.type === 'account_review_required') {
-    const accountId =
-      dataString(notification, 'account_id') ??
-      (notification.entityType === 'account' ? notification.entityId : null);
-    return accountId
-      ? `/(admin)/accounts/${accountId}`
-      : '/(admin)/accounts/pending';
+    return '/(admin)/accounts/pending';
   }
 
   const isForumEvent =
@@ -264,14 +259,6 @@ export default function AdminNotificationsScreen() {
         }
         contentContainerStyle={styles.content}
       >
-        <Pressable
-          style={styles.backButton}
-          onPress={() => router.replace("/(admin)/dashboard" as never)}
-        >
-          <Ionicons name="arrow-back" size={18} color="#23435D" />
-          <Text style={styles.backText}>Back to Dashboard</Text>
-        </Pressable>
-
         <View style={styles.headingRow}>
           <View style={styles.headingCopy}>
             <Text style={styles.eyebrow}>ADMIN INBOX</Text>
@@ -532,18 +519,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderRadius: 21,
   },
-  backButton: {
-    alignSelf: "flex-start",
-    minHeight: 38,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 7,
-    paddingHorizontal: 12,
-    borderRadius: 19,
-    marginBottom: 16,
-    backgroundColor: "#EEF2F6",
-  },
-  backText: { color: "#23435D", fontSize: 12, fontWeight: "700" },
   errorCard: {
     flexDirection: "row",
     alignItems: "center",
