@@ -118,6 +118,7 @@ function getNotificationKind(notification: AppNotification): NotificationKind {
   }
 
   if (
+    notification.type === 'forum_discussion_created' ||
     notification.type === 'forum_comment_received' ||
     notification.type === 'forum_reply_received'
   ) {
@@ -149,6 +150,7 @@ function getAuthorityNotificationPath(notification: AppNotification): string {
   if (
     notification.entityType === 'forum_post' ||
     notification.entityType === 'forum_comment' ||
+    notification.type === 'forum_discussion_created' ||
     notification.type === 'forum_comment_received' ||
     notification.type === 'forum_reply_received' ||
     notification.type === 'official_announcement'

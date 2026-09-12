@@ -9,3 +9,6 @@ ALTER TYPE notification_type
 
 ALTER TYPE notification_type
     ADD VALUE IF NOT EXISTS 'complaint_pending_stale';
+
+ALTER TYPE notification_type
+    ADD VALUE IF NOT EXISTS 'forum_discussion_created';

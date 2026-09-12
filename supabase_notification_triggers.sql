@@ -845,6 +845,61 @@ AFTER INSERT ON forum_posts
 FOR EACH ROW
 EXECUTE FUNCTION notify_about_official_announcement();
 
+CREATE OR REPLACE FUNCTION notify_about_resident_discussion()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+    recipient RECORD;
+    author_name TEXT;
+BEGIN
+    -- Official posts are handled by notify_about_official_announcement().
+    IF NEW.is_official THEN
+        RETURN NEW;
+    END IF;
+
+    SELECT COALESCE(NULLIF(TRIM(full_name), ''), 'A resident')
+    INTO author_name
+    FROM account
+    WHERE acc_id = NEW.acc_id;
+
+    FOR recipient IN
+        SELECT acc_id, role
+        FROM account
+        WHERE status::TEXT = 'verified'
+          AND acc_id <> NEW.acc_id
+    LOOP
+        PERFORM enqueue_notification(
+            recipient.acc_id,
+            NEW.acc_id,
+            'forum_discussion_created',
+            'forum_post',
+            NEW.post_id,
+            'forum-post:' || NEW.post_id::TEXT || ':resident-discussion',
+            'New resident discussion',
+            COALESCE(author_name, 'A resident') || ' posted: "' || NEW.title || '"',
+            notification_forum_path(recipient.role),
+            JSONB_BUILD_OBJECT(
+                'forum_post_id', NEW.post_id,
+                'forum_post_type', NEW.status::TEXT,
+                'is_official', FALSE
+            ),
+            'normal'
+        );
+    END LOOP;
+
+    RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_notify_resident_discussion ON forum_posts;
+CREATE TRIGGER trg_notify_resident_discussion
+AFTER INSERT ON forum_posts
+FOR EACH ROW
+EXECUTE FUNCTION notify_about_resident_discussion();
+
 COMMENT ON FUNCTION enqueue_notification(
     UUID,
     UUID,
@@ -862,3 +917,6 @@ COMMENT ON FUNCTION enqueue_notification(
 
 COMMENT ON FUNCTION notify_complaint_audience_status_change() IS
     'Notifies owners for work start, all residents for resolution, and authority after complaint acceptance.';
+
+COMMENT ON FUNCTION notify_about_resident_discussion() IS
+    'Notifies every other verified account when a resident opens a forum discussion.';

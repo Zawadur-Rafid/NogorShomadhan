@@ -20,6 +20,7 @@ export type NotificationType =
   | "complaint_resolved"
   | "complaint_feedback_received"
   | "complaint_feedback_replied"
+  | "forum_discussion_created"
   | "forum_comment_received"
   | "forum_reply_received"
   | "official_announcement"

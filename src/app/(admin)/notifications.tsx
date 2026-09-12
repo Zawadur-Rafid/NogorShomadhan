@@ -98,6 +98,7 @@ function getAdminNotificationPath(notification: AppNotification): string {
   const isForumEvent =
     notification.entityType === 'forum_post' ||
     notification.entityType === 'forum_comment' ||
+    notification.type === 'forum_discussion_created' ||
     notification.type === 'forum_comment_received' ||
     notification.type === 'forum_reply_received' ||
     notification.type === 'official_announcement';
@@ -131,6 +132,7 @@ function getNotificationKind(notification: AppNotification): NotificationKind {
   if (notification.type === 'account_review_required') return 'account';
   if (notification.type === 'duplicate_review_required') return 'duplicate';
   if (
+    notification.type === 'forum_discussion_created' ||
     notification.type === 'forum_comment_received' ||
     notification.type === 'forum_reply_received' ||
     notification.type === 'official_announcement'
