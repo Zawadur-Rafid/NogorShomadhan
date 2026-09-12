@@ -368,7 +368,7 @@ const styles = StyleSheet.create({
   },
   title: {
     color: "#23435D",
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: "800",
     marginTop: 4,
     fontFamily: "System",
