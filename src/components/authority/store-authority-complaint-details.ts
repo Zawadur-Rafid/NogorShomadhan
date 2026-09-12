@@ -32,6 +32,7 @@ export type AuthorityWorkUpdate = {
   timestamp: string;
   complete: boolean;
   budget: string;
+  deadline: string;
   images: AuthorityEvidenceImage[];
   contractorAssignmentId?: string;
 };

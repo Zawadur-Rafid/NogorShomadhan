@@ -1,4 +1,3 @@
-import { confirmAction } from "@/utils/confirm";
 import KeyboardAwareScrollView from "@/components/keyboard-aware-scroll-view";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useEffect, useState } from "react";
@@ -270,6 +269,7 @@ export function CommunityEventCreateModal({
   const [activePicker, setActivePicker] = useState<"start" | "end">("start");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [confirming, setConfirming] = useState(false);
 
   useEffect(() => {
     if (visible) {
@@ -284,6 +284,7 @@ export function CommunityEventCreateModal({
       setActivePicker("start");
       setError("");
       setSubmitting(false);
+      setConfirming(false);
     }
   }, [visible]);
 
@@ -322,7 +323,7 @@ export function CommunityEventCreateModal({
     }
   };
 
-  const handleSubmit = async () => {
+  const requestSubmit = () => {
     if (!title.trim()) {
       setError("Please enter an event title.");
       return;
@@ -332,14 +333,13 @@ export function CommunityEventCreateModal({
       return;
     }
 
-    const confirmed = await confirmAction(
-      "Are you sure you want to submit this announcement?",
-      undefined,
-      "Submit",
-    );
-    if (!confirmed) return;
+    setError("");
+    setConfirming(true);
+  };
 
+  const submitEvent = async () => {
     try {
+      setConfirming(false);
       setSubmitting(true);
       await onSubmit({
         title: title.trim(),
@@ -512,7 +512,7 @@ export function CommunityEventCreateModal({
               </TouchableOpacity>
 
               <TouchableOpacity
-                onPress={handleSubmit}
+                onPress={requestSubmit}
                 disabled={submitting}
                 style={[modalStyles.submitBtn, submitting && { opacity: 0.7 }]}
               >
@@ -523,6 +523,46 @@ export function CommunityEventCreateModal({
               </TouchableOpacity>
             </View>
           </KeyboardAwareScrollView>
+
+          {confirming ? (
+            <View style={modalStyles.confirmOverlay}>
+              <View style={modalStyles.confirmCard}>
+                <View style={modalStyles.confirmIcon}>
+                  <Ionicons name="help-circle-outline" size={26} color="#23435D" />
+                </View>
+                <Text style={modalStyles.confirmTitle}>Submit Event</Text>
+                <Text style={modalStyles.confirmMessage}>
+                  Are you sure you want to publish this community event?
+                </Text>
+                <View style={modalStyles.confirmActions}>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="No, return to event form"
+                    onPress={() => setConfirming(false)}
+                    style={({ pressed }) => [
+                      modalStyles.confirmButton,
+                      modalStyles.confirmNoButton,
+                      pressed && modalStyles.confirmNoButtonPressed,
+                    ]}
+                  >
+                    <Text style={modalStyles.confirmNoText}>No</Text>
+                  </Pressable>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Yes, publish event"
+                    onPress={() => void submitEvent()}
+                    style={({ pressed }) => [
+                      modalStyles.confirmButton,
+                      modalStyles.confirmYesButton,
+                      pressed && modalStyles.confirmYesButtonPressed,
+                    ]}
+                  >
+                    <Text style={modalStyles.confirmYesText}>Yes</Text>
+                  </Pressable>
+                </View>
+              </View>
+            </View>
+          ) : null}
         </Pressable>
       </Pressable>
     </Modal>
@@ -973,6 +1013,69 @@ const modalStyles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "700",
   },
+  confirmOverlay: {
+    position: "absolute",
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+    zIndex: 20,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 20,
+    padding: 18,
+    backgroundColor: "rgba(15, 23, 42, 0.48)",
+  },
+  confirmCard: {
+    width: "100%",
+    maxWidth: 330,
+    alignItems: "center",
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#EAECF0",
+    padding: 20,
+    backgroundColor: "#FFFFFF",
+  },
+  confirmIcon: {
+    width: 50,
+    height: 50,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 25,
+    backgroundColor: "#EAF0F6",
+  },
+  confirmTitle: {
+    marginTop: 12,
+    color: "#1F2937",
+    fontSize: 18,
+    fontWeight: "800",
+  },
+  confirmMessage: {
+    marginTop: 7,
+    color: "#667085",
+    fontSize: 13,
+    lineHeight: 19,
+    textAlign: "center",
+  },
+  confirmActions: {
+    width: "100%",
+    flexDirection: "row",
+    gap: 10,
+    marginTop: 18,
+  },
+  confirmButton: {
+    flex: 1,
+    minHeight: 43,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 10,
+  },
+  confirmNoButton: { backgroundColor: "#F2F4F7" },
+  confirmNoButtonPressed: { backgroundColor: "#E4E7EC" },
+  confirmNoText: { color: "#344054", fontSize: 14, fontWeight: "700" },
+  confirmYesButton: { backgroundColor: "#23435D" },
+  confirmYesButtonPressed: { backgroundColor: "#193043" },
+  confirmYesText: { color: "#FFFFFF", fontSize: 14, fontWeight: "700" },
   // Viewer styles
   eventTagBadge: {
     alignSelf: "flex-start",

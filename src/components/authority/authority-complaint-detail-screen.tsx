@@ -459,11 +459,19 @@ function WorkActivityTimeline({ updates }: { updates: AuthorityWorkUpdate[] }) {
               <Text style={styles.timelineTime}>{update.timestamp}</Text>
             </View>
             <Text style={styles.timelineNote}>{update.note}</Text>
-            <View style={styles.budgetChange}>
-              <Ionicons name="cash-outline" size={13} color="#607A9A" />
-              <Text style={styles.budgetChangeText}>
-                Budget at this update: {update.budget}
-              </Text>
+            <View style={styles.updateMetadata}>
+              <View style={styles.budgetChange}>
+                <Ionicons name="cash-outline" size={13} color="#607A9A" />
+                <Text style={styles.budgetChangeText}>
+                  Budget at this update: {update.budget}
+                </Text>
+              </View>
+              <View style={styles.budgetChange}>
+                <Ionicons name="calendar-outline" size={13} color="#607A9A" />
+                <Text style={styles.budgetChangeText}>
+                  Deadline at this update: {update.deadline}
+                </Text>
+              </View>
             </View>
             <EvidenceGrid images={update.images} />
           </View>
@@ -2693,6 +2701,7 @@ const styles = StyleSheet.create({
   timelineTitle: { flex: 1, color: '#344054', fontSize: 11, fontWeight: '800' },
   timelineTime: { color: '#8A93A1', fontSize: 8 },
   timelineNote: { color: '#667085', fontSize: 9, lineHeight: 14, marginTop: 4 },
+  updateMetadata: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   budgetChange: {
     alignSelf: 'flex-start',
     flexDirection: 'row',

@@ -521,6 +521,7 @@ export async function getComplaintDetails(compId: string) {
         timestamp: formatDate(update.created_at),
         complete: true,
         budget: formatBudget(update.budget),
+        deadline: formatDate(update.deadline),
         images,
         contractorAssignmentId: contractor?.contractor_event_id,
       };

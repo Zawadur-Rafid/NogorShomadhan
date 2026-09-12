@@ -319,6 +319,39 @@ export default function AuthorityForumScreen() {
     }
   };
 
+  const publishEvent = async ({
+    title,
+    description,
+    startDate,
+    endDate,
+  }: {
+    title: string;
+    description: string;
+    startDate: string;
+    endDate: string;
+  }) => {
+    const accId = await AsyncStorage.getItem('acc_id');
+    if (!accId) {
+      throw new Error('Your authority session is missing. Please sign in again.');
+    }
+
+    const formattedBody = formatEventBody({ startDate, endDate }, description);
+    const createdPost = await forumService.createOfficialPost({
+      acc_id: accId,
+      title,
+      body: formattedBody,
+      status: 'Announcement',
+    });
+
+    if (!createdPost) {
+      throw new Error(
+        'The event could not be saved. Check the forum database setup and try again.',
+      );
+    }
+
+    await loadPostsFromDb();
+  };
+
   const addReply = async (postId: string) => {
     const text = replyDrafts[postId]?.trim();
     if (!text) return;
@@ -709,36 +742,7 @@ export default function AuthorityForumScreen() {
       <CommunityEventCreateModal
         visible={createEventModalVisible}
         onClose={() => setCreateEventModalVisible(false)}
-        onSubmit={async ({ title, description, startDate, endDate }) => {
-          const formattedBody = formatEventBody({ startDate, endDate }, description);
-          const newPostUI: ForumPostUI = {
-            id: createLocalId('post'),
-            author: 'Community Authority',
-            initials: 'CA',
-            status: 'Announcement',
-            title,
-            body: formattedBody,
-            time: 'Just now',
-            official: true,
-            comments: [],
-          };
-          setPosts((current) => [newPostUI, ...current]);
-
-          try {
-            const accId =
-              (await AsyncStorage.getItem('acc_id')) ||
-              '00000000-0000-0000-0000-000000000000';
-            await forumService.createOfficialPost({
-              acc_id: accId,
-              title,
-              body: formattedBody,
-              status: 'Announcement',
-            });
-            loadPostsFromDb();
-          } catch {
-            console.log('Local event announcement created; database sync skipped.');
-          }
-        }}
+        onSubmit={publishEvent}
       />
     </SafeAreaView>
   );
