@@ -1,6 +1,6 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
-import { useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import { useFocusEffect, useRouter } from "expo-router";
+import { useCallback, useState } from "react";
 import {
   ScrollView,
   StyleSheet,
@@ -64,9 +64,11 @@ export default function AdminDashboard() {
     }
   };
 
-  useEffect(() => {
-    void fetchDashboardMetrics();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      void fetchDashboardMetrics();
+    }, [])
+  );
 
   return (
     <View style={styles.container}>

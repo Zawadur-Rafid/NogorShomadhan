@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
+import { useFocusEffect } from "expo-router";
 import {
     Modal,
     Pressable,
@@ -40,6 +41,12 @@ export default function PendingAccountsPage() {
     approveAccount,
     rejectAccount,
   } = useAdminAccounts();
+
+  useFocusEffect(
+    useCallback(() => {
+      void refresh();
+    }, [refresh])
+  );
 
   const [query, setQuery] = useState("");
   const [selectedAccount, setSelectedAccount] = useState<AdminAccount | null>(

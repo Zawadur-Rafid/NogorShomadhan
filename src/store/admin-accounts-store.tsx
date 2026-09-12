@@ -10,6 +10,7 @@ import {
 } from "react";
 
 import { supabase } from "@/lib/supabase";
+import { smsService } from "@/services/sms.service";
 
 export type AdminAccountRole = "resident" | "authority" | "admin";
 export type AdminAccountStatus = "unverified" | "verified" | "rejected";
@@ -234,13 +235,22 @@ export function AdminAccountsProvider({ children }: { children: ReactNode }) {
         console.error("Error updating verified metrics in AsyncStorage", e);
       }
 
+      // Send SMS
+      const account = pendingAccounts.find((a) => a.id === accountId);
+      if (account?.phoneNum) {
+        await smsService.sendApprovalSMS(account.phoneNum).catch(console.error);
+      }
+
       await refresh();
     },
-    [refresh],
+    [refresh, pendingAccounts],
   );
 
   const rejectAccount = useCallback(
     async (accountId: string) => {
+      // Find account first before deleting it to get the phone number
+      const account = pendingAccounts.find((a) => a.id === accountId);
+
       const { error: deleteError } = await supabase
         .from("account")
         .delete()
@@ -261,9 +271,14 @@ export function AdminAccountsProvider({ children }: { children: ReactNode }) {
         console.error("Error updating rejected metrics in AsyncStorage", e);
       }
 
+      // Send SMS
+      if (account?.phoneNum) {
+        await smsService.sendRejectionSMS(account.phoneNum).catch(console.error);
+      }
+
       await refresh();
     },
-    [refresh],
+    [refresh, pendingAccounts],
   );
 
   const value = useMemo<AdminAccountsContextValue>(
