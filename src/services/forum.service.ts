@@ -9,6 +9,34 @@ export interface DbAccount {
 
 export type ForumStatus = 'Announcement' | 'Update' | 'Alert';
 
+export type ForumModerationStatus = 'pending' | 'approved' | 'rejected';
+
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * forum_posts has two foreign keys to account (acc_id and reviewed_by), so the
+ * author embed must name the constraint. A bare `account!acc_id` hint is
+ * ambiguous and makes PostgREST reject the whole query with PGRST201.
+ */
+export const POST_AUTHOR_EMBED =
+  'account:account!forum_posts_acc_id_fkey(full_name, username, role)';
+
+export interface FetchPostsOptions {
+  /**
+   * Account viewing the forum. Their own posts stay visible to them while
+   * they wait for review, so a submitted post does not simply vanish.
+   * Their rejected posts are not returned — those are surfaced through the
+   * rejection notification instead.
+   */
+  viewerAccId?: string | null;
+  /**
+   * Moderation states to return, for review screens. Rejected posts are left
+   * out everywhere, so an admin queue asks for ['pending', 'approved'].
+   */
+  moderationStatuses?: ForumModerationStatus[];
+}
+
 export interface DbForumComment {
   comment_id: string;
   post_id: string;
@@ -28,6 +56,9 @@ export interface DbForumPost {
   status: ForumStatus;
   is_official: boolean;
   created_at: string;
+  moderation_status: ForumModerationStatus;
+  rejection_note?: string | null;
+  reviewed_at?: string | null;
   account?: DbAccount | null;
   comments?: DbForumComment[];
 }
@@ -36,15 +67,35 @@ export const forumService = {
   /**
    * Fetch all forum posts along with author account information and comments/replies.
    */
-  async fetchPosts(): Promise<DbForumPost[]> {
+  async fetchPosts(options: FetchPostsOptions = {}): Promise<DbForumPost[]> {
     try {
-      const { data: posts, error: postsError } = await supabase
+      let query = supabase
         .from('forum_posts')
         .select(`
           *,
-          account:account!acc_id(full_name, username, role)
-        `)
-        .order('created_at', { ascending: false });
+          ${POST_AUTHOR_EMBED}
+        `);
+
+      if (options.moderationStatuses) {
+        query = query.in('moderation_status', options.moderationStatuses);
+      } else {
+        // The id is interpolated into a PostgREST filter, so only accept a UUID.
+        const viewerAccId = UUID_PATTERN.test(options.viewerAccId ?? '')
+          ? options.viewerAccId
+          : null;
+
+        // Approved posts, plus the viewer's own post while it awaits review.
+        query = viewerAccId
+          ? query.or(
+              `moderation_status.eq.approved,and(acc_id.eq.${viewerAccId},moderation_status.eq.pending)`,
+            )
+          : query.eq('moderation_status', 'approved');
+      }
+
+      const { data: posts, error: postsError } = await query.order(
+        'created_at',
+        { ascending: false },
+      );
 
       if (postsError) {
         console.warn('Supabase fetch error for forum_posts:', postsError.message);
@@ -125,6 +176,60 @@ export const forumService = {
   },
 
   /**
+   * Look up one of the viewer's own rejected posts. A rejected post is removed
+   * from every feed, so this is how the author reads the reason after tapping
+   * their rejection notification.
+   */
+  async fetchOwnRejectedPost(
+    post_id: string,
+    acc_id: string,
+  ): Promise<DbForumPost | null> {
+    try {
+      const { data, error } = await supabase
+        .from('forum_posts')
+        .select(`*, ${POST_AUTHOR_EMBED}`)
+        .eq('post_id', post_id)
+        .eq('acc_id', acc_id)
+        .eq('moderation_status', 'rejected')
+        .maybeSingle();
+
+      if (error) {
+        console.warn('Supabase rejected post lookup failed:', error.message);
+        return null;
+      }
+      return data;
+    } catch (e: any) {
+      console.warn('Supabase rejected post lookup error:', e?.message || e);
+      return null;
+    }
+  },
+
+  /**
+   * Approve a resident post. Database triggers notify the author and then
+   * announce the post to the authority and every other resident.
+   */
+  async approvePost(post_id: string, admin_acc_id: string): Promise<boolean> {
+    return setModerationStatus(post_id, admin_acc_id, 'approved', null);
+  },
+
+  /**
+   * Reject a resident post. The note is required and is shown to the author
+   * in their rejection notification.
+   */
+  async rejectPost(
+    post_id: string,
+    admin_acc_id: string,
+    rejection_note: string,
+  ): Promise<boolean> {
+    const note = rejection_note.trim();
+    if (!note) {
+      console.warn('Rejecting a post requires a reason for the author.');
+      return false;
+    }
+    return setModerationStatus(post_id, admin_acc_id, 'rejected', note);
+  },
+
+  /**
    * Delete a comment from the main database table (e.g. Admin moderation).
    */
   async deleteComment(comment_id: string): Promise<boolean> {
@@ -167,6 +272,35 @@ export const forumService = {
   },
 };
 
+async function setModerationStatus(
+  post_id: string,
+  admin_acc_id: string,
+  moderation_status: Exclude<ForumModerationStatus, 'pending'>,
+  rejection_note: string | null,
+): Promise<boolean> {
+  try {
+    const { error } = await supabase
+      .from('forum_posts')
+      .update({
+        moderation_status,
+        reviewed_by: admin_acc_id,
+        rejection_note,
+      })
+      .eq('post_id', post_id)
+      // Guard against two admins reviewing the same post at once.
+      .eq('moderation_status', 'pending');
+
+    if (error) {
+      console.warn('Supabase forum moderation update failed:', error.message);
+      return false;
+    }
+    return true;
+  } catch (e: any) {
+    console.warn('Supabase forum moderation error:', e?.message || e);
+    return false;
+  }
+}
+
 async function createForumPost(params: {
   acc_id: string;
   title: string;
@@ -178,7 +312,7 @@ async function createForumPost(params: {
     const { data, error } = await supabase
       .from('forum_posts')
       .insert([params])
-      .select(`*, account:account!acc_id(full_name, username, role)`)
+      .select(`*, ${POST_AUTHOR_EMBED}`)
       .single();
 
     if (error) {
