@@ -1,14 +1,15 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Alert, LayoutChangeEvent, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, useWindowDimensions, View } from "react-native";
+import { Alert, LayoutChangeEvent, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, useWindowDimensions, View } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import KeyboardAwareScrollView, {
   type AppKeyboardAwareScrollViewRef,
 } from "@/components/keyboard-aware-scroll-view";
 import AdminBottomNav from "@/components/AdminBottomNav";
-import { forumService, ForumStatus } from "@/services/forum.service";
+import { forumService, ForumModerationStatus, ForumStatus } from "@/services/forum.service";
+import { CommunityGuidelinesModal } from "@/components/forum/community-guidelines";
 import { confirmAction } from "@/utils/confirm";
 import {
   ForumCategory,
@@ -44,6 +45,8 @@ interface ForumPostUI {
   body: string;
   time: string;
   official?: boolean;
+  moderationStatus?: ForumModerationStatus;
+  rejectionNote?: string | null;
   comments: ForumCommentUI[];
 }
 
@@ -153,10 +156,18 @@ export default function AdminForumScreen() {
     description?: string;
     author?: string;
   } | null>(null);
+  const [rejectTarget, setRejectTarget] = useState<ForumPostUI | null>(null);
+  const [rejectNote, setRejectNote] = useState("");
+  const [moderatingPostId, setModeratingPostId] = useState<string | null>(null);
+  const [showGuidelines, setShowGuidelines] = useState(false);
 
   const loadPostsFromDb = useCallback(async () => {
     try {
-      const dbPosts = await forumService.fetchPosts();
+      // Admins see published posts and the review queue. Rejected posts are
+      // withdrawn from the forum entirely.
+      const dbPosts = await forumService.fetchPosts({
+        moderationStatuses: ["pending", "approved"],
+      });
       const formatted: ForumPostUI[] = dbPosts.map((p) => ({
           id: p.post_id,
           author: getForumSourceLabel(p.account, p.is_official),
@@ -166,6 +177,8 @@ export default function AdminForumScreen() {
           body: p.body,
           time: formatTimeAgo(p.created_at),
           official: p.is_official,
+          moderationStatus: p.moderation_status,
+          rejectionNote: p.rejection_note,
           comments: (p.comments || []).map((c) => ({
             id: c.comment_id,
             author: getForumSourceLabel(c.account, c.is_official),
@@ -346,6 +359,63 @@ export default function AdminForumScreen() {
     }
   };
 
+  const approvePost = async (post: ForumPostUI) => {
+    const confirmed = await confirmAction(
+      `Approve "${post.title}"? It will be published to the forum and the author, the authority, and every resident will be notified.`,
+    );
+    if (!confirmed) return;
+
+    setModeratingPostId(post.id);
+    try {
+      const adminAccId = await AsyncStorage.getItem("acc_id");
+      if (!adminAccId) {
+        Alert.alert("Not signed in", "Could not identify the reviewing admin.");
+        return;
+      }
+
+      const ok = await forumService.approvePost(post.id, adminAccId);
+      if (!ok) {
+        Alert.alert(
+          "Could not approve",
+          "The post could not be approved. It may have already been reviewed.",
+        );
+      }
+      await loadPostsFromDb();
+    } finally {
+      setModeratingPostId(null);
+    }
+  };
+
+  const submitRejection = async () => {
+    if (!rejectTarget) return;
+
+    const note = rejectNote.trim();
+    if (!note) return;
+
+    setModeratingPostId(rejectTarget.id);
+    try {
+      const adminAccId = await AsyncStorage.getItem("acc_id");
+      if (!adminAccId) {
+        Alert.alert("Not signed in", "Could not identify the reviewing admin.");
+        return;
+      }
+
+      const ok = await forumService.rejectPost(rejectTarget.id, adminAccId, note);
+      if (!ok) {
+        Alert.alert(
+          "Could not reject",
+          "The post could not be rejected. It may have already been reviewed.",
+        );
+      }
+
+      setRejectTarget(null);
+      setRejectNote("");
+      await loadPostsFromDb();
+    } finally {
+      setModeratingPostId(null);
+    }
+  };
+
   const deletePost = async (postId: string) => {
     const targetPost = posts.find((p) => p.id === postId);
     const question = targetPost?.official
@@ -513,6 +583,7 @@ export default function AdminForumScreen() {
               </View>
             </View>
 
+
             {(() => {
               const { isEvent, event, cleanBody } = parseEventFromBody(post.body);
               return (
@@ -556,6 +627,68 @@ export default function AdminForumScreen() {
                 </>
               );
             })()}
+
+            {post.moderationStatus === "pending" && (
+              <View style={styles.reviewPanel}>
+                <View style={styles.reviewHeaderRow}>
+                  <Ionicons name="shield-checkmark-outline" size={16} color="#B54708" />
+                  <Text style={styles.reviewPendingTitle}>Awaiting your review</Text>
+                </View>
+                <Text style={styles.reviewHint}>
+                  Check this post against the Community Guidelines. Approving
+                  publishes it and notifies the author, the authority, and every
+                  resident.
+                </Text>
+
+                <TouchableOpacity
+                  onPress={() => setShowGuidelines(true)}
+                  style={styles.reviewGuidelinesLink}
+                  accessibilityRole="button"
+                  accessibilityLabel="View Community Guidelines"
+                >
+                  <Ionicons name="shield-checkmark" size={14} color="#00475E" />
+                  <Text style={styles.reviewGuidelinesText}>
+                    View Community Guidelines
+                  </Text>
+                  <Ionicons name="chevron-forward" size={13} color="#00475E" />
+                </TouchableOpacity>
+
+                <View style={styles.reviewActions}>
+                  <TouchableOpacity
+                    disabled={moderatingPostId === post.id}
+                    onPress={() => approvePost(post)}
+                    style={[
+                      styles.reviewButton,
+                      styles.approveButton,
+                      moderatingPostId === post.id && styles.disabledButton,
+                    ]}
+                    accessibilityRole="button"
+                    accessibilityLabel="Approve post"
+                  >
+                    <Ionicons name="checkmark-circle" size={15} color="#FFFFFF" />
+                    <Text style={styles.approveButtonText}>Accept</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    disabled={moderatingPostId === post.id}
+                    onPress={() => {
+                      setRejectTarget(post);
+                      setRejectNote("");
+                    }}
+                    style={[
+                      styles.reviewButton,
+                      styles.rejectButton,
+                      moderatingPostId === post.id && styles.disabledButton,
+                    ]}
+                    accessibilityRole="button"
+                    accessibilityLabel="Reject post"
+                  >
+                    <Ionicons name="close-circle" size={15} color="#B42318" />
+                    <Text style={styles.rejectButtonText}>Reject</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
 
             <View style={styles.commentHeading}>
               <Ionicons name="chatbubble-outline" size={15} color="#667085" />
@@ -617,34 +750,37 @@ export default function AdminForumScreen() {
             ))}
 
             {/* Comment Composer */}
-            <View style={styles.commentComposer}>
-              {replyTarget[post.id] && (
-                <View style={styles.replyingBanner}>
-                  <Text style={styles.replyingText}>Replying to comment</Text>
-                  <TouchableOpacity
-                    onPress={() => setReplyTarget((current) => ({ ...current, [post.id]: null }))}
-                  >
-                    <Ionicons name="close-circle" size={14} color="#667085" />
+            {/* Commenting opens only once the post is published. */}
+            {isPostOpenForComments(post) && (
+              <View style={styles.commentComposer}>
+                {replyTarget[post.id] && (
+                  <View style={styles.replyingBanner}>
+                    <Text style={styles.replyingText}>Replying to comment</Text>
+                    <TouchableOpacity
+                      onPress={() => setReplyTarget((current) => ({ ...current, [post.id]: null }))}
+                    >
+                      <Ionicons name="close-circle" size={14} color="#667085" />
+                    </TouchableOpacity>
+                  </View>
+                )}
+                <View style={styles.composerInputRow}>
+                  <TextInput
+                    value={commentDrafts[post.id] ?? ""}
+                    onChangeText={(text) =>
+                      setCommentDrafts((current) => ({ ...current, [post.id]: text }))
+                    }
+                    placeholder={
+                      replyTarget[post.id] ? "Write a reply to comment..." : "Add an admin comment..."
+                    }
+                    placeholderTextColor="#98A2B3"
+                    style={styles.commentInput}
+                  />
+                  <TouchableOpacity onPress={() => addComment(post.id)} style={styles.commentSend}>
+                    <Ionicons name="send" size={16} color="#FFFFFF" />
                   </TouchableOpacity>
                 </View>
-              )}
-              <View style={styles.composerInputRow}>
-                <TextInput
-                  value={commentDrafts[post.id] ?? ""}
-                  onChangeText={(text) =>
-                    setCommentDrafts((current) => ({ ...current, [post.id]: text }))
-                  }
-                  placeholder={
-                    replyTarget[post.id] ? "Write a reply to comment..." : "Add an admin comment..."
-                  }
-                  placeholderTextColor="#98A2B3"
-                  style={styles.commentInput}
-                />
-                <TouchableOpacity onPress={() => addComment(post.id)} style={styles.commentSend}>
-                  <Ionicons name="send" size={16} color="#FFFFFF" />
-                </TouchableOpacity>
               </View>
-            </View>
+            )}
           </View>
         ))}
 
@@ -655,6 +791,91 @@ export default function AdminForumScreen() {
         ) : null}
       </KeyboardAwareScrollView>
       <AdminBottomNav activeRoute="forum" />
+
+      <CommunityGuidelinesModal
+        visible={showGuidelines}
+        onClose={() => setShowGuidelines(false)}
+      />
+
+      <Modal
+        visible={Boolean(rejectTarget)}
+        transparent
+        animationType="fade"
+        statusBarTranslucent
+        onRequestClose={() => setRejectTarget(null)}
+      >
+        <Pressable
+          style={styles.modalOverlay}
+          onPress={() => setRejectTarget(null)}
+        >
+          <Pressable
+            style={styles.modalCard}
+            onPress={(event) => event.stopPropagation()}
+          >
+            <View style={styles.modalHeaderRow}>
+              <View style={styles.modalIconBadge}>
+                <Ionicons name="close-circle-outline" size={20} color="#B42318" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.modalTitle}>Reject this post</Text>
+                <Text style={styles.modalSubtitle} numberOfLines={2}>
+                  {rejectTarget?.title}
+                </Text>
+              </View>
+            </View>
+
+            {/* A Modal renders in its own window, so it needs its own
+                keyboard handling — the screen's scroll view cannot reach it. */}
+            <KeyboardAwareScrollView
+              contentContainerStyle={styles.modalScrollBody}
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+              bottomOffset={130}
+            >
+              <Text style={styles.modalLabel}>
+                Why is this post being rejected?
+              </Text>
+              <Text style={styles.modalHelp}>
+                This note is sent to the author with their rejection
+                notification, so explain which guideline the post did not meet.
+              </Text>
+
+              <TextInput
+                value={rejectNote}
+                onChangeText={setRejectNote}
+                placeholder="e.g. This post shares a neighbour's personal details without consent."
+                placeholderTextColor="#98A2B3"
+                multiline
+                style={styles.modalInput}
+              />
+            </KeyboardAwareScrollView>
+
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                onPress={() => setRejectTarget(null)}
+                style={[styles.reviewButton, styles.modalCancelButton]}
+                accessibilityRole="button"
+              >
+                <Text style={styles.modalCancelText}>Cancel</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                disabled={!rejectNote.trim() || moderatingPostId !== null}
+                onPress={submitRejection}
+                style={[
+                  styles.reviewButton,
+                  styles.modalConfirmButton,
+                  (!rejectNote.trim() || moderatingPostId !== null) &&
+                    styles.disabledButton,
+                ]}
+                accessibilityRole="button"
+              >
+                <Text style={styles.modalConfirmText}>Reject & notify</Text>
+              </TouchableOpacity>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
 
       {selectedEventPost && (
         <CommunityEventViewerModal
@@ -669,6 +890,11 @@ export default function AdminForumScreen() {
       )}
     </View>
   );
+}
+
+/** Fallback demo posts carry no moderation status and are always open. */
+function isPostOpenForComments(post: ForumPostUI): boolean {
+  return !post.moderationStatus || post.moderationStatus === "approved";
 }
 
 function getInitials(name: string): string {
@@ -737,6 +963,105 @@ const styles = StyleSheet.create({
   statusBadge: { paddingHorizontal: 9, paddingVertical: 4, borderRadius: 12 },
   statusText: { fontSize: 9, fontWeight: "700" },
   deleteIcon: { padding: 6, borderRadius: 14, backgroundColor: "#FFF1F0" },
+  reviewPanel: {
+    marginTop: 14,
+    padding: 12,
+    borderRadius: 10,
+    backgroundColor: "#FFFAEB",
+    borderWidth: 1,
+    borderColor: "#FEDF89",
+    gap: 6,
+  },
+  reviewHeaderRow: { flexDirection: "row", alignItems: "center", gap: 6 },
+  reviewPendingTitle: { color: "#B54708", fontSize: 12, fontWeight: "800" },
+  reviewGuidelinesLink: {
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "flex-start",
+    gap: 5,
+    paddingVertical: 2,
+  },
+  reviewGuidelinesText: {
+    color: "#00475E",
+    fontSize: 11,
+    fontWeight: "700",
+    textDecorationLine: "underline",
+  },
+  reviewHint: { color: "#667085", fontSize: 11, lineHeight: 16 },
+  reviewActions: { flexDirection: "row", gap: 8, marginTop: 4 },
+  reviewButton: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  approveButton: { backgroundColor: "#027A48" },
+  approveButtonText: { color: "#FFFFFF", fontSize: 12, fontWeight: "700" },
+  rejectButton: { backgroundColor: "#FFFFFF", borderWidth: 1, borderColor: "#FECDCA" },
+  rejectButtonText: { color: "#B42318", fontSize: 12, fontWeight: "700" },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(15, 23, 42, 0.45)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 16,
+  },
+  modalCard: {
+    width: "100%",
+    maxWidth: 420,
+    maxHeight: "90%",
+    backgroundColor: "#FFFFFF",
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "#EAECF0",
+    padding: 18,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.16,
+    shadowRadius: 24,
+    elevation: 10,
+  },
+  modalHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingBottom: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: "#EAECF0",
+  },
+  modalIconBadge: {
+    width: 42,
+    height: 42,
+    borderRadius: 12,
+    backgroundColor: "#FFF1F0",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  modalTitle: { fontSize: 17, fontWeight: "800", color: "#1F2937" },
+  modalSubtitle: { fontSize: 11, color: "#667085", marginTop: 2 },
+  modalScrollBody: { paddingTop: 2 },
+  modalLabel: { marginTop: 14, color: "#344054", fontSize: 12, fontWeight: "700" },
+  modalHelp: { marginTop: 4, color: "#667085", fontSize: 11, lineHeight: 16 },
+  modalInput: {
+    marginTop: 8,
+    minHeight: 88,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: "#D0D5DD",
+    borderRadius: 10,
+    backgroundColor: "#FAFAFA",
+    color: "#191C1E",
+    fontSize: 13,
+    textAlignVertical: "top",
+  },
+  modalActions: { flexDirection: "row", gap: 8, marginTop: 14 },
+  modalCancelButton: { backgroundColor: "#F2F4F7" },
+  modalCancelText: { color: "#344054", fontSize: 12, fontWeight: "700" },
+  modalConfirmButton: { backgroundColor: "#B42318" },
+  modalConfirmText: { color: "#FFFFFF", fontSize: 12, fontWeight: "700" },
   postTitle: { marginTop: 14, color: "#191C1E", fontSize: 16, fontWeight: "700" },
   postBody: { marginTop: 6, color: "#40484D", fontSize: 12, lineHeight: 18 },
   commentHeading: { flexDirection: "row", alignItems: "center", gap: 5, marginTop: 16, marginBottom: 8 },

@@ -24,11 +24,7 @@ const colors = {
   subtitle: "#707070",
   border: "#E5E7EB",
   blue: "#E8F2FF",
-  orange: "#FFF3E5",
-  red: "#FFECEC",
   blueIcon: "#2D6CDF",
-  orangeIcon: "#C97816",
-  redIcon: "#C0392B",
 };
 
 export default function PendingAccountsPage() {
@@ -109,39 +105,7 @@ export default function PendingAccountsPage() {
           </View>
           <View style={styles.statsTextBlock}>
             <Text style={styles.smallLabel}>PENDING ACCOUNT</Text>
-            <Text style={styles.bigText}>{metrics.pendingCount} Accounts</Text>
-          </View>
-        </View>
-
-        <View style={styles.statsCard}>
-          <View style={styles.iconOrange}>
-            <Ionicons
-              name="shield-checkmark-outline"
-              size={24}
-              color={colors.orangeIcon}
-            />
-          </View>
-          <View style={styles.statsTextBlock}>
-            <Text style={styles.smallLabel}>VERIFIED TODAY</Text>
-            <Text style={styles.bigText}>
-              {metrics.verifiedTodayCount} Citizens
-            </Text>
-          </View>
-        </View>
-
-        <View style={styles.statsCard}>
-          <View style={styles.iconRed}>
-            <Ionicons
-              name="close-circle-outline"
-              size={24}
-              color={colors.redIcon}
-            />
-          </View>
-          <View style={styles.statsTextBlock}>
-            <Text style={styles.smallLabel}>REJECTED TODAY</Text>
-            <Text style={styles.bigText}>
-              {metrics.rejectedTodayCount} Accounts
-            </Text>
+            <Text style={styles.bigText}>{metrics.pendingCount} Account</Text>
           </View>
         </View>
 
@@ -358,22 +322,6 @@ const styles = StyleSheet.create({
     height: 46,
     borderRadius: 23,
     backgroundColor: colors.blue,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  iconOrange: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
-    backgroundColor: colors.orange,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  iconRed: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
-    backgroundColor: colors.red,
     justifyContent: "center",
     alignItems: "center",
   },

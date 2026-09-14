@@ -22,11 +22,7 @@ const colors = {
   text: "#1E1E1E",
   subtitle: "#707070",
   blue: "#E8F2FF",
-  orange: "#FFF3E5",
-  green: "#EAF8EF",
   blueIcon: "#2D6CDF",
-  orangeIcon: "#C97816",
-  greenIcon: "#1E8E3E",
 };
 
 type AccountSortOrder = "newest" | "oldest";
@@ -89,40 +85,8 @@ export default function RegisteredAccountsPage() {
           <View style={styles.statsTextBlock}>
             <Text style={styles.smallLabel}>REGISTERED</Text>
             <Text style={styles.bigText}>
-              {metrics.registeredCount} Accounts
+              {metrics.registeredCount} Account
             </Text>
-          </View>
-        </View>
-
-        <View style={styles.statsCard}>
-          <View style={styles.iconOrange}>
-            <Ionicons
-              name="shield-checkmark-outline"
-              size={24}
-              color={colors.orangeIcon}
-            />
-          </View>
-
-          <View style={styles.statsTextBlock}>
-            <Text style={styles.smallLabel}>RECENTLY VERIFIED</Text>
-            <Text style={styles.bigText}>
-              {metrics.verifiedTodayCount} Citizens
-            </Text>
-          </View>
-        </View>
-
-        <View style={styles.statsCard}>
-          <View style={styles.iconGreen}>
-            <Ionicons
-              name="business-outline"
-              size={24}
-              color={colors.greenIcon}
-            />
-          </View>
-
-          <View style={styles.statsTextBlock}>
-            <Text style={styles.smallLabel}>AUTHORITY ACCOUNTS</Text>
-            <Text style={styles.bigText}>{metrics.authorityCount} Offices</Text>
           </View>
         </View>
 
@@ -366,24 +330,6 @@ const styles = StyleSheet.create({
     height: 44,
     borderRadius: 10,
     backgroundColor: colors.blue,
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 14,
-  },
-  iconOrange: {
-    width: 44,
-    height: 44,
-    borderRadius: 10,
-    backgroundColor: colors.orange,
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 14,
-  },
-  iconGreen: {
-    width: 44,
-    height: 44,
-    borderRadius: 10,
-    backgroundColor: colors.green,
     justifyContent: "center",
     alignItems: "center",
     marginRight: 14,
