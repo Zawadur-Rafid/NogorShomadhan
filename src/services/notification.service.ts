@@ -21,6 +21,9 @@ export type NotificationType =
   | "complaint_feedback_received"
   | "complaint_feedback_replied"
   | "forum_discussion_created"
+  | "forum_post_review_required"
+  | "forum_post_approved"
+  | "forum_post_rejected"
   | "forum_comment_received"
   | "forum_reply_received"
   | "official_announcement"
@@ -154,6 +157,7 @@ export interface AdminNotification {
     | "account"
     | "complaint_review"
     | "forum_announcement"
+    | "forum_post_review"
     | "complaint_update"
     | "duplicate_review";
   icon: string;
@@ -289,12 +293,20 @@ export const notificationService = {
           (inboxNotifications ?? []).forEach((notification) => {
             const isDuplicate =
               notification.type === "duplicate_review_required";
+            const isForumReview =
+              notification.type === "forum_post_review_required";
             notifications.push({
               id: notification.notification_id,
-              type: isDuplicate ? "duplicate_review" : "complaint_update",
+              type: isDuplicate
+                ? "duplicate_review"
+                : isForumReview
+                  ? "forum_post_review"
+                  : "complaint_update",
               icon: isDuplicate
                 ? "git-compare-outline"
-                : "notifications-outline",
+                : isForumReview
+                  ? "shield-checkmark-outline"
+                  : "notifications-outline",
               title: notification.title,
               message: notification.body,
               time: formatTimeAgo(notification.created_at),
@@ -371,7 +383,7 @@ export const notificationService = {
       const { data: announcements, error: announcementsError } = await supabase
         .from("forum_posts")
         .select(
-          "post_id, title, created_at, is_official, account:account!acc_id(full_name)",
+          "post_id, title, created_at, is_official, account:account!forum_posts_acc_id_fkey(full_name)",
         )
         .eq("is_official", true)
         .order("created_at", { ascending: false })
@@ -517,9 +529,13 @@ export const notificationService = {
     try {
       const notifications: ForumNotification[] = [];
 
+      // Posts awaiting (or refused) admin review are not announced to anyone.
+      // Admins learn about them through the forum_post_review_required inbox
+      // notification instead.
       const { data: posts, error: postsError } = await supabase
         .from("forum_posts")
-        .select("*, account:account!acc_id(full_name, username, role)")
+        .select("*, account:account!forum_posts_acc_id_fkey(full_name, username, role)")
+        .eq("moderation_status", "approved")
         .order("created_at", { ascending: false });
 
       if (postsError) {

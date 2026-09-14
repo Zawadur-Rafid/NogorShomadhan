@@ -135,7 +135,9 @@ function getNotificationKind(notification: AppNotification): NotificationKind {
   if (
     notification.type === 'forum_discussion_created' ||
     notification.type === 'forum_comment_received' ||
-    notification.type === 'forum_reply_received'
+    notification.type === 'forum_reply_received' ||
+    notification.type === 'forum_post_approved' ||
+    notification.type === 'forum_post_rejected'
   ) {
     return 'forum';
   }
