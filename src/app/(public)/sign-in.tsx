@@ -205,6 +205,9 @@ export default function SignInScreen() {
       <KeyboardAwareScrollView
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
+          // Clear the password field by enough to also reveal the Sign In
+          // button and the sign-up link sitting below it.
+          bottomOffset={160}
         >
           <View style={styles.topNav}>
             <BackButton />
@@ -297,6 +300,9 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     padding: 16,
+    // Centred content that exactly fills the screen has no scroll range, so the
+    // keyboard cannot push the form up. This slack gives it somewhere to go.
+    paddingBottom: 48,
     justifyContent: "center",
   },
   topNav: {
