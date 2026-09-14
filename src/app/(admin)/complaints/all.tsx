@@ -1,5 +1,6 @@
 import AdminBottomNav from "@/components/AdminBottomNav";
 import { supabase } from "@/lib/supabase";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
@@ -375,6 +376,35 @@ export function ComplaintsListScreen({
         setActionError(`Accept failed: ${error.message}`);
         setActionLoadingId(null);
         return;
+      }
+
+      // Record the verification the same way authority actions are recorded,
+      // so it shows up in the admin activity log.
+      try {
+        const adminAccId = await AsyncStorage.getItem("acc_id");
+        const { error: historyError } = await supabase
+          .from("complaint_status_history")
+          .insert([
+            {
+              comp_id: complaintId,
+              from_status: "unverified",
+              to_status: "pending",
+              changed_by_acc_id: adminAccId,
+              note: "Verified by admin and moved to pending.",
+            },
+          ]);
+
+        if (historyError) {
+          console.warn(
+            "Complaint acceptance could not be logged:",
+            historyError.message,
+          );
+        }
+      } catch (historyException) {
+        console.warn(
+          "Complaint acceptance could not be logged:",
+          historyException,
+        );
       }
 
       setReviewComplaints((current) =>

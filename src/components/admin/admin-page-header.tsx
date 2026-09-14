@@ -110,6 +110,23 @@ export default function AdminPageHeader() {
         <View style={styles.accountMenu}>
           <Pressable
             accessibilityRole="button"
+            onPress={() => {
+              setMenuVisible(false);
+              router.push("/(admin)/activity-log" as any);
+            }}
+            style={({ pressed }) => [
+              styles.menuItem,
+              pressed && styles.menuItemPressed,
+            ]}
+          >
+            <Ionicons name="time-outline" size={18} color="#23435D" />
+            <Text style={styles.menuItemText}>Activity log</Text>
+          </Pressable>
+
+          <View style={styles.menuDivider} />
+
+          <Pressable
+            accessibilityRole="button"
             onPress={confirmLogout}
             style={({ pressed }) => [
               styles.logoutButton,
@@ -204,7 +221,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: "100%",
     right: 18,
-    minWidth: 126,
+    minWidth: 168,
     padding: 6,
     borderRadius: 10,
     backgroundColor: "#FFFFFF",
@@ -293,6 +310,22 @@ const styles = StyleSheet.create({
   },
   logoutText: { color: "#B42318", fontSize: 14, fontWeight: "700" },
   pressed: { backgroundColor: "#FFF1F0" },
+  menuItem: {
+    minHeight: 40,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 9,
+    paddingHorizontal: 12,
+    borderRadius: 7,
+  },
+  menuItemPressed: { backgroundColor: "#EEF3F7" },
+  menuItemText: { color: "#23435D", fontSize: 14, fontWeight: "700" },
+  menuDivider: {
+    height: 1,
+    marginVertical: 4,
+    marginHorizontal: 6,
+    backgroundColor: "#EAEDF1",
+  },
   modalOverlay: {
     flex: 1,
     alignItems: "center",

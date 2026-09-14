@@ -1,4 +1,15 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
 import { supabase } from "../lib/supabase";
+
+/** The signed-in admin, recorded as the actor on every review decision. */
+async function currentAdminId(): Promise<string | null> {
+  try {
+    return await AsyncStorage.getItem("acc_id");
+  } catch {
+    return null;
+  }
+}
 
 type DuplicateConfirmationRow = {
   acc_id: string | null;
@@ -90,6 +101,7 @@ export async function confirmDuplicate(dupId: string, adminNote?: string) {
     .update({
       admin_status: "confirmed",
       reviewed_at: new Date().toISOString(),
+      reviewed_by: await currentAdminId(),
       admin_note: adminNote || null,
     })
     .eq("dup_id", dupId)
@@ -140,6 +152,7 @@ export async function rejectDuplicate(dupId: string, adminNote?: string) {
     .update({
       admin_status: "rejected",
       reviewed_at: new Date().toISOString(),
+      reviewed_by: await currentAdminId(),
       admin_note: adminNote || null,
     })
     .eq("dup_id", dupId)

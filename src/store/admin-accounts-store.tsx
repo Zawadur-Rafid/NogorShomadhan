@@ -83,6 +83,36 @@ function getTodayKey() {
   return `admin_metrics_${now.getFullYear()}_${now.getMonth() + 1}_${now.getDate()}`;
 }
 
+/**
+ * Records an admin decision on a resident account so it can appear in the
+ * admin activity log. Failures are logged, never surfaced: the review itself
+ * must not fail because its audit row could not be written.
+ */
+async function recordAccountReview(
+  accountId: string,
+  account: AdminAccount | undefined,
+  decision: "approved" | "rejected",
+) {
+  try {
+    const reviewedBy = await AsyncStorage.getItem("acc_id");
+    const { error } = await supabase.from("account_review_log").insert([
+      {
+        acc_id: accountId,
+        full_name: account?.fullName ?? null,
+        username: account?.username ?? null,
+        decision,
+        reviewed_by: reviewedBy,
+      },
+    ]);
+
+    if (error) {
+      console.warn("Account review could not be logged:", error.message);
+    }
+  } catch (e) {
+    console.warn("Account review could not be logged:", e);
+  }
+}
+
 const AdminAccountsContext = createContext<AdminAccountsContextValue | null>(
   null,
 );
@@ -209,6 +239,8 @@ export function AdminAccountsProvider({ children }: { children: ReactNode }) {
 
   const approveAccount = useCallback(
     async (accountId: string) => {
+      const account = pendingAccounts.find((a) => a.id === accountId);
+
       const { error: updateError } = await supabase
         .from("account")
         .update({ status: "verified" })
@@ -218,6 +250,8 @@ export function AdminAccountsProvider({ children }: { children: ReactNode }) {
         setError(updateError.message);
         return;
       }
+
+      await recordAccountReview(accountId, account, "approved");
 
       // Record approval for today
       try {
@@ -236,7 +270,6 @@ export function AdminAccountsProvider({ children }: { children: ReactNode }) {
       }
 
       // Send SMS
-      const account = pendingAccounts.find((a) => a.id === accountId);
       if (account?.phoneNum) {
         await smsService.sendApprovalSMS(account.phoneNum).catch(console.error);
       }
@@ -250,6 +283,10 @@ export function AdminAccountsProvider({ children }: { children: ReactNode }) {
     async (accountId: string) => {
       // Find account first before deleting it to get the phone number
       const account = pendingAccounts.find((a) => a.id === accountId);
+
+      // Logged before the delete: the account row is about to disappear, so
+      // the log keeps the only remaining record of who was rejected.
+      await recordAccountReview(accountId, account, "rejected");
 
       const { error: deleteError } = await supabase
         .from("account")
