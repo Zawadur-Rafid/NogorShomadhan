@@ -18,7 +18,13 @@ import KeyboardAwareScrollView, {
 } from "@/components/keyboard-aware-scroll-view";
 import BottomNav from "@/components/BottomNav";
 import ResidentPageHeader from "@/components/resident-page-header";
-import { forumService, ForumStatus } from "@/services/forum.service";
+import { forumService, ForumModerationStatus, ForumStatus } from "@/services/forum.service";
+import {
+  CommunityGuidelinesModal,
+  CommunityGuidelinesNotice,
+} from "@/components/forum/community-guidelines";
+import PostSubmittedModal from "@/components/forum/post-submitted-modal";
+import PostRejectedModal from "@/components/forum/post-rejected-modal";
 import { confirmAction } from "@/utils/confirm";
 import {
   ForumCategory,
@@ -52,6 +58,8 @@ interface ForumPostUI {
   body: string;
   time: string;
   official?: boolean;
+  moderationStatus?: ForumModerationStatus;
+  rejectionNote?: string | null;
   comments: ForumCommentUI[];
 }
 
@@ -158,10 +166,18 @@ export default function ResidentForumScreen() {
     description?: string;
     author?: string;
   } | null>(null);
+  const [showGuidelines, setShowGuidelines] = useState(false);
+  const [showSubmittedModal, setShowSubmittedModal] = useState(false);
+  const [rejectedPost, setRejectedPost] = useState<{
+    title: string;
+    note: string | null;
+  } | null>(null);
+  const rejectionLookupRef = useRef<string | null>(null);
 
   const loadPostsFromDb = useCallback(async () => {
     try {
-      const dbPosts = await forumService.fetchPosts();
+      const viewerAccId = await AsyncStorage.getItem("acc_id");
+      const dbPosts = await forumService.fetchPosts({ viewerAccId });
       const formatted: ForumPostUI[] = dbPosts.map((p) => ({
           id: p.post_id,
           author: getForumSourceLabel(p.account, p.is_official),
@@ -171,6 +187,8 @@ export default function ResidentForumScreen() {
           body: p.body,
           time: formatTimeAgo(p.created_at),
           official: p.is_official,
+          moderationStatus: p.moderation_status,
+          rejectionNote: p.rejection_note,
           comments: (p.comments || []).map((c) => ({
             id: c.comment_id,
             author: getForumSourceLabel(c.account, c.is_official),
@@ -234,6 +252,26 @@ export default function ResidentForumScreen() {
     requestAnimationFrame(scrollToNotificationTarget);
   }, [posts, scrollToNotificationTarget, targetPostId]);
 
+  // A rejected post is withdrawn from the forum, so its notification has
+  // nothing to scroll to. Look the post up and show the reason instead.
+  useEffect(() => {
+    if (!targetPostId) return;
+    if (rejectionLookupRef.current === targetPostId) return;
+    if (posts.some((post) => post.id === targetPostId)) return;
+
+    rejectionLookupRef.current = targetPostId;
+
+    void (async () => {
+      const accId = await AsyncStorage.getItem("acc_id");
+      if (!accId) return;
+
+      const post = await forumService.fetchOwnRejectedPost(targetPostId, accId);
+      if (post) {
+        setRejectedPost({ title: post.title, note: post.rejection_note ?? null });
+      }
+    })();
+  }, [posts, targetPostId]);
+
   const changeFilter = (filter: ForumCategory) => {
     if (targetKey) {
       scrolledTargetRef.current = targetKey;
@@ -261,25 +299,15 @@ export default function ResidentForumScreen() {
   const publishPost = async () => {
     if (!postTitle.trim() || !postBody.trim()) return;
 
-    const confirmed = await confirmAction('Are you sure you want to post this resident discussion?');
+    const confirmed = await confirmAction(
+      'This post will be reviewed by an admin against the Community Guidelines before it appears in the forum. Submit it now?',
+    );
     if (!confirmed) return;
 
     const title = postTitle.trim();
     const body = postBody.trim();
     setPostTitle("");
     setPostBody("");
-
-    const newPostUI: ForumPostUI = {
-      id: `pending-post-${posts.length + 1}`,
-      author: "Resident",
-      initials: "RS",
-      status: "Update",
-      title,
-      body,
-      time: "Just now",
-      comments: [],
-    };
-    setPosts((current) => [newPostUI, ...current]);
 
     try {
       const accId = (await AsyncStorage.getItem("acc_id")) || "00000000-0000-0000-0000-000000000000";
@@ -290,8 +318,10 @@ export default function ResidentForumScreen() {
       });
       loadPostsFromDb();
     } catch {
-      console.log("Local resident post created; database sync skipped.");
+      console.log("Resident post submitted; database sync skipped.");
     }
+
+    setShowSubmittedModal(true);
   };
 
   const addComment = async (postId: string) => {
@@ -378,13 +408,15 @@ export default function ResidentForumScreen() {
             style={styles.bodyInput}
           />
 
+          <CommunityGuidelinesNotice onPress={() => setShowGuidelines(true)} />
+
           <TouchableOpacity
             disabled={!postTitle.trim() || !postBody.trim()}
             onPress={publishPost}
             style={[styles.publishButton, (!postTitle.trim() || !postBody.trim()) && styles.disabledButton]}
           >
             <Ionicons name="send" size={16} color="#FFFFFF" />
-            <Text style={styles.publishText}>Post Discussion</Text>
+            <Text style={styles.publishText}>Submit for Review</Text>
           </TouchableOpacity>
         </View>
 
@@ -424,6 +456,17 @@ export default function ResidentForumScreen() {
                 <Text style={[styles.statusText, { color: forumCategoryTheme[getForumCategory(post)].color }]}>{getForumCategory(post)}</Text>
               </View>
             </View>
+
+            {/* Only the author can see their own post before it is approved. */}
+            {post.moderationStatus === "pending" && (
+              <View style={styles.moderationNotice}>
+                <Ionicons name="time-outline" size={14} color="#B54708" />
+                <Text style={styles.moderationPendingText}>
+                  Awaiting admin review. Only you can see this post for now.
+                </Text>
+              </View>
+            )}
+
 
             {(() => {
               const { isEvent, event, cleanBody } = parseEventFromBody(post.body);
@@ -518,34 +561,37 @@ export default function ResidentForumScreen() {
               </View>
             ))}
 
-            <View style={styles.commentComposer}>
-              {replyTarget[post.id] && (
-                <View style={styles.replyingBanner}>
-                  <Text style={styles.replyingText}>Replying to comment</Text>
-                  <TouchableOpacity
-                    onPress={() => setReplyTarget((current) => ({ ...current, [post.id]: null }))}
-                  >
-                    <Ionicons name="close-circle" size={14} color="#667085" />
+            {/* A post still under review has no audience yet, so no replies. */}
+            {isPostOpenForComments(post) && (
+              <View style={styles.commentComposer}>
+                {replyTarget[post.id] && (
+                  <View style={styles.replyingBanner}>
+                    <Text style={styles.replyingText}>Replying to comment</Text>
+                    <TouchableOpacity
+                      onPress={() => setReplyTarget((current) => ({ ...current, [post.id]: null }))}
+                    >
+                      <Ionicons name="close-circle" size={14} color="#667085" />
+                    </TouchableOpacity>
+                  </View>
+                )}
+                <View style={styles.composerInputRow}>
+                  <TextInput
+                    value={commentDrafts[post.id] ?? ""}
+                    onChangeText={(text) =>
+                      setCommentDrafts((current) => ({ ...current, [post.id]: text }))
+                    }
+                    placeholder={
+                      replyTarget[post.id] ? "Write a reply to comment..." : "Add a reply..."
+                    }
+                    placeholderTextColor="#98A2B3"
+                    style={styles.commentInput}
+                  />
+                  <TouchableOpacity onPress={() => addComment(post.id)} style={styles.commentSend}>
+                    <Ionicons name="send" size={16} color="#FFFFFF" />
                   </TouchableOpacity>
                 </View>
-              )}
-              <View style={styles.composerInputRow}>
-                <TextInput
-                  value={commentDrafts[post.id] ?? ""}
-                  onChangeText={(text) =>
-                    setCommentDrafts((current) => ({ ...current, [post.id]: text }))
-                  }
-                  placeholder={
-                    replyTarget[post.id] ? "Write a reply to comment..." : "Add a reply..."
-                  }
-                  placeholderTextColor="#98A2B3"
-                  style={styles.commentInput}
-                />
-                <TouchableOpacity onPress={() => addComment(post.id)} style={styles.commentSend}>
-                  <Ionicons name="send" size={16} color="#FFFFFF" />
-                </TouchableOpacity>
               </View>
-            </View>
+            )}
           </View>
         ))}
 
@@ -558,6 +604,27 @@ export default function ResidentForumScreen() {
       </KeyboardAwareScrollView>
 
       <BottomNav activeRoute="forum" />
+
+      <CommunityGuidelinesModal
+        visible={showGuidelines}
+        onClose={() => setShowGuidelines(false)}
+      />
+
+      <PostSubmittedModal
+        visible={showSubmittedModal}
+        onDismiss={() => setShowSubmittedModal(false)}
+      />
+
+      <PostRejectedModal
+        visible={Boolean(rejectedPost)}
+        title={rejectedPost?.title ?? ""}
+        note={rejectedPost?.note ?? null}
+        onDismiss={() => setRejectedPost(null)}
+        onViewGuidelines={() => {
+          setRejectedPost(null);
+          setShowGuidelines(true);
+        }}
+      />
 
       {selectedEventPost && (
         <CommunityEventViewerModal
@@ -572,6 +639,11 @@ export default function ResidentForumScreen() {
       )}
     </SafeAreaView>
   );
+}
+
+/** Mock fallback posts carry no moderation status and are always open. */
+function isPostOpenForComments(post: ForumPostUI): boolean {
+  return !post.moderationStatus || post.moderationStatus === "approved";
 }
 
 function getInitials(name: string): string {
@@ -634,6 +706,17 @@ const styles = StyleSheet.create({
   time: { marginTop: 2, color: "#98A2B3", fontSize: 11 },
   statusBadge: { paddingHorizontal: 8, paddingVertical: 5, borderRadius: 12 },
   statusText: { fontSize: 10, fontWeight: "700" },
+  moderationNotice: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 6,
+    marginTop: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderRadius: 8,
+    backgroundColor: "#FFFAEB",
+  },
+  moderationPendingText: { flex: 1, color: "#B54708", fontSize: 11, lineHeight: 16, fontWeight: "600" },
   postTitle: { marginTop: 14, color: "#191C1E", fontSize: 18, fontWeight: "600" },
   postBody: { marginTop: 6, color: "#40484D", fontSize: 14, lineHeight: 20 },
   commentHeading: { flexDirection: "row", alignItems: "center", gap: 5, marginTop: 16, marginBottom: 8 },
