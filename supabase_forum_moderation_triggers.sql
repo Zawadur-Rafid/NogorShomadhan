@@ -171,6 +171,7 @@ BEGIN
         SELECT acc_id, role
         FROM account
         WHERE status::TEXT = 'verified'
+          AND role::TEXT <> 'admin'
           AND acc_id <> NEW.acc_id
     LOOP
         PERFORM enqueue_notification(
@@ -267,4 +268,4 @@ COMMENT ON FUNCTION notify_admins_about_forum_post_review() IS
 COMMENT ON FUNCTION notify_author_about_forum_moderation() IS
     'Notifies the author when an admin approves or rejects their post, including the rejection reason.';
 COMMENT ON FUNCTION notify_about_resident_discussion() IS
-    'Notifies every other verified account once an admin approves a resident discussion.';
+    'Notifies the authority and other verified residents once an admin approves a resident discussion; admins are excluded because they already reviewed it.';

@@ -1,4 +1,7 @@
-import { notificationService } from "@/services/notification.service";
+import {
+  ADMIN_EXCLUDED_NOTIFICATION_TYPES,
+  notificationService,
+} from "@/services/notification.service";
 import { confirmAction } from "@/utils/confirm";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useFocusEffect, usePathname, useRouter } from "expo-router";
@@ -21,7 +24,7 @@ export default function AdminPageHeader() {
 
       let active = true;
       void notificationService
-        .fetchUnreadCount()
+        .fetchUnreadCount(undefined, ADMIN_EXCLUDED_NOTIFICATION_TYPES)
         .then((count) => {
           if (active) setUnreadCount(count);
         })

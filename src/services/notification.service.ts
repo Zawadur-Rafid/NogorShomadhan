@@ -61,7 +61,12 @@ export interface FetchNotificationsOptions {
   accountId?: string;
   limit?: number;
   unreadOnly?: boolean;
+  excludedTypes?: NotificationType[];
 }
+
+export const ADMIN_EXCLUDED_NOTIFICATION_TYPES: NotificationType[] = [
+  "forum_discussion_created",
+];
 
 type NotificationRow = {
   notification_id: string;
@@ -197,6 +202,10 @@ export const notificationService = {
       query = query.is("read_at", null);
     }
 
+    for (const excludedType of options.excludedTypes ?? []) {
+      query = query.neq("type", excludedType);
+    }
+
     const { data, error } = await query;
 
     if (error) {
@@ -206,13 +215,22 @@ export const notificationService = {
     return ((data ?? []) as NotificationRow[]).map(mapNotificationRow);
   },
 
-  async fetchUnreadCount(accountId?: string): Promise<number> {
+  async fetchUnreadCount(
+    accountId?: string,
+    excludedTypes: NotificationType[] = [],
+  ): Promise<number> {
     const recipientAccountId = await getNotificationAccountId(accountId);
-    const { count, error } = await supabase
+    let query = supabase
       .from("notifications")
       .select("notification_id", { count: "exact", head: true })
       .eq("recipient_acc_id", recipientAccountId)
       .is("read_at", null);
+
+    for (const excludedType of excludedTypes) {
+      query = query.neq("type", excludedType);
+    }
+
+    const { count, error } = await query;
 
     if (error) {
       throw new Error(`Failed to load unread notification count: ${error.message}`);
@@ -281,6 +299,7 @@ export const notificationService = {
           )
           .eq("recipient_acc_id", adminAccountId)
           .is("read_at", null)
+          .neq("type", "forum_discussion_created")
           .order("created_at", { ascending: false })
           .limit(40);
 

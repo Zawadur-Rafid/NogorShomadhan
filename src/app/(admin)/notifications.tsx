@@ -12,7 +12,10 @@ import {
 } from 'react-native';
 
 import { useNotifications } from '@/hooks/use-notifications';
-import type { AppNotification } from '@/services/notification.service';
+import {
+  ADMIN_EXCLUDED_NOTIFICATION_TYPES,
+  type AppNotification,
+} from '@/services/notification.service';
 
 type NotificationFilter = 'ALL' | 'UNREAD';
 type NotificationKind = 'account' | 'complaint' | 'duplicate' | 'forum' | 'system';
@@ -204,7 +207,10 @@ export default function AdminNotificationsScreen() {
     markAsRead,
     markAllAsRead,
     markAllAsSeen,
-  } = useNotifications({ limit: 100 });
+  } = useNotifications({
+    limit: 100,
+    excludedTypes: ADMIN_EXCLUDED_NOTIFICATION_TYPES,
+  });
   const [filter, setFilter] = useState<NotificationFilter>('ALL');
   const hasFocusedRef = useRef(false);
 

@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   notificationService,
   type AppNotification,
+  type NotificationType,
 } from "@/services/notification.service";
 import {
   setAllNotificationsRead,
@@ -12,10 +13,12 @@ import {
 
 type UseNotificationsOptions = {
   limit?: number;
+  excludedTypes?: NotificationType[];
 };
 
 export function useNotifications(options: UseNotificationsOptions = {}) {
   const limit = options.limit ?? 60;
+  const excludedTypesKey = options.excludedTypes?.join(",") ?? "";
   const mountedRef = useRef(true);
   const requestIdRef = useRef(0);
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
@@ -48,6 +51,9 @@ export function useNotifications(options: UseNotificationsOptions = {}) {
       try {
         const nextNotifications = await notificationService.fetchNotifications({
           limit,
+          excludedTypes: excludedTypesKey
+            ? (excludedTypesKey.split(",") as NotificationType[])
+            : undefined,
         });
 
         if (mountedRef.current && requestIdRef.current === requestId) {
@@ -68,7 +74,7 @@ export function useNotifications(options: UseNotificationsOptions = {}) {
         }
       }
     },
-    [limit],
+    [excludedTypesKey, limit],
   );
 
   useEffect(() => {
