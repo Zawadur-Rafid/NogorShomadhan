@@ -90,6 +90,39 @@ export default function AdminPageHeader() {
           >
             <Text style={styles.avatarText}>AD</Text>
           </Pressable>
+
+          {menuVisible ? (
+            <View style={styles.accountMenu}>
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => {
+                  setMenuVisible(false);
+                  router.push("/(admin)/activity-log" as any);
+                }}
+                style={({ pressed }) => [
+                  styles.menuItem,
+                  pressed && styles.menuItemPressed,
+                ]}
+              >
+                <Ionicons name="time-outline" size={18} color="#23435D" />
+                <Text style={styles.menuItemText}>Activity log</Text>
+              </Pressable>
+
+              <View style={styles.menuDivider} />
+
+              <Pressable
+                accessibilityRole="button"
+                onPress={confirmLogout}
+                style={({ pressed }) => [
+                  styles.logoutButton,
+                  pressed && styles.pressed,
+                ]}
+              >
+                <Ionicons name="log-out-outline" size={18} color="#B42318" />
+                <Text style={styles.logoutText}>Log out</Text>
+              </Pressable>
+            </View>
+          ) : null}
         </View>
       ) : (
         <Pressable
@@ -105,39 +138,6 @@ export default function AdminPageHeader() {
           <Text style={styles.backText}>Back</Text>
         </Pressable>
       )}
-
-      {isDashboard && menuVisible ? (
-        <View style={styles.accountMenu}>
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => {
-              setMenuVisible(false);
-              router.push("/(admin)/activity-log" as any);
-            }}
-            style={({ pressed }) => [
-              styles.menuItem,
-              pressed && styles.menuItemPressed,
-            ]}
-          >
-            <Ionicons name="time-outline" size={18} color="#23435D" />
-            <Text style={styles.menuItemText}>Activity log</Text>
-          </Pressable>
-
-          <View style={styles.menuDivider} />
-
-          <Pressable
-            accessibilityRole="button"
-            onPress={confirmLogout}
-            style={({ pressed }) => [
-              styles.logoutButton,
-              pressed && styles.pressed,
-            ]}
-          >
-            <Ionicons name="log-out-outline" size={18} color="#B42318" />
-            <Text style={styles.logoutText}>Log out</Text>
-          </Pressable>
-        </View>
-      ) : null}
 
     </View>
   );
@@ -194,7 +194,11 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     letterSpacing: 0.1,
   },
-  actions: { flexDirection: "row", alignItems: "center" },
+  actions: {
+    flexDirection: "row",
+    alignItems: "center",
+    position: "relative",
+  },
   avatar: {
     width: 36,
     height: 36,
@@ -219,17 +223,16 @@ const styles = StyleSheet.create({
   backText: { color: "#23435D", fontSize: 11, fontWeight: "700" },
   accountMenu: {
     position: "absolute",
-    top: "100%",
-    right: 18,
+    top: 44,
+    right: 0,
     minWidth: 168,
     padding: 6,
     borderRadius: 10,
     backgroundColor: "#FFFFFF",
-    shadowColor: "#000000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.14,
-    shadowRadius: 10,
-    elevation: 6,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    boxShadow: "0 10px 28px rgba(35, 67, 93, 0.16)",
+    zIndex: 30,
   },
   notificationsMenu: {
     position: "absolute",
