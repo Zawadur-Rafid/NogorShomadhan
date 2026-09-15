@@ -1,0 +1,576 @@
+% ============================================================
+%  Nogor Shomadhan -- Report Sections 1 and 5
+%  Engine: pdfLaTeX
+% ============================================================
+\documentclass[11pt,a4paper]{article}
+
+% ---------- Encoding & fonts (pdfLaTeX-safe) ----------
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{microtype}
+
+% ---------- Layout ----------
+\usepackage[a4paper,margin=1in]{geometry}
+\usepackage{setspace}
+\onehalfspacing
+
+% ---------- Tables ----------
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{longtable}
+\usepackage{xltabular}   % multi-page table with an X (auto-width) column
+\usepackage{array}
+\usepackage{ragged2e}
+\newcolumntype{L}[1]{>{\RaggedRight\arraybackslash}p{#1}}
+
+% ---------- Lists, colour, links ----------
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage[hidelinks]{hyperref}
+\usepackage{graphicx}
+
+% ---------- Code / identifier styling ----------
+\newcommand{\code}[1]{\texttt{\small #1}}
+
+\begin{document}
+
+% ============================================================
+\section{Introduction}
+% ============================================================
+
+\subsection{Project Title}
+
+\textbf{Nogor Shomadhan} --- \emph{A Mobile Platform for Community Maintenance
+Issue Reporting, AI-Assisted Triage and Resolution Tracking}.
+
+The name \emph{Nogor Shomadhan} translates from Bengali as ``City Solution'',
+reflecting the aim of the project: turning scattered, informal complaints about a
+neighbourhood into an organised, traceable and measurable resolution process.
+
+\subsection{Project Overview}
+
+Residents of a residential community routinely face local infrastructure and
+maintenance problems --- damaged roads, faulty streetlights, water leakage,
+overflowing garbage bins, blocked drainage, broken park facilities and
+security-related concerns. In most communities these problems are still reported
+through phone calls, social media groups or informal messaging, so complaints
+arrive through disconnected channels, duplicate reports pile up, evidence is
+missing, and residents have no way to tell whether anything is being done.
+
+\emph{Nogor Shomadhan} replaces that informal process with a single mobile
+application that carries a complaint through its entire life cycle. A resident
+submits a report containing a title, a written description, a structured location
+(house, road, avenue and nearby landmark) and photographic evidence. A
+generative-AI model then reads the submitted text together with the attached
+photographs and automatically assigns the complaint to one of twelve civic
+categories, so the resident is never asked to classify the problem manually. The
+same AI layer immediately compares the new report against recent complaints in
+the same category and, when it recognises the same real-world problem, raises a
+duplicate flag together with a confidence score and a written justification for a
+human reviewer, instead of silently discarding the report.
+
+An administrator verifies the complaint, resolves any duplicate flag, and
+forwards genuine complaints to the community authority. The authority manages the
+complaint from a dedicated dashboard: it accepts the work, assigns a contractor,
+sets and revises deadlines, posts progress updates with photographic evidence,
+and finally marks the complaint resolved. Every status transition is recorded in
+an immutable history, so the resident sees a complete, timestamped timeline of
+what happened rather than a single opaque status label. Once the issue is closed
+the resident rates the quality of the resolution and can leave written feedback,
+which the authority answers from a feedback centre. Any resident may also raise
+the urgency counter on an existing complaint, letting the community collectively
+signal which problems need attention first.
+
+Around this core workflow the platform provides a role-aware notification system
+that is generated inside the database itself, so residents, authority staff and
+administrators are informed of every relevant event; a community forum where
+authorities publish announcements, updates and alerts and residents hold
+moderated discussions; analytics dashboards that visualise complaint distribution
+by category and by area, monthly trends, resolved-versus-pending ratios and
+resolution-time statistics; exportable PDF reports generated on the device; and
+an administrative activity log and system-settings panel that make platform-level
+actions auditable and configurable.
+
+\subsection{Target Users}
+
+The platform is built around three primary, clearly separated user roles. Each
+role is a distinct route group in the application with its own navigation,
+permissions and dashboard, so a user only ever sees the screens and data relevant
+to their responsibility.
+
+\begin{table}[htbp]
+\centering
+\caption{Target users of the Nogor Shomadhan platform}
+\label{tab:target-users}
+\renewcommand{\arraystretch}{1.25}
+\begin{tabularx}{\textwidth}{L{2.6cm} L{3.4cm} X}
+\toprule
+\textbf{User Role} & \textbf{Who They Are} & \textbf{What They Do on the Platform} \\
+\midrule
+Resident &
+Verified residents of the community (flat owners and tenants) &
+Register an account for approval; submit complaints with photographs, a
+structured location and a description; track the status timeline of their own
+reports; browse and comment on the community complaint feed; raise the urgency
+counter on existing complaints; rate and give feedback on resolved issues;
+participate in the community forum; view personal analytics and export PDF
+reports. \\
+\addlinespace
+Community Authority &
+Staff of the community management or maintenance office &
+Review complaints forwarded by the administrator; accept or reject work; assign
+contractors; set and revise deadlines; post progress updates with evidence
+photographs; move complaints through the \emph{Pending} $\rightarrow$
+\emph{In Progress} $\rightarrow$ \emph{Resolved} life cycle; respond to resident
+feedback from the feedback centre; publish official announcements, updates and
+alerts to the forum; monitor operational analytics and resolution performance. \\
+\addlinespace
+Administrator &
+Platform owner or community management committee representative &
+Approve or reject resident and authority account registrations; verify submitted
+complaints before they reach the authority; adjudicate AI-flagged duplicate
+reports; moderate forum content; configure system settings such as AI
+auto-categorisation, duplicate-detection sensitivity and maintenance mode; review
+the platform-wide activity log and system analytics. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+Beyond these three operational roles, the platform also serves the community
+management committee as a secondary, indirect audience: the analytics dashboards
+and exportable PDF reports turn the accumulated complaint history into evidence
+for budgeting, contractor evaluation and long-term maintenance planning. Finally,
+a set of public, unauthenticated pages (Home, About, Impact and Contact)
+addresses prospective residents and visitors, communicating what the platform
+does before they register.
+
+% ------------------------------------------------------------
+% Sections 2, 3 and 4 are written by other team members.
+% The counter below makes the next section number 5.
+% Delete this line once all sections are merged in order.
+% ------------------------------------------------------------
+\setcounter{section}{4}
+
+% ============================================================
+\section{Technologies and Integrations}
+% ============================================================
+
+This section documents the frameworks, external services and AI models used to
+build \emph{Nogor Shomadhan}, and explains why each was selected over the
+alternatives that were considered. The guiding constraints were that the system
+had to be delivered by a small student team within a single semester, run on real
+Android devices as well as in a browser for demonstration, and support a
+relational, audit-heavy data model without the team having to build, deploy and
+maintain a separate backend server.
+
+\subsection{Technology Stack Overview}
+
+Table~\ref{tab:stack} lists the technologies that make up the platform, grouped
+by the layer of the system they serve. Each of them is described, and its
+selection justified, in the subsections that follow.
+
+\begin{table}[!htbp]
+\centering
+\caption{Summary of the technology stack}
+\label{tab:stack}
+\renewcommand{\arraystretch}{1.25}
+\begin{tabularx}{\textwidth}{L{3.3cm} L{4.1cm} X}
+\toprule
+\textbf{Layer} & \textbf{Technology} & \textbf{Role in the Project} \\
+\midrule
+Application framework & Expo SDK~57 with React Native~0.86 and React~19 &
+Cross-platform mobile application for Android and iOS, plus a web build for
+demonstration \\
+\addlinespace
+Language & TypeScript~6 (\code{strict} mode) &
+Statically typed application code, with shared domain types derived from the ER
+diagram \\
+\addlinespace
+Navigation & Expo Router~57 (file-based routing, typed routes) &
+Route groups per user role with per-group layout guards \\
+\addlinespace
+Backend platform & Supabase (PostgreSQL, Storage, PL/pgSQL, \code{pg\_cron}) &
+Database, file hosting, business-rule triggers and scheduled jobs \\
+\addlinespace
+Data access & \code{@supabase/supabase-js} v2 &
+Typed client-side queries, filtering and mutations against PostgreSQL \\
+\addlinespace
+Artificial intelligence & Google Gemini Flash via \code{@google/generative-ai} &
+Multimodal complaint categorisation and duplicate-report detection \\
+\addlinespace
+Messaging integration & BulkSMSBD HTTP SMS API &
+Out-of-band SMS notices for account approval and rejection \\
+\addlinespace
+Device capabilities & \code{expo-image-picker}, \code{expo-image},
+\code{expo-file-system}, \code{expo-print}, \code{expo-sharing},
+\code{expo-secure-store} &
+Evidence capture, image rendering, on-device PDF report generation and sharing \\
+\addlinespace
+UI and interaction & React Native Reanimated~4, Gesture Handler, Safe Area
+Context, Keyboard Controller, \code{@expo/vector-icons} &
+Animated, gesture-driven and accessible interface components \\
+\addlinespace
+Local persistence & \code{@react-native-async-storage/\allowbreak async-storage} &
+Session persistence, cached notification state and offline-tolerant preferences \\
+\addlinespace
+Tooling & Expo CLI, Metro bundler, ESLint (\code{eslint-config-expo}), Git &
+Development server, bundling, static analysis and version control \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{Frontend Framework: Expo and React Native}
+
+The application is built with \textbf{Expo SDK~57} on top of
+\textbf{React Native~0.86} and \textbf{React~19}, written entirely in
+\textbf{TypeScript} with \code{strict} type checking enabled. Routing is handled
+by \textbf{Expo Router~57}, which maps the directory structure under
+\code{src/app/} directly onto application routes.
+
+Expo Router's route groups are used to express the role architecture of the
+system: \code{(public)}, \code{(resident)}, \code{(authority)} and \code{(admin)}
+each form an isolated navigation tree with its own \code{\_layout.tsx} file that
+acts as an access guard for that role. A resident can therefore never reach an
+administrator screen through navigation, because the guard lives at the layout
+level rather than being repeated inside every screen. Typed routes were enabled
+so that an incorrect navigation target becomes a compile-time error instead of a
+runtime dead end.
+
+\paragraph{Justification.} Three alternatives were considered for the client
+application:
+
+\begin{itemize}[leftmargin=1.4em,itemsep=0.35em]
+  \item \textbf{Native Android (Kotlin) and iOS (Swift) development} would have
+        required two separate codebases, two toolchains and two sets of UI work
+        for the same feature set --- not feasible for a four-member team within
+        one semester.
+  \item \textbf{Flutter} offers comparable cross-platform reach, but would have
+        required the team to adopt Dart and would have cut the project off from
+        the JavaScript ecosystem that the Supabase and Google Generative AI
+        client libraries are written for. The team's existing competence in
+        JavaScript and TypeScript made React Native the lower-risk choice.
+  \item \textbf{Bare React Native} (React Native CLI without Expo) would have
+        given the same rendering model, but the project depends on more than
+        twenty native modules --- camera and gallery access, secure storage, file
+        system, printing, sharing, gesture handling, animation worklets. Under
+        bare React Native each of these requires manual native linking and
+        per-platform build configuration. Expo's config plugins and prebuild
+        pipeline handle that automatically, which removed a large and unforgiving
+        class of build problems from the project.
+\end{itemize}
+
+Expo was additionally preferred because \textbf{React Native Web} is part of the
+same toolchain: the identical codebase produces a browser build, which made
+in-class demonstration and day-to-day development markedly faster than launching
+an emulator for every change. Expo Router was chosen over configuring
+\textbf{React Navigation} manually because file-based routing keeps the
+navigation structure visible in the file tree and makes role-based guarding a
+structural property of the project rather than a convention the team has to
+remember to apply.
+
+\subsection{Backend and Database Platform: Supabase}
+
+\textbf{Supabase} provides the entire server side of the platform. Four of its
+capabilities are used.
+
+\begin{description}[leftmargin=1.6em,style=nextline,itemsep=0.4em]
+  \item[PostgreSQL database.] The relational schema implements the ER diagram
+        directly: \code{account}, \code{complaints}, \code{evidence},
+        \code{duplicate}, \code{complaint\_status\_history},
+        \code{complaint\_work\_updates}, \code{contractor\_history}, feedback,
+        forum posts and comments, \code{notifications} and \code{app\_settings}.
+        Domain vocabularies such as account status, account role, complaint
+        status, complaint category and notification type are declared as
+        PostgreSQL \code{ENUM} types, so invalid values are rejected by the
+        database rather than merely discouraged by the client. Row Level Security
+        is enabled on every table with explicit access policies.
+  \item[Storage.] Evidence photographs submitted by residents and progress
+        photographs uploaded by the authority are stored in Supabase Storage
+        buckets. Images captured through the picker are decoded from base64 into
+        a binary buffer before upload, and the resulting public URL is written
+        into the \code{evidence} table alongside the complaint.
+  \item[PL/pgSQL functions and triggers.] The notification system is implemented
+        inside the database. Triggers on account insertion, complaint status
+        changes, duplicate insertion, duplicate adjudication, work updates,
+        feedback, feedback replies, forum comments and official announcements
+        call a shared \code{enqueue\_notification} routine that writes
+        role-addressed notification rows carrying a deduplicating event key, a
+        priority level and a deep-link action path.
+  \item[Scheduled jobs.] The \code{pg\_cron} extension runs time-based
+        notification generators inside the database --- for example, flagging a
+        complaint that has remained pending for fourteen days without work being
+        started, and raising deadline-milestone and overdue notices.
+\end{description}
+
+\paragraph{Justification.} Supabase was chosen over the two obvious
+alternatives:
+
+\begin{itemize}[leftmargin=1.4em,itemsep=0.35em]
+  \item \textbf{A custom backend (Node.js/Express with PostgreSQL)} would have
+        given complete control, but the team would then have had to design,
+        implement, document, deploy and keep a REST API online in addition to
+        building the mobile client. Supabase exposes PostgreSQL through a
+        generated, policy-enforced client SDK, so the endpoints planned in the
+        API section of this report are satisfied by typed queries from the
+        application's service layer, with no server code to host. This removed an
+        entire deployment surface from a semester-length project.
+  \item \textbf{Firebase (Firestore)} was rejected because the data model is
+        strongly relational. The platform constantly joins complaints to
+        accounts, evidence, status history, contractor history, feedback and
+        duplicate records, and the analytics screens aggregate across those joins
+        by category, area, month and resolution time. A document store would have
+        forced denormalisation and client-side aggregation, and it offers no
+        equivalent of \code{ENUM} domains, foreign keys or transactional
+        triggers. PostgreSQL expresses the ER diagram as designed.
+\end{itemize}
+
+Implementing notifications as database triggers rather than as client-side code
+or separate cloud functions was a deliberate decision: a notification row is
+created in the same transaction as the state change that caused it, so
+notifications cannot drift out of step with the data, and they are produced
+correctly no matter which role or which screen triggered the change. For the same
+reason \code{pg\_cron} was preferred over an external scheduler or worker process
+--- the schedule lives next to the data it inspects, with no additional service
+to keep running.
+
+\subsection{AI Models and APIs}
+
+Artificial intelligence is used for the two smart features of the platform, both
+served by \textbf{Google Gemini Flash} through the official
+\textbf{\code{@google/generative-ai}} JavaScript SDK.
+
+\subsubsection{Automatic Complaint Categorisation}
+
+When a resident submits a complaint, the title, the description and the attached
+evidence photographs are sent to Gemini in a single multimodal request. The model
+is constrained to reply with exactly one label from a fixed list of twelve
+categories --- Road Damage; Garbage \& Waste; Drainage \& Waterlogging;
+Streetlight \& Electrical; Water Supply; Sanitation \& Public Toilets; Traffic \&
+Illegal Parking; Public Safety \& Encroachment; Noise \& Environmental Pollution;
+Parks \& Public Spaces; Animal-Related Issues; and Other. The returned label is
+validated against that list before it is accepted, and the system falls back to
+\emph{Other} if the response is unrecognised or the service is unavailable, so
+complaint submission never fails because of the AI layer.
+
+\subsubsection{Duplicate Complaint Detection}
+
+Duplicate detection runs as a two-stage pipeline:
+
+\begin{enumerate}[leftmargin=1.6em,itemsep=0.35em]
+  \item \textbf{Database prefilter.} A PostgreSQL query retrieves a small
+        candidate set --- the most recent complaints in the same category,
+        excluding the new complaint itself. This keeps the AI request small and
+        cheap regardless of how large the complaint history grows.
+  \item \textbf{AI adjudication.} The new complaint and the candidate set are
+        passed to Gemini, which is instructed to reason about physical location
+        (house, road, avenue, landmark), category and timing rather than mere word
+        overlap, and to return a strict JSON verdict containing a boolean
+        duplicate decision, a confidence score, the matched complaint identifier
+        and a written reason. When the score crosses the configured threshold, a
+        row is inserted into the \code{duplicate} table carrying the score and the
+        model's reasoning, which in turn raises a duplicate-review notification
+        for the administrator.
+\end{enumerate}
+
+Crucially, the AI never deletes a complaint. It produces evidence; an
+administrator makes the decision on a dedicated review screen. The sensitivity of
+the check is configurable by the administrator from the system-settings page, and
+both AI features can be switched off entirely through the \code{app\_settings}
+table.
+
+\paragraph{Justification.} Several approaches were evaluated:
+
+\begin{itemize}[leftmargin=1.4em,itemsep=0.35em]
+  \item \textbf{Training a custom classifier} (for example a fine-tuned BERT
+        model or a classical TF--IDF classifier) would have required a labelled
+        corpus of Bangladeshi community complaints. No such dataset exists, and
+        collecting and annotating one was outside the scope of the project. A
+        general-purpose instruction-following model achieves usable accuracy with
+        no training data at all.
+  \item \textbf{Keyword matching or TF--IDF cosine similarity} for duplicate
+        detection was rejected because the reports it must compare are written by
+        different residents in free text, frequently mixing Bengali and English
+        and describing the same pothole in entirely different words. A lexical
+        measure misses paraphrase, and it cannot weigh location and recency the
+        way the task requires.
+  \item \textbf{Vector embeddings with \code{pgvector}} were a serious candidate
+        and would scale better on a very large corpus. They were not chosen
+        because a similarity score alone cannot explain itself: the administrator
+        review screen needs a human-readable justification for why two complaints
+        were judged to be the same problem. A single generative call returns the
+        score \emph{and} the reasoning, which made the review workflow possible
+        without building a second explanation mechanism.
+  \item \textbf{Other commercial models} (such as OpenAI GPT-4 class or Anthropic
+        Claude models) are comparable in capability. Gemini Flash was selected
+        because its free tier is sufficient for a student project, it accepts text
+        and images in the same request --- which matters because the photograph
+        often identifies the category better than the resident's wording --- and
+        its latency is low enough to run inside the complaint submission flow
+        without making the user wait noticeably.
+\end{itemize}
+
+\subsection{External APIs and Third-Party Services}
+
+\paragraph{BulkSMSBD SMS gateway.} Account approval and rejection decisions are
+delivered to the applicant by SMS through the BulkSMSBD HTTP API. This closes a
+genuine gap in the workflow: a resident whose registration is still awaiting
+approval cannot sign in, and therefore cannot receive an in-app notification. A
+channel outside the application is the only way to reach them. BulkSMSBD was
+chosen over international providers such as Twilio because it supports
+Bangladeshi eleven-digit mobile numbers natively with local operator routing, its
+pricing suits a local deployment, and it requires no international sender
+registration. Email was considered as a cheaper alternative but rejected because
+SMS reach and read rates are substantially higher among the intended user base.
+
+\paragraph{On-device PDF report generation.} Analytics reports and complaint
+reports are produced with \code{expo-print}, which renders an HTML document
+generated by the application into a PDF, and \code{expo-sharing}, which hands the
+resulting file to the operating system share sheet. Server-side generation with a
+headless browser toolchain such as Puppeteer or \code{wkhtmltopdf} was rejected
+because it would have meant hosting yet another service purely to produce a
+document the device can already render, and because on-device generation keeps
+complaint data on the user's device.
+
+\paragraph{Device and media integrations.} Evidence capture uses
+\code{expo-image-picker} to take a photograph or select one from the gallery,
+returning base64 data that is uploaded to Supabase Storage;
+\code{expo-file-system} manages generated report files; \code{expo-image}
+provides cached, progressive image rendering; \code{expo-secure-store} holds
+sensitive session material on the device; and
+\code{@react-native-async-storage/async-storage} persists the Supabase session
+and cached notification state so the user is not signed out between launches.
+Interface behaviour relies on \textbf{React Native Reanimated~4} with the
+worklets runtime for animations that run on the UI thread, \textbf{React Native
+Gesture Handler} for native-quality gestures, \textbf{React Native Safe Area
+Context} and \textbf{Screens} for correct native layout, and \textbf{React Native
+Keyboard Controller} to keep long complaint and registration forms usable while
+the keyboard is open. The analytics charts are composed from React Native
+primitives and the project's own theme tokens rather than from a heavyweight
+charting library, which kept the visualisations consistent with the rest of the
+interface and avoided a dependency that renders differently on web and native.
+
+\paragraph{State management.} Application state is managed with React Context
+providers and custom hooks (for authentication, complaints, notifications and
+analytics) rather than an external state library such as Redux or Zustand.
+Because Supabase is the single source of truth and each screen queries the data it
+needs, a global normalised client store would have added indirection without
+solving a problem the project actually has.
+
+\subsection{Development Tooling}
+
+Development uses the \textbf{Expo CLI} with the \textbf{Metro} bundler for the
+development server and bundling, \textbf{ESLint} with \code{eslint-config-expo}
+for static analysis, \textbf{TypeScript} path aliases (\code{@/*}
+$\rightarrow$ \code{src/*}) to keep imports stable as the file tree grows, and
+\textbf{Git} for version control. Database changes are tracked as versioned SQL
+migration files inside the repository, and the current schema and Row Level
+Security policies are maintained as living documentation alongside them, so the
+database can be rebuilt from scratch in a new Supabase project.
+
+\subsection{Consolidated Justification}
+
+Table~\ref{tab:justification} summarises, for each major requirement of the
+system, the technology adopted, the alternatives that were considered, and the
+reason for the final decision.
+
+\begin{xltabular}{\textwidth}{L{2.7cm} L{2.9cm} L{2.9cm} X}
+\caption{Technology decisions and their justification}
+\label{tab:justification} \\
+\toprule
+\textbf{Requirement} & \textbf{Adopted} & \textbf{Alternatives} &
+\textbf{Reason for Choice} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Requirement} & \textbf{Adopted} & \textbf{Alternatives} &
+\textbf{Reason for Choice} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+\bottomrule
+\endlastfoot
+
+Cross-platform mobile client &
+Expo (React Native) &
+Native Kotlin/Swift; Flutter; bare React Native &
+One TypeScript codebase for Android, iOS and web; managed native modules remove
+manual linking for twenty-plus native dependencies; team already fluent in
+TypeScript \\
+\addlinespace
+
+Role-separated navigation &
+Expo Router with route groups &
+Manually configured React Navigation &
+File-based routes mirror the four user modules; role guards live in per-group
+layouts; typed routes catch invalid navigation at compile time \\
+\addlinespace
+
+Relational data with audit history &
+Supabase PostgreSQL &
+Firebase Firestore; self-hosted Express and PostgreSQL &
+Foreign keys, \code{ENUM} domains and transactional triggers express the ER
+diagram directly; the generated client SDK removes the need to host a separate
+API \\
+\addlinespace
+
+Evidence image hosting &
+Supabase Storage &
+Cloudinary; Amazon S3 &
+Same project, credentials and access-policy model as the database; public URLs
+are referenced straight from complaint rows \\
+\addlinespace
+
+Event-driven notifications &
+PL/pgSQL triggers &
+Client-side writes; serverless cloud functions &
+Notifications are written in the same transaction as the state change, so they
+can never drift from the data, whichever client caused the change \\
+\addlinespace
+
+Time-based notifications &
+\code{pg\_cron} &
+External cron host; scheduled worker service &
+Runs next to the data it inspects, with no extra service to deploy or monitor \\
+\addlinespace
+
+Complaint categorisation &
+Google Gemini Flash (multimodal) &
+Fine-tuned BERT; TF--IDF classifier; other commercial LLMs &
+No labelled Bangladeshi complaint corpus exists; photographs and text are
+classified in a single request; free tier and low latency fit the submission
+flow \\
+\addlinespace
+
+Duplicate detection &
+Gemini with an SQL candidate prefilter &
+Keyword or TF--IDF similarity; \code{pgvector} embeddings &
+Recognises semantically identical reports written in different words and
+languages, weighs location and recency, and returns a human-readable reason for
+administrator review \\
+\addlinespace
+
+Out-of-band user notices &
+BulkSMSBD API &
+Twilio; transactional email; push notifications &
+Local eleven-digit number support and operator routing at local cost; reaches
+users who cannot yet sign in to receive an in-app notification \\
+\addlinespace
+
+Report export &
+\code{expo-print} with \code{expo-sharing} &
+Server-side Puppeteer or \code{wkhtmltopdf} &
+Renders PDFs on the device, so no additional service is hosted and complaint data
+stays local \\
+\addlinespace
+
+Client state &
+React Context with custom hooks &
+Redux Toolkit; Zustand &
+Supabase is the single source of truth; per-screen queries make a global
+normalised store unnecessary \\
+
+\end{xltabular}
+
+\end{document}

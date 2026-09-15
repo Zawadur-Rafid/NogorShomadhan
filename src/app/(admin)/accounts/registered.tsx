@@ -51,8 +51,7 @@ export default function RegisteredAccountsPage() {
       return (
         account.fullName.toLowerCase().includes(search) ||
         account.email.toLowerCase().includes(search) ||
-        account.username.toLowerCase().includes(search) ||
-        account.role.toLowerCase().includes(search)
+        account.username.toLowerCase().includes(search)
       );
     });
 
@@ -95,7 +94,7 @@ export default function RegisteredAccountsPage() {
           <TextInput
             value={query}
             onChangeText={setQuery}
-            placeholder="Search by name, role, email or username"
+            placeholder="Search by name, email or username"
             placeholderTextColor="#8A8A8A"
             style={styles.searchInput}
           />
@@ -190,9 +189,6 @@ export default function RegisteredAccountsPage() {
 
                 <View style={styles.profileTextWrap}>
                   <Text style={styles.personName}>{account.fullName}</Text>
-                  <Text style={styles.personInfo}>
-                    {account.role.toUpperCase()} • VERIFIED
-                  </Text>
 
                   <View style={styles.roleBadge}>
                     <Text style={styles.roleBadgeText}>APPROVED ACCOUNT</Text>
@@ -241,9 +237,7 @@ export default function RegisteredAccountsPage() {
                 <Text style={styles.modalTitle}>
                   {selectedAccount.fullName}
                 </Text>
-                <Text style={styles.modalSubtitle}>
-                  {selectedAccount.role.toUpperCase()} • VERIFIED
-                </Text>
+                <Text style={styles.modalSubtitle}>VERIFIED</Text>
 
                 <View style={styles.detailRow}>
                   <Text style={styles.detailLabel}>NID</Text>
@@ -487,12 +481,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "700",
     color: colors.text,
-  },
-  personInfo: {
-    fontSize: 11,
-    fontWeight: "600",
-    color: colors.subtitle,
-    marginTop: 2,
   },
   roleBadge: {
     alignSelf: "flex-start",
